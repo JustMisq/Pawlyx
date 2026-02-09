@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface Stats {
   period: string
@@ -98,11 +98,7 @@ export default function AdvancedStats() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month')
 
-  useEffect(() => {
-    fetchStats()
-  }, [period])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/stats?period=${period}`)
@@ -115,7 +111,11 @@ export default function AdvancedStats() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [period])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   const periodLabels = {
     month: 'Ce mois',

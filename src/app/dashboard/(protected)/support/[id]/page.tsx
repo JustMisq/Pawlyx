@@ -82,6 +82,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [isInternal, setIsInternal] = useState(false)
   const [sending, setSending] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchTicket()
   }, [id])

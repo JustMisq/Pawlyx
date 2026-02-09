@@ -30,7 +30,7 @@ export default function AdminErrorsPage() {
     } else if (session) {
       fetchErrors()
     }
-  }, [session, router, filter, resolved])
+  }, [session, router, filter, resolved]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchErrors = async () => {
     try {

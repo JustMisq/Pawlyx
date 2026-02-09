@@ -62,6 +62,7 @@ export default function MemberPermissionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchMemberPermissions()
   }, [memberId])

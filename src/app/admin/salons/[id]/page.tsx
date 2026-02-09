@@ -76,7 +76,7 @@ export default function AdminSalonDetailPage() {
     } else if (session) {
       fetchSalon()
     }
-  }, [session, router])
+  }, [session, router]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchSalon = async () => {
     try {

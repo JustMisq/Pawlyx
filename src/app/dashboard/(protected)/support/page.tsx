@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -82,11 +82,7 @@ export default function SupportPage() {
     priority: 'normal',
   })
 
-  useEffect(() => {
-    fetchTickets()
-  }, [filter])
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       const res = await fetch(`/api/support/tickets?status=${filter}&admin=true`)
       if (res.ok) {
@@ -101,7 +97,11 @@ export default function SupportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter])
+
+  useEffect(() => {
+    fetchTickets()
+  }, [fetchTickets])
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault()

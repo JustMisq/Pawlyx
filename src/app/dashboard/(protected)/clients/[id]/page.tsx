@@ -115,7 +115,7 @@ export default function ClientDetailsPage() {
     }
     
     if (clientId) fetchAll()
-  }, [clientId, animals.length])
+  }, [clientId, animals.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddAnimal = async (e: React.FormEvent) => {
     e.preventDefault()

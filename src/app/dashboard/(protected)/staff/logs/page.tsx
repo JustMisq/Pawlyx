@@ -28,6 +28,7 @@ export default function LogsPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchLogs()
   }, [page, filter, startDate, endDate])

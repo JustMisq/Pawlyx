@@ -60,6 +60,7 @@ export default function AnimalDetailPage() {
     weight: '',
   })
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchAnimalDetails()
   }, [animalId])

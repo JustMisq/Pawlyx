@@ -40,7 +40,7 @@ export default function AdminUsersPage() {
     } else if (session) {
       fetchUsers()
     }
-  }, [session, router, page, searchEmail])
+  }, [session, router, page, searchEmail]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUsers = async () => {
     try {

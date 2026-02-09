@@ -34,7 +34,7 @@ export default function AdminInteractionsPage() {
     } else if (session) {
       fetchInteractions()
     }
-  }, [session, router, typeFilter, statusFilter, requiresReply])
+  }, [session, router, typeFilter, statusFilter, requiresReply]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchInteractions = async () => {
     try {

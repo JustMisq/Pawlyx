@@ -55,7 +55,7 @@ export default function TicketDetailPage() {
     } else if (session) {
       fetchTicket()
     }
-  }, [session, router, ticketId])
+  }, [session, router, ticketId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTicket = async () => {
     try {

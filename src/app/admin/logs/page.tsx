@@ -40,7 +40,7 @@ export default function AdminLogsPage() {
     } else if (session) {
       fetchLogs()
     }
-  }, [session, router, page, filter, severity])
+  }, [session, router, page, filter, severity]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchLogs = async () => {
     try {

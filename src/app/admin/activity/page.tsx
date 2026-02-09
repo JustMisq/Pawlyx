@@ -30,7 +30,7 @@ export default function AdminActivityPage() {
     } else if (session) {
       fetchActivities()
     }
-  }, [session, router, filter, resource])
+  }, [session, router, filter, resource]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchActivities = async () => {
     try {

@@ -40,7 +40,7 @@ export default function AdminTicketsPage() {
     } else if (session) {
       fetchTickets()
     }
-  }, [session, router, filter, priority])
+  }, [session, router, filter, priority]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTickets = async () => {
     try {
