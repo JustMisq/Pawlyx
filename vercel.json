@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm install && prisma generate && next build",
+  "outputDirectory": ".next",
+  "env": {
+    "SKIP_ENV_VALIDATION": "true"
+  },
+  "regions": ["cdg1"]
+}
