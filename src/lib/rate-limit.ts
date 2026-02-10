@@ -4,15 +4,18 @@ import { Redis } from '@upstash/redis'
 // ✅ Redis rate limiting (production-ready)
 let redis: Redis | null = null
 
-if (process.env.REDIS_URL) {
+if (process.env.REDIS_URL && process.env.REDIS_TOKEN) {
   try {
     redis = new Redis({
       url: process.env.REDIS_URL,
-      token: process.env.REDIS_TOKEN || '',
+      token: process.env.REDIS_TOKEN,
     })
   } catch (error) {
-    console.warn('⚠️  Redis connection failed, falling back to in-memory rate limiting')
+    console.warn('⚠️  Redis connection failed, falling back to in-memory rate limiting', error)
+    redis = null
   }
+} else if (process.env.REDIS_URL) {
+  console.warn('⚠️  REDIS_TOKEN is missing - falling back to in-memory rate limiting')
 }
 
 // In-memory fallback store

@@ -1,8 +1,14 @@
 {
-  "buildCommand": "npm install && prisma generate && next build",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "nodeVersion": "20.x",
   "env": {
-    "SKIP_ENV_VALIDATION": "true"
+    "NODE_ENV": "production"
   },
-  "regions": ["cdg1"]
+  "regions": ["cdg1"],
+  "git": {
+    "deploymentEnabled": true
+  }
 }

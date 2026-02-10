@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: pawlyx-api
+    env: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm install && npx prisma migrate deploy && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        value: ${DATABASE_URL}
+      - key: NEXTAUTH_URL
+        value: https://pawlyx-api.onrender.com
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: STRIPE_PUBLISHABLE_KEY
+        value: ${STRIPE_PUBLISHABLE_KEY}
+      - key: STRIPE_SECRET_KEY
+        value: ${STRIPE_SECRET_KEY}
+      - key: STRIPE_PRICE_ID_MONTHLY
+        value: ${STRIPE_PRICE_ID_MONTHLY}
+      - key: STRIPE_PRICE_ID_YEARLY
+        value: ${STRIPE_PRICE_ID_YEARLY}
+      - key: STRIPE_WEBHOOK_SECRET
+        value: ${STRIPE_WEBHOOK_SECRET}

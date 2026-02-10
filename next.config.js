@@ -56,16 +56,29 @@ const nextConfig = {
   },
 }
 
-// Wrap with Sentry for error tracking - only if DSN is configured
-module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, {
-      // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-      org: process.env.SENTRY_ORG || 'groomly',
-      project: process.env.SENTRY_PROJECT || 'groomly',
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      silent: process.env.NODE_ENV === 'development',
-      widenClientFileUpload: true,
-      tunnelRoute: '/monitoring',
-      hideSourceMaps: true,
-    })
-  : nextConfig
+// ✅ SÉCURITÉ: Wrap with Sentry for error tracking (optional)
+// Sentry is disabled during Vercel builds to avoid build issues
+const shouldUseSentry = 
+  process.env.NEXT_PUBLIC_SENTRY_DSN && 
+  process.env.NODE_ENV === 'production' &&
+  process.env.VERCEL !== '1'
+
+try {
+  module.exports = shouldUseSentry
+    ? withSentryConfig(nextConfig, {
+        org: process.env.SENTRY_ORG || 'groomly',
+        project: process.env.SENTRY_PROJECT || 'groomly',
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        silent: true,
+        widenClientFileUpload: true,
+        tunnelRoute: '/monitoring',
+        hideSourceMaps: true,
+        disableLogger: true,
+        skipBrowserBundleWarmup: true,
+      })
+    : nextConfig
+} catch (error) {
+  // Fallback if Sentry is not available
+  console.warn('⚠️ Sentry config error (non-blocking):', error.message)
+  module.exports = nextConfig
+}
