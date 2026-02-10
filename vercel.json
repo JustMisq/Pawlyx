@@ -3,12 +3,5 @@
   "outputDirectory": ".next",
   "installCommand": "npm ci",
   "framework": "nextjs",
-  "nodeVersion": "20.x",
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "regions": ["cdg1"],
-  "git": {
-    "deploymentEnabled": true
-  }
+  "regions": ["cdg1"]
 }
