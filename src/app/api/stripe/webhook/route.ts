@@ -47,50 +47,90 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         
-        if (session.customer_email && session.subscription) {
-          const user = await prisma.user.findUnique({
-            where: { email: session.customer_email },
+        logger.info('STRIPE/WEBHOOK', 'checkout.session.completed received', {
+          customer_email: session.customer_email,
+          subscription: session.subscription,
+          customer: session.customer,
+        })
+
+        if (!session.customer_email) {
+          logger.error('STRIPE/WEBHOOK', 'Missing customer_email in session')
+          return NextResponse.json(
+            { error: 'Missing customer_email' },
+            { status: 400 }
+          )
+        }
+
+        if (!session.subscription) {
+          logger.error('STRIPE/WEBHOOK', 'Missing subscription in session')
+          return NextResponse.json(
+            { error: 'Missing subscription' },
+            { status: 400 }
+          )
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: session.customer_email },
+        })
+
+        if (!user) {
+          logger.error('STRIPE/WEBHOOK', `User not found for email: ${session.customer_email}`)
+          return NextResponse.json(
+            { error: 'User not found' },
+            { status: 404 }
+          )
+        }
+
+        try {
+          const subscription = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          )
+
+          const priceId = subscription.items.data[0]?.price.id
+          const plan =
+            priceId === process.env.STRIPE_PRICE_ID_MONTHLY
+              ? 'monthly'
+              : 'yearly'
+          
+          const price = plan === 'monthly' ? 15 : 150
+
+          logger.info('STRIPE/WEBHOOK', 'Creating subscription', {
+            userId: user.id,
+            plan,
+            stripeSubscriptionId: session.subscription,
           })
 
-          if (user) {
-            const subscription = await stripe.subscriptions.retrieve(
-              session.subscription as string
-            )
+          await prisma.subscription.upsert({
+            where: { userId: user.id },
+            create: {
+              userId: user.id,
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              status: 'active',
+              plan,
+              price,
+              currency: 'EUR',
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            },
+            update: {
+              stripeCustomerId: session.customer as string,
+              stripeSubscriptionId: session.subscription as string,
+              status: 'active',
+              plan,
+              price,
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            },
+          })
 
-            const priceId = subscription.items.data[0]?.price.id
-            const plan =
-              priceId === process.env.STRIPE_PRICE_ID_MONTHLY
-                ? 'monthly'
-                : 'yearly'
-            
-            const price = plan === 'monthly' ? 15 : 150
-
-            await prisma.subscription.upsert({
-              where: { userId: user.id },
-              create: {
-                userId: user.id,
-                stripeCustomerId: session.customer as string,
-                stripeSubscriptionId: session.subscription as string,
-                status: 'active',
-                plan,
-                price,
-                currency: 'EUR',
-                currentPeriodStart: new Date(subscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-              },
-              update: {
-                stripeCustomerId: session.customer as string,
-                stripeSubscriptionId: session.subscription as string,
-                status: 'active',
-                plan,
-                price,
-                currentPeriodStart: new Date(subscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-              },
-            })
-
-            logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CREATED', user.id, { plan })
-          }
+          logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CREATED', user.id, { plan })
+        } catch (substriptionError) {
+          logger.error('STRIPE/WEBHOOK', 'Failed to create subscription', substriptionError)
+          return NextResponse.json(
+            { error: 'Failed to create subscription' },
+            { status: 500 }
+          )
         }
         break
       }
@@ -98,45 +138,63 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
         
+        logger.info('STRIPE/WEBHOOK', 'customer.subscription.deleted received', {
+          stripeCustomerId: subscription.customer,
+        })
+
         const subscriptionRecord = await prisma.subscription.findFirst({
           where: { stripeCustomerId: subscription.customer as string },
         })
 
-        if (subscriptionRecord) {
-          await prisma.subscription.update({
-            where: { id: subscriptionRecord.id },
-            data: { status: 'canceled' },
-          })
-
-          logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CANCELED', subscriptionRecord.userId)
+        if (!subscriptionRecord) {
+          logger.warn('STRIPE/WEBHOOK', `Subscription not found for customer: ${subscription.customer}`)
+          return NextResponse.json({ received: true }, { status: 200 })
         }
+
+        await prisma.subscription.update({
+          where: { id: subscriptionRecord.id },
+          data: { status: 'canceled' },
+        })
+
+        logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CANCELED', subscriptionRecord.userId)
         break
       }
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
         
-        if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(
-            invoice.subscription as string
-          )
+        logger.info('STRIPE/WEBHOOK', 'invoice.payment_succeeded received', {
+          stripeCustomerId: invoice.customer,
+          subscription: invoice.subscription,
+        })
 
-          const subscriptionRecord = await prisma.subscription.findFirst({
-            where: { stripeCustomerId: invoice.customer as string },
-          })
-
-          if (subscriptionRecord) {
-            await prisma.subscription.update({
-              where: { id: subscriptionRecord.id },
-              data: {
-                currentPeriodStart: new Date(subscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-              },
-            })
-
-            logger.audit('STRIPE/WEBHOOK', 'INVOICE_PAID', subscriptionRecord.userId)
-          }
+        if (!invoice.subscription) {
+          logger.debug('STRIPE/WEBHOOK', 'Invoice without subscription, skipping')
+          return NextResponse.json({ received: true }, { status: 200 })
         }
+
+        const subscription = await stripe.subscriptions.retrieve(
+          invoice.subscription as string
+        )
+
+        const subscriptionRecord = await prisma.subscription.findFirst({
+          where: { stripeCustomerId: invoice.customer as string },
+        })
+
+        if (!subscriptionRecord) {
+          logger.warn('STRIPE/WEBHOOK', `Subscription not found for customer: ${invoice.customer}`)
+          return NextResponse.json({ received: true }, { status: 200 })
+        }
+
+        await prisma.subscription.update({
+          where: { id: subscriptionRecord.id },
+          data: {
+            currentPeriodStart: new Date(subscription.current_period_start * 1000),
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          },
+        })
+
+        logger.audit('STRIPE/WEBHOOK', 'INVOICE_PAID', subscriptionRecord.userId)
         break
       }
 
