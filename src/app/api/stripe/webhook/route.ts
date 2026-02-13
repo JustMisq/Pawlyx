@@ -10,6 +10,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(request: NextRequest) {
+  console.log('🔔 WEBHOOK STRIPE: Request reçue!')
+  console.log('Secret configured:', !!webhookSecret)
+  
   if (!webhookSecret) {
     logger.error('STRIPE/WEBHOOK', 'STRIPE_WEBHOOK_SECRET not configured')
     return NextResponse.json(
