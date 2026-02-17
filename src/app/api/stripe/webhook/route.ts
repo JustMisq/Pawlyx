@@ -1,215 +1,249 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
-import { logger, getErrorMessage } from '@/lib/logger'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 })
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-
+/**
+ * Webhook Stripe - Gère les événements de paiement
+ * Endpoint: POST /api/stripe/webhook
+ * 
+ * Événements gérés:
+ * - checkout.session.completed: Crée/met à jour la subscription
+ * - customer.subscription.deleted: Annule la subscription
+ * - invoice.payment_succeeded: Met à jour les dates de facture
+ */
 export async function POST(request: NextRequest) {
-  console.log('🔔 WEBHOOK STRIPE: Request reçue!')
-  console.log('Secret configured:', !!webhookSecret)
+  const signature = request.headers.get('stripe-signature')
+  const body = await request.text()
+  const secret = process.env.STRIPE_WEBHOOK_SECRET
+
+  // ===================================================================
+  // 1. VALIDER LA SIGNATURE (sécurité critique)
+  // ===================================================================
   
-  if (!webhookSecret) {
-    logger.error('STRIPE/WEBHOOK', 'STRIPE_WEBHOOK_SECRET not configured')
+  if (!secret) {
+    console.error('❌ [WEBHOOK] STRIPE_WEBHOOK_SECRET non configuré')
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 }
     )
   }
 
-  const body = await request.text()
-  const signature = request.headers.get('stripe-signature')
-
   if (!signature) {
-    logger.error('STRIPE/WEBHOOK', 'No stripe-signature header found')
+    console.error('❌ [WEBHOOK] Header stripe-signature manquant')
     return NextResponse.json(
-      { error: 'No signature found' },
+      { error: 'Missing signature header' },
       { status: 400 }
     )
   }
 
   let event: Stripe.Event
-
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    logger.info('STRIPE/WEBHOOK', `Event verified: ${event.type}`)
-  } catch (error) {
-    logger.error('STRIPE/WEBHOOK', 'Signature verification failed', error)
+    event = stripe.webhooks.constructEvent(body, signature, secret)
+    console.log(`✅ [WEBHOOK] Signature validée - Type: ${event.type}`)
+  } catch (err) {
+    console.error('❌ [WEBHOOK] Signature invalide:', err)
     return NextResponse.json(
-      { error: 'Webhook signature verification failed' },
+      { error: 'Invalid signature' },
       { status: 400 }
     )
   }
 
+  // ===================================================================
+  // 2. TRAITER LES ÉVÉNEMENTS
+  // ===================================================================
+
   try {
     switch (event.type) {
+      // USER COMPLÈTE UN PAIEMENT ET CRÉE UNE SUBSCRIPTION
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         
-        logger.info('STRIPE/WEBHOOK', 'checkout.session.completed received', {
-          customer_email: session.customer_email,
-          subscription: session.subscription,
-          customer: session.customer,
-        })
+        console.log(`📦 [WEBHOOK] checkout.session.completed reçu`)
+        console.log(`   Email: ${session.customer_email}`)
+        console.log(`   Subscription ID: ${session.subscription}`)
 
-        if (!session.customer_email) {
-          logger.error('STRIPE/WEBHOOK', 'Missing customer_email in session')
-          return NextResponse.json(
-            { error: 'Missing customer_email' },
-            { status: 400 }
+        // Validation
+        if (!session.customer_email || !session.subscription) {
+          console.warn(
+            '⚠️ [WEBHOOK] Session incomplète:',
+            { email: session.customer_email, sub: session.subscription }
           )
+          // On retourne 200 même si c'est incomplet (Stripe ne peut pas refaire)
+          return NextResponse.json({ received: true })
         }
 
-        if (!session.subscription) {
-          logger.error('STRIPE/WEBHOOK', 'Missing subscription in session')
-          return NextResponse.json(
-            { error: 'Missing subscription' },
-            { status: 400 }
-          )
+        // 2.1: Chercher l'utilisateur
+        let user
+        try {
+          user = await prisma.user.findUnique({
+            where: { email: session.customer_email },
+            select: { id: true, email: true }
+          })
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur DB - findUnique:', err)
+          throw err
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: session.customer_email },
-        })
 
         if (!user) {
-          logger.error('STRIPE/WEBHOOK', `User not found for email: ${session.customer_email}`)
-          return NextResponse.json(
-            { error: 'User not found' },
-            { status: 404 }
-          )
+          console.warn(`⚠️ [WEBHOOK] User non trouvé: ${session.customer_email}`)
+          // On accepte quand même (user créera compte plus tard)
+          return NextResponse.json({ received: true })
         }
 
+        // 2.2: Récupérer les infos de la subscription Stripe
+        let stripeSubscription: Stripe.Subscription
         try {
-          const subscription = await stripe.subscriptions.retrieve(
+          stripeSubscription = await stripe.subscriptions.retrieve(
             session.subscription as string
           )
+          console.log(`   Subscription Stripe status: ${stripeSubscription.status}`)
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur Stripe API:', err)
+          throw err
+        }
 
-          const priceId = subscription.items.data[0]?.price.id
-          const plan =
-            priceId === process.env.STRIPE_PRICE_ID_MONTHLY
-              ? 'monthly'
-              : 'yearly'
-          
-          const price = plan === 'monthly' ? 15 : 150
+        // 2.3: Déterminer le plan (monthly vs yearly)
+        const priceId = stripeSubscription.items.data[0]?.price.id
+        const plan =
+          priceId === process.env.STRIPE_PRICE_ID_MONTHLY ? 'monthly' : 'yearly'
+        const price = plan === 'monthly' ? 15 : 150
 
-          logger.info('STRIPE/WEBHOOK', 'Creating subscription', {
-            userId: user.id,
-            plan,
-            stripeSubscriptionId: session.subscription,
-          })
+        console.log(`   Plan détecté: ${plan} (${price}€)`)
 
-          await prisma.subscription.upsert({
+        // 2.4: Créer/Mettre à jour la subscription en BDD
+        try {
+          const createdSubscription = await prisma.subscription.upsert({
             where: { userId: user.id },
             create: {
               userId: user.id,
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
-              plan,
+              plan: plan as 'monthly' | 'yearly',
               price,
               currency: 'EUR',
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(
+                stripeSubscription.current_period_start * 1000
+              ),
+              currentPeriodEnd: new Date(
+                stripeSubscription.current_period_end * 1000
+              ),
             },
             update: {
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
-              plan,
+              plan: plan as 'monthly' | 'yearly',
               price,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(
+                stripeSubscription.current_period_start * 1000
+              ),
+              currentPeriodEnd: new Date(
+                stripeSubscription.current_period_end * 1000
+              ),
             },
           })
 
-          logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CREATED', user.id, { plan })
-        } catch (substriptionError) {
-          logger.error('STRIPE/WEBHOOK', 'Failed to create subscription', substriptionError)
-          return NextResponse.json(
-            { error: 'Failed to create subscription' },
-            { status: 500 }
-          )
+          console.log(`✅ [WEBHOOK] Subscription créée - ID: ${createdSubscription.id}`)
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur Prisma - upsert subscription:', err)
+          throw err
         }
+
         break
       }
 
+      // USER ANNULE SON ABONNEMENT
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
         
-        logger.info('STRIPE/WEBHOOK', 'customer.subscription.deleted received', {
-          stripeCustomerId: subscription.customer,
-        })
+        console.log(`❌ [WEBHOOK] customer.subscription.deleted`)
+        console.log(`   Stripe Customer: ${subscription.customer}`)
 
-        const subscriptionRecord = await prisma.subscription.findFirst({
-          where: { stripeCustomerId: subscription.customer as string },
-        })
+        try {
+          const updated = await prisma.subscription.updateMany({
+            where: { stripeCustomerId: subscription.customer as string },
+            data: { status: 'canceled' },
+          })
 
-        if (!subscriptionRecord) {
-          logger.warn('STRIPE/WEBHOOK', `Subscription not found for customer: ${subscription.customer}`)
-          return NextResponse.json({ received: true }, { status: 200 })
+          console.log(`✅ [WEBHOOK] ${updated.count} subscription(s) annulée(s)`)
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur Prisma - update subscription:', err)
+          throw err
         }
 
-        await prisma.subscription.update({
-          where: { id: subscriptionRecord.id },
-          data: { status: 'canceled' },
-        })
-
-        logger.audit('STRIPE/WEBHOOK', 'SUBSCRIPTION_CANCELED', subscriptionRecord.userId)
         break
       }
 
+      // FACTURE PAYÉE (renouvellement)
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
         
-        logger.info('STRIPE/WEBHOOK', 'invoice.payment_succeeded received', {
-          stripeCustomerId: invoice.customer,
-          subscription: invoice.subscription,
-        })
+        console.log(`💳 [WEBHOOK] invoice.payment_succeeded`)
+        console.log(`   Stripe Customer: ${invoice.customer}`)
 
         if (!invoice.subscription) {
-          logger.debug('STRIPE/WEBHOOK', 'Invoice without subscription, skipping')
-          return NextResponse.json({ received: true }, { status: 200 })
+          console.log(`   Pas de subscription, skip`)
+          return NextResponse.json({ received: true })
         }
 
-        const subscription = await stripe.subscriptions.retrieve(
-          invoice.subscription as string
-        )
+        try {
+          const stripeSubscription = await stripe.subscriptions.retrieve(
+            invoice.subscription as string
+          )
 
-        const subscriptionRecord = await prisma.subscription.findFirst({
-          where: { stripeCustomerId: invoice.customer as string },
-        })
+          const updated = await prisma.subscription.updateMany({
+            where: { stripeCustomerId: invoice.customer as string },
+            data: {
+              currentPeriodStart: new Date(
+                stripeSubscription.current_period_start * 1000
+              ),
+              currentPeriodEnd: new Date(
+                stripeSubscription.current_period_end * 1000
+              ),
+              status: 'active',
+            },
+          })
 
-        if (!subscriptionRecord) {
-          logger.warn('STRIPE/WEBHOOK', `Subscription not found for customer: ${invoice.customer}`)
-          return NextResponse.json({ received: true }, { status: 200 })
+          console.log(`✅ [WEBHOOK] ${updated.count} subscription(s) mise(s) à jour`)
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur traitement invoice:', err)
+          throw err
         }
 
-        await prisma.subscription.update({
-          where: { id: subscriptionRecord.id },
-          data: {
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          },
-        })
-
-        logger.audit('STRIPE/WEBHOOK', 'INVOICE_PAID', subscriptionRecord.userId)
         break
       }
 
       default:
-        logger.debug('STRIPE/WEBHOOK', `Unhandled event type: ${event.type}`)
+        console.log(`📝 [WEBHOOK] Événement non géré: ${event.type}`)
     }
 
-    return NextResponse.json({ received: true })
+    // ===================================================================
+    // 3. RETOUR SUCCÈS
+    // ===================================================================
+    console.log(`✅ [WEBHOOK] Événement ${event.id} traité avec succès`)
+    return NextResponse.json({ received: true }, { status: 200 })
+
   } catch (error) {
-    logger.error('STRIPE/WEBHOOK', 'Webhook processing failed', error)
+    // ===================================================================
+    // 4. ERREUR CATASTRALE
+    // ===================================================================
+    console.error(`🔥 [WEBHOOK] Erreur critique:`, error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`   Message: ${errorMsg}`)
+    console.error(`   Stack:`, error instanceof Error ? error.stack : 'N/A')
+
+    // Retourner 500 (Stripe va retry)
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
+      {
+        error: 'Internal server error',
+        message: errorMsg,
+        eventId: event.id,
+      },
       { status: 500 }
     )
   }
