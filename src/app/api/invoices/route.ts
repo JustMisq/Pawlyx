@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get invoices error:', error)
     return NextResponse.json(
-      { message: 'Error fetching invoices', error: String(error) },
+      { message: 'Error fetching invoices' },
       { status: 500 }
     )
   }
@@ -73,51 +73,53 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Générer le numéro de facture
-    const year = new Date().getFullYear()
-    const latestInvoice = await prisma.invoice.findFirst({
-      where: {
-        salonId: salon.id,
-        invoiceNumber: {
-          startsWith: `INV-${year}-`,
+    // ✅ FIX: Utiliser une transaction pour éviter les race conditions sur le numéro
+    const invoice = await prisma.$transaction(async (tx) => {
+      const year = new Date().getFullYear()
+      const latestInvoice = await tx.invoice.findFirst({
+        where: {
+          salonId: salon.id,
+          invoiceNumber: {
+            startsWith: `INV-${year}-`,
+          },
         },
-      },
-      orderBy: { invoiceNumber: 'desc' },
-    })
+        orderBy: { invoiceNumber: 'desc' },
+      })
 
-    let nextNumber = 1
-    if (latestInvoice) {
-      const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
-      nextNumber = lastNum + 1
-    }
-    const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
+      let nextNumber = 1
+      if (latestInvoice) {
+        const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
+        nextNumber = lastNum + 1
+      }
+      const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
 
-    const finalTaxRate = taxRate || 20
-    const taxAmount = (subtotal * finalTaxRate) / 100
-    const total = subtotal + taxAmount
+      const finalTaxRate = taxRate || 20
+      const taxAmount = (subtotal * finalTaxRate) / 100
+      const total = subtotal + taxAmount
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        clientId,
-        appointmentId: appointmentId || null,
-        subtotal,
-        taxRate: finalTaxRate,
-        taxAmount,
-        total,
-        salonId: salon.id,
-      },
-      include: {
-        client: true,
-        appointment: true,
-      },
+      return tx.invoice.create({
+        data: {
+          invoiceNumber,
+          clientId,
+          appointmentId: appointmentId || null,
+          subtotal,
+          taxRate: finalTaxRate,
+          taxAmount,
+          total,
+          salonId: salon.id,
+        },
+        include: {
+          client: true,
+          appointment: true,
+        },
+      })
     })
 
     return NextResponse.json(invoice, { status: 201 })
   } catch (error) {
     console.error('Create invoice error:', error)
     return NextResponse.json(
-      { message: 'Error creating invoice', error: String(error) },
+      { message: 'Error creating invoice' },
       { status: 500 }
     )
   }
@@ -166,7 +168,9 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         status,
-        paidAt: status === 'paid' ? new Date() : null,
+        // ✅ FIX: Ne pas effacer paidAt lors d'un changement de statut
+        // Seulement mettre paidAt quand on passe à 'paid'
+        ...(status === 'paid' && !invoice.paidAt ? { paidAt: new Date() } : {}),
       },
       include: {
         client: true,
@@ -178,7 +182,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Update invoice error:', error)
     return NextResponse.json(
-      { message: 'Error updating invoice', error: String(error) },
+      { message: 'Error updating invoice' },
       { status: 500 }
     )
   }
@@ -231,7 +235,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Delete invoice error:', error)
     return NextResponse.json(
-      { message: 'Error deleting invoice', error: String(error) },
+      { message: 'Error deleting invoice' },
       { status: 500 }
     )
   }

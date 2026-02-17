@@ -86,62 +86,65 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Sujet et description requis' }, { status: 400 })
     }
 
-    // Générer un numéro de ticket unique
-    const year = new Date().getFullYear()
-    const lastTicket = await prisma.supportTicket.findFirst({
-      where: {
-        ticketNumber: { startsWith: `TKT-${year}` },
-      },
-      orderBy: { ticketNumber: 'desc' },
-    })
+    // ✅ FIX: Générer le numéro de ticket dans une transaction pour éviter les doublons
+    const ticket = await prisma.$transaction(async (tx) => {
+      const year = new Date().getFullYear()
+      const lastTicket = await tx.supportTicket.findFirst({
+        where: {
+          ticketNumber: { startsWith: `TKT-${year}` },
+        },
+        orderBy: { ticketNumber: 'desc' },
+      })
 
-    let ticketNumber = `TKT-${year}-001`
-    if (lastTicket) {
-      const lastNum = parseInt(lastTicket.ticketNumber.split('-')[2])
-      ticketNumber = `TKT-${year}-${String(lastNum + 1).padStart(3, '0')}`
-    }
+      let ticketNumber = `TKT-${year}-001`
+      if (lastTicket) {
+        const lastNum = parseInt(lastTicket.ticketNumber.split('-')[2])
+        ticketNumber = `TKT-${year}-${String(lastNum + 1).padStart(3, '0')}`
+      }
 
-    // Récupérer le salonId si l'utilisateur en a un
-    const salon = await prisma.salon.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true },
-    })
+      // Récupérer le salonId si l'utilisateur en a un
+      const salon = await tx.salon.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      })
 
-    // Récupérer les infos navigateur/OS (depuis headers ou body)
-    const userAgent = request.headers.get('user-agent') || ''
+      const userAgent = request.headers.get('user-agent') || ''
 
-    const ticket = await prisma.supportTicket.create({
-      data: {
-        ticketNumber,
-        subject,
-        description,
-        category: category || 'general',
-        priority: priority || 'normal',
-        userId: session.user.id,
-        salonId: salon?.id || null,
-        browser: userAgent.substring(0, 255),
-        appVersion: process.env.npm_package_version || '1.0.0',
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+      const newTicket = await tx.supportTicket.create({
+        data: {
+          ticketNumber,
+          subject,
+          description,
+          category: category || 'general',
+          priority: priority || 'normal',
+          userId: session.user.id,
+          salonId: salon?.id || null,
+          browser: userAgent.substring(0, 255),
+          appVersion: process.env.npm_package_version || '1.0.0',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    })
+      })
 
-    // Créer le premier message (la description)
-    await prisma.ticketMessage.create({
-      data: {
-        ticketId: ticket.id,
-        content: description,
-        isStaffReply: false,
-        authorId: session.user.id,
-        authorName: session.user.name || 'Utilisateur',
-      },
+      // Créer le premier message (la description)
+      await tx.ticketMessage.create({
+        data: {
+          ticketId: newTicket.id,
+          content: description,
+          isStaffReply: false,
+          authorId: session.user.id,
+          authorName: session.user.name || 'Utilisateur',
+        },
+      })
+
+      return newTicket
     })
 
     return NextResponse.json(ticket, { status: 201 })

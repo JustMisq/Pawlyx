@@ -6,6 +6,11 @@ import Link from 'next/link'
 export default function DebugSessionInfo() {
   const { data: session, status } = useSession()
 
+  // ✅ FIX: Ne rendre le debug qu'en développement
+  if (process.env.NODE_ENV !== 'development') {
+    return null
+  }
+
   if (status !== 'authenticated' || !session?.user?.email) {
     return null
   }

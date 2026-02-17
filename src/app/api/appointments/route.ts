@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Get appointments error:', error)
     return NextResponse.json(
-      { message: 'Error fetching appointments', error: String(error) },
+      { message: 'Error fetching appointments' },
       { status: 500 }
     )
   }
@@ -126,91 +126,95 @@ export async function POST(request: NextRequest) {
     const start = new Date(startTime)
     const end = new Date(start.getTime() + service.duration * 60000)
 
-    // Créer le rendez-vous
-    const appointment = await prisma.appointment.create({
-      data: {
-        clientId,
-        animalId,
-        serviceId,
-        salonId: salon.id,
-        date: start,
-        startTime: start,
-        endTime: end,
-        totalPrice: service.price,
-        notes: notes || null,
-        internalNotes: internalNotes || null,
-        status: 'scheduled',
-      },
-      include: {
-        client: true,
-        animal: true,
-        service: true,
-      },
-    })
-
-    // Créer automatiquement une facture
-    const year = new Date().getFullYear()
-    const latestInvoice = await prisma.invoice.findFirst({
-      where: {
-        salonId: salon.id,
-        invoiceNumber: { startsWith: `INV-${year}-` },
-      },
-      orderBy: { invoiceNumber: 'desc' },
-    })
-
-    let nextNumber = 1
-    if (latestInvoice) {
-      const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
-      nextNumber = lastNum + 1
-    }
-    const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
-
-    const taxRate = 20
-    const subtotal = service.price
-    const taxAmount = (subtotal * taxRate) / 100
-    const total = subtotal + taxAmount
-
-    // Date d'échéance : 30 jours
-    const dueDate = new Date()
-    dueDate.setDate(dueDate.getDate() + 30)
-
-    await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        clientId,
-        appointmentId: appointment.id,
-        subtotal,
-        taxRate,
-        taxAmount,
-        total,
-        salonId: salon.id,
-        status: 'draft',
-        dueDate,
-      },
-    })
-
-    // Créer un rappel pour 24h avant
-    const reminderDate = new Date(start)
-    reminderDate.setHours(reminderDate.getHours() - 24)
-    
-    if (reminderDate > new Date()) {
-      await prisma.reminder.create({
+    // ✅ FIX: Utiliser une transaction pour créer RDV + facture + rappel atomiquement
+    // Évite les race conditions sur le numéro de facture
+    const appointment = await prisma.$transaction(async (tx) => {
+      // Créer le rendez-vous
+      const newAppointment = await tx.appointment.create({
         data: {
-          type: 'appointment_24h',
-          channel: 'email',
-          scheduledFor: reminderDate,
-          appointmentId: appointment.id,
-          status: 'pending',
+          clientId,
+          animalId,
+          serviceId,
+          salonId: salon.id,
+          date: start,
+          startTime: start,
+          endTime: end,
+          totalPrice: service.price,
+          notes: notes || null,
+          internalNotes: internalNotes || null,
+          status: 'scheduled',
+        },
+        include: {
+          client: true,
+          animal: true,
+          service: true,
         },
       })
-    }
 
-    console.log('✅ Appointment created:', appointment.id)
+      // Créer automatiquement une facture (dans la transaction)
+      const year = new Date().getFullYear()
+      const latestInvoice = await tx.invoice.findFirst({
+        where: {
+          salonId: salon.id,
+          invoiceNumber: { startsWith: `INV-${year}-` },
+        },
+        orderBy: { invoiceNumber: 'desc' },
+      })
+
+      let nextNumber = 1
+      if (latestInvoice) {
+        const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
+        nextNumber = lastNum + 1
+      }
+      const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
+
+      const taxRate = 20
+      const subtotal = service.price
+      const taxAmount = (subtotal * taxRate) / 100
+      const total = subtotal + taxAmount
+
+      const dueDate = new Date()
+      dueDate.setDate(dueDate.getDate() + 30)
+
+      await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          clientId,
+          appointmentId: newAppointment.id,
+          subtotal,
+          taxRate,
+          taxAmount,
+          total,
+          salonId: salon.id,
+          status: 'draft',
+          dueDate,
+        },
+      })
+
+      // Créer un rappel pour 24h avant
+      const reminderDate = new Date(start)
+      reminderDate.setHours(reminderDate.getHours() - 24)
+      
+      if (reminderDate > new Date()) {
+        await tx.reminder.create({
+          data: {
+            type: 'appointment_24h',
+            channel: 'email',
+            scheduledFor: reminderDate,
+            appointmentId: newAppointment.id,
+            status: 'pending',
+          },
+        })
+      }
+
+      return newAppointment
+    })
+
     return NextResponse.json(appointment, { status: 201 })
   } catch (error) {
     console.error('💥 POST appointments error:', error)
     return NextResponse.json(
-      { message: 'Error creating appointment', error: String(error) },
+      { message: 'Error creating appointment' },
       { status: 500 }
     )
   }
@@ -306,7 +310,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('PUT appointment error:', error)
     return NextResponse.json(
-      { message: 'Error updating appointment', error: String(error) },
+      { message: 'Error updating appointment' },
       { status: 500 }
     )
   }
@@ -363,7 +367,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('💥 DELETE appointment error:', error)
     return NextResponse.json(
-      { message: 'Error deleting appointment', error: String(error) },
+      { message: 'Error deleting appointment' },
       { status: 500 }
     )
   }

@@ -50,7 +50,7 @@ export async function GET(
   } catch (error) {
     console.error('Get client error:', error)
     return NextResponse.json(
-      { message: 'Error fetching client', error: String(error) },
+      { message: 'Error fetching client' },
       { status: 500 }
     )
   }

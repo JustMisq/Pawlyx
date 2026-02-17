@@ -55,15 +55,28 @@ export async function GET(
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'",
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (error) {
     console.error('Generate invoice PDF error:', error)
     return NextResponse.json(
-      { message: 'Error generating invoice', error: String(error) },
+      { message: 'Error generating invoice' },
       { status: 500 }
     )
   }
+}
+
+// ✅ SÉCURITÉ: Fonction d'échappement HTML pour prévenir les XSS
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return ''
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 function generateInvoiceHTML(invoice: any) {
@@ -156,22 +169,22 @@ function generateInvoiceHTML(invoice: any) {
     <!-- Header -->
     <div class="header">
       <div>
-        <div class="logo">🐾 ${salon.name}</div>
+        <div class="logo">🐾 ${escapeHtml(salon.name)}</div>
         <div class="party-details" style="margin-top: 10px;">
-          ${salon.address || ''}<br>
-          ${salon.postalCode || ''} ${salon.city || ''}<br>
-          ${salon.phone ? `📞 ${salon.phone}` : ''}<br>
-          ${salon.email ? `📧 ${salon.email}` : ''}
+          ${escapeHtml(salon.address)}<br>
+          ${escapeHtml(salon.postalCode)} ${escapeHtml(salon.city)}<br>
+          ${salon.phone ? `📞 ${escapeHtml(salon.phone)}` : ''}<br>
+          ${salon.email ? `📧 ${escapeHtml(salon.email)}` : ''}
         </div>
       </div>
       <div class="invoice-info">
-        <div class="invoice-number">FACTURE ${invoice.invoiceNumber}</div>
+        <div class="invoice-number">FACTURE ${escapeHtml(invoice.invoiceNumber)}</div>
         <div class="invoice-date">
           Date : ${formatDate(createdAt)}<br>
           ${dueDate ? `Échéance : ${formatDate(dueDate)}` : ''}
         </div>
         <div style="margin-top: 10px;">
-          <span class="status status-${invoice.status}">${statusLabel[invoice.status] || invoice.status}</span>
+          <span class="status status-${escapeHtml(invoice.status)}">${escapeHtml(statusLabel[invoice.status] || invoice.status)}</span>
         </div>
       </div>
     </div>
@@ -180,22 +193,22 @@ function generateInvoiceHTML(invoice: any) {
     <div class="parties">
       <div class="party">
         <div class="party-title">Émetteur</div>
-        <div class="party-name">${salon.legalName || salon.name}</div>
+        <div class="party-name">${escapeHtml(salon.legalName || salon.name)}</div>
         <div class="party-details">
-          ${salon.legalForm || ''}<br>
-          ${salon.address || ''}<br>
-          ${salon.postalCode || ''} ${salon.city || ''}<br>
-          ${salon.siret ? `SIRET : ${salon.siret}` : ''}<br>
-          ${salon.tvaNumber ? `TVA : ${salon.tvaNumber}` : 'TVA non applicable, art. 293 B du CGI'}
+          ${escapeHtml(salon.legalForm)}<br>
+          ${escapeHtml(salon.address)}<br>
+          ${escapeHtml(salon.postalCode)} ${escapeHtml(salon.city)}<br>
+          ${salon.siret ? `SIRET : ${escapeHtml(salon.siret)}` : ''}<br>
+          ${salon.tvaNumber ? `TVA : ${escapeHtml(salon.tvaNumber)}` : 'TVA non applicable, art. 293 B du CGI'}
         </div>
       </div>
       <div class="party">
         <div class="party-title">Client</div>
-        <div class="party-name">${client.firstName} ${client.lastName}</div>
+        <div class="party-name">${escapeHtml(client.firstName)} ${escapeHtml(client.lastName)}</div>
         <div class="party-details">
-          ${client.address || ''}<br>
-          ${client.email || ''}<br>
-          ${client.phone || ''}
+          ${escapeHtml(client.address)}<br>
+          ${escapeHtml(client.email)}<br>
+          ${escapeHtml(client.phone)}
         </div>
       </div>
     </div>
@@ -213,9 +226,9 @@ function generateInvoiceHTML(invoice: any) {
       <tbody>
         <tr>
           <td>
-            <strong>${appointment?.service?.name || 'Prestation de toilettage'}</strong><br>
+            <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
             <span style="color: #6b7280; font-size: 11px;">
-              ${appointment?.animal ? `Animal : ${appointment.animal.name}` : ''}<br>
+              ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}` : ''}<br>
               ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
             </span>
           </td>
@@ -245,7 +258,7 @@ function generateInvoiceHTML(invoice: any) {
       <div class="payment-title">✅ Facture acquittée</div>
       <div>
         Payée le : ${invoice.paidAt ? formatDate(new Date(invoice.paidAt)) : '-'}<br>
-        Mode de paiement : ${invoice.paymentMethod ? paymentMethodLabel[invoice.paymentMethod] || invoice.paymentMethod : '-'}
+        Mode de paiement : ${invoice.paymentMethod ? escapeHtml(paymentMethodLabel[invoice.paymentMethod] || invoice.paymentMethod) : '-'}
       </div>
     </div>
     ` : ''}
@@ -254,8 +267,8 @@ function generateInvoiceHTML(invoice: any) {
     ${salon.invoiceTerms || salon.invoiceNotes ? `
     <div class="terms">
       <strong>Conditions de paiement :</strong><br>
-      ${salon.invoiceTerms || 'Paiement à réception de la facture'}<br><br>
-      ${salon.invoiceNotes || ''}
+      ${escapeHtml(salon.invoiceTerms) || 'Paiement à réception de la facture'}<br><br>
+      ${escapeHtml(salon.invoiceNotes)}
     </div>
     ` : `
     <div class="terms">
@@ -268,8 +281,8 @@ function generateInvoiceHTML(invoice: any) {
     <!-- Footer -->
     <div class="footer">
       <div class="legal">
-        ${salon.legalName || salon.name} ${salon.legalForm ? `- ${salon.legalForm}` : ''}<br>
-        ${salon.siret ? `SIRET : ${salon.siret}` : ''} ${salon.tvaNumber ? `- TVA : ${salon.tvaNumber}` : ''}<br>
+        ${escapeHtml(salon.legalName || salon.name)} ${salon.legalForm ? `- ${escapeHtml(salon.legalForm)}` : ''}<br>
+        ${salon.siret ? `SIRET : ${escapeHtml(salon.siret)}` : ''} ${salon.tvaNumber ? `- TVA : ${escapeHtml(salon.tvaNumber)}` : ''}<br>
         Document généré automatiquement par Groomly
       </div>
     </div>

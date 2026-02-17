@@ -49,7 +49,13 @@ export const authConfig: NextAuthOptions = {
         })
 
         if (!user) {
-          logger.warn("AUTH", `User not found: ${credentials.email}`)
+          logger.warn("AUTH", `Login attempt with unknown email`)
+          return null
+        }
+
+        // ✅ SÉCURITÉ: Empêcher les utilisateurs soft-deleted de se connecter
+        if (user.deletedAt) {
+          logger.warn("AUTH", `Suspended user attempted login: ${user.id}`)
           return null
         }
 
@@ -75,14 +81,36 @@ export const authConfig: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt({ token, user }: any) {
+    async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id
         token.isAdmin = user.isAdmin || false
       }
+      // ✅ SÉCURITÉ: Re-valider isAdmin et deletedAt depuis la DB périodiquement
+      // Vérifier toutes les 5 minutes pour éviter le stale JWT
+      const now = Math.floor(Date.now() / 1000)
+      if (!token.lastDbCheck || now - (token.lastDbCheck as number) > 300) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { isAdmin: true, deletedAt: true },
+          })
+          if (!dbUser || dbUser.deletedAt) {
+            // Utilisateur supprimé/suspendu: invalider le token
+            return { ...token, id: null, isAdmin: false, invalidated: true }
+          }
+          token.isAdmin = dbUser.isAdmin
+          token.lastDbCheck = now
+        } catch {
+          // Si la DB est inaccessible, garder les valeurs existantes
+        }
+      }
       return token
     },
     session({ session, token }: any) {
+      if (token.invalidated) {
+        return { ...session, user: null }
+      }
       if (session.user) {
         session.user.id = token.id as string
         session.user.isAdmin = token.isAdmin as boolean
@@ -93,19 +121,6 @@ export const authConfig: NextAuthOptions = {
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",
-  },
-  // ✅ SÉCURITÉ: Configuration des cookies
-  cookies: {
-    sessionToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60,
-      },
-    },
   },
   // ✅ DEBUG en development uniquement
   debug: process.env.NODE_ENV === 'development',

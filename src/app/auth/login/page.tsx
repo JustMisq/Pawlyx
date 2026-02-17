@@ -33,14 +33,16 @@ export default function LoginPage() {
 
       if (!result?.ok) {
         toast.error('Email ou mot de passe incorrect')
+        setLoading(false)
         return
       }
 
       toast.success('Connexion réussie!')
+      // Attendre un peu que la session soit créée côté client
+      await new Promise(resolve => setTimeout(resolve, 500))
       router.push('/dashboard')
     } catch (error) {
       toast.error('Une erreur est survenue')
-    } finally {
       setLoading(false)
     }
   }

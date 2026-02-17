@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -28,12 +28,7 @@ export default function LogsPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchLogs()
-  }, [page, filter, startDate, endDate])
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -57,7 +52,11 @@ export default function LogsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, filter, startDate, endDate])
+
+  useEffect(() => {
+    fetchLogs()
+  }, [fetchLogs])
 
   const getActionColor = (action: string) => {
     switch (action) {

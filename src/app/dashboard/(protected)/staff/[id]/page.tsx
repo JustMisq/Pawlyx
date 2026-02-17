@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
@@ -62,12 +62,7 @@ export default function MemberPermissionsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchMemberPermissions()
-  }, [memberId])
-
-  const fetchMemberPermissions = async () => {
+  const fetchMemberPermissions = useCallback(async () => {
     try {
       const res = await fetch(`/api/salon/members/${memberId}`)
       if (!res.ok) throw new Error('Erreur')
@@ -82,7 +77,11 @@ export default function MemberPermissionsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [memberId, router])
+
+  useEffect(() => {
+    fetchMemberPermissions()
+  }, [fetchMemberPermissions])
 
   const togglePermission = (key: keyof Permission) => {
     setPermissions((prev) => ({

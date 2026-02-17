@@ -27,7 +27,7 @@ export async function GET() {
   } catch (error) {
     console.error('Get inventory error:', error)
     return NextResponse.json(
-      { message: 'Error fetching inventory', error: String(error) },
+      { message: 'Error fetching inventory' },
       { status: 500 }
     )
   }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create inventory error:', error)
     return NextResponse.json(
-      { message: 'Error creating inventory item', error: String(error) },
+      { message: 'Error creating inventory item' },
       { status: 500 }
     )
   }
@@ -139,7 +139,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Update inventory error:', error)
     return NextResponse.json(
-      { message: 'Error updating inventory item', error: String(error) },
+      { message: 'Error updating inventory item' },
       { status: 500 }
     )
   }
@@ -193,7 +193,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Delete inventory error:', error)
     return NextResponse.json(
-      { message: 'Error deleting inventory item', error: String(error) },
+      { message: 'Error deleting inventory item' },
       { status: 500 }
     )
   }

@@ -12,7 +12,7 @@ export async function GET() {
       logger.debug('API/SUBSCRIPTION', 'No user session')
       return NextResponse.json(
         { hasActiveSubscription: false },
-        { status: 401 }
+        { status: 200 }
       )
     }
 
@@ -34,7 +34,7 @@ export async function GET() {
     logger.error('API/SUBSCRIPTION', `Check failed: ${errorId}`, error)
     return NextResponse.json(
       { hasActiveSubscription: false, message, errorId },
-      { status: 500 }
+      { status: 200 }
     )
   }
 }

@@ -49,11 +49,11 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       logger.warn('AUTH', `Registration attempt with existing email: ${validatedData.email}`)
       
-      // Ne pas révéler si l'email existe ou non (prévenir enumeration)
+      // ✅ SÉCURITÉ: Ne pas révéler si l'email existe (prévenir énumération)
       return NextResponse.json(
         { 
-          message: 'Un compte avec cet email existe déjà. Vous pouvez vous connecter.',
-          errorId: `REG_EXISTS_${Date.now()}`
+          message: 'Si cette adresse email n\'est pas déjà utilisée, votre compte a été créé. Vérifiez vos emails.',
+          errorId: `REG_${Date.now()}`
         },
         { status: 400 }
       )
@@ -62,7 +62,10 @@ export async function POST(request: NextRequest) {
     // ✅ SÉCURITÉ: Hasher le mot de passe avec 10 rounds
     const hashedPassword = await bcrypt.hash(validatedData.password, 10)
 
-    // ✅ SÉCURITÉ: Créer l'utilisateur
+    // ✅ SÉCURITÉ: Créer l'utilisateur avec une subscription trial
+    const trialEndDate = new Date()
+    trialEndDate.setDate(trialEndDate.getDate() + 14) // Trial de 14 jours
+
     const user = await prisma.user.create({
       data: {
         name: validatedData.name,
@@ -72,6 +75,16 @@ export async function POST(request: NextRequest) {
         salon: {
           create: {
             name: `Salon de ${validatedData.name}`,
+          }
+        },
+        // Créer une subscription trial gratuite
+        subscription: {
+          create: {
+            plan: "trial",
+            price: 0,
+            status: "active",
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: trialEndDate,
           }
         }
       },

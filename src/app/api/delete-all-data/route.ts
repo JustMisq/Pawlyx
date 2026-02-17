@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (salon) {
-      // ✅ SÉCURITÉ: Supprimer en cascade mais garder le salon
-      await Promise.all([
+      // ✅ FIX: Utiliser $transaction séquentielle pour éviter les violations de FK
+      await prisma.$transaction([
         prisma.invoice.deleteMany({ where: { salonId: salon.id } }),
         prisma.appointment.deleteMany({ where: { salonId: salon.id } }),
         prisma.inventoryItem.deleteMany({ where: { salonId: salon.id } }),

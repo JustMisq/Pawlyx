@@ -42,7 +42,7 @@ export function DeleteModal({
     }
 
     // Vérifier le texte de confirmation pour les actions très dangereuses
-    if (isDangerous && confirmInput !== 'SUPPRIMER DÉFINITIVEMENT') {
+    if (isDangerous && confirmInput !== confirmText) {
       setPasswordError('Texte de confirmation incorrect')
       return
     }
@@ -100,7 +100,7 @@ export function DeleteModal({
                   setConfirmInput(e.target.value)
                   setPasswordError('')
                 }}
-                placeholder="SUPPRIMER DÉFINITIVEMENT"
+                placeholder={confirmText}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 outline-none font-mono text-sm"
               />
             </div>
@@ -144,7 +144,7 @@ export function DeleteModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isLoading || (isDangerous && confirmInput !== 'SUPPRIMER DÉFINITIVEMENT') || (requirePassword && !password)}
+            disabled={isLoading || (isDangerous && confirmInput !== confirmText) || (requirePassword && !password)}
             className={`flex-1 font-bold ${isDangerous ? 'bg-red-700 hover:bg-red-800 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}
           >
             {isLoading ? 'Traitement...' : 'Confirmer'}

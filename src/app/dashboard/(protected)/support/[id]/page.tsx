@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
@@ -82,12 +82,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [isInternal, setIsInternal] = useState(false)
   const [sending, setSending] = useState(false)
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchTicket()
-  }, [id])
-
-  const fetchTicket = async () => {
+  const fetchTicket = useCallback(async () => {
     try {
       const res = await fetch(`/api/support/tickets/${id}`)
       if (res.ok) {
@@ -103,7 +98,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, router])
+
+  useEffect(() => {
+    fetchTicket()
+  }, [fetchTicket])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()

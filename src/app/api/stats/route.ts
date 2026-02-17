@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Stats error:', error)
     return NextResponse.json(
-      { message: 'Error fetching stats', error: String(error) },
+      { message: 'Error fetching stats' },
       { status: 500 }
     )
   }

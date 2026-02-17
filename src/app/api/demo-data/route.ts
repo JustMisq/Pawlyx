@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Generate demo data error:', error)
     return NextResponse.json(
-      { message: 'Erreur lors de la génération', error: String(error) },
+      { message: 'Erreur lors de la génération' },
       { status: 500 }
     )
   }
@@ -89,7 +89,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Clear demo data error:', error)
     return NextResponse.json(
-      { message: 'Erreur lors de la suppression', error: String(error) },
+      { message: 'Erreur lors de la suppression' },
       { status: 500 }
     )
   }

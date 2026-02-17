@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -60,12 +60,7 @@ export default function AnimalDetailPage() {
     weight: '',
   })
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    fetchAnimalDetails()
-  }, [animalId])
-
-  const fetchAnimalDetails = async () => {
+  const fetchAnimalDetails = useCallback(async () => {
     try {
       const animalRes = await fetch(`/api/animals/${animalId}`)
       
@@ -110,7 +105,11 @@ export default function AnimalDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [animalId])
+
+  useEffect(() => {
+    fetchAnimalDetails()
+  }, [fetchAnimalDetails])
 
   const handleSaveNotes = async () => {
     try {

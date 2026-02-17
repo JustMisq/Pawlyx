@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Accounting export error:', error)
     return NextResponse.json(
-      { message: 'Error generating export', error: String(error) },
+      { message: 'Error generating export' },
       { status: 500 }
     )
   }

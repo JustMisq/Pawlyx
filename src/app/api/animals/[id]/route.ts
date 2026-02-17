@@ -157,8 +157,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    await prisma.animal.delete({
+    // ✅ Soft delete au lieu de hard delete (cohérence avec le reste du code)
+    await prisma.animal.update({
       where: { id },
+      data: { deletedAt: new Date() },
     })
 
     return NextResponse.json({ message: 'Animal deleted successfully' })

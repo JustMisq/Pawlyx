@@ -15,6 +15,11 @@ export async function POST(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
+    // ✅ SÉCURITÉ: Empêcher un admin de se suspendre lui-même
+    if (id === session.user.id) {
+      return NextResponse.json({ error: 'Vous ne pouvez pas vous suspendre vous-même' }, { status: 400 })
+    }
+
     // Soft delete
     await prisma.user.update({
       where: { id },

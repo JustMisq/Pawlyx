@@ -9,11 +9,11 @@ import { prisma } from '@/lib/prisma'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Vérifier le secret pour sécuriser le CRON
+    // ✅ SÉCURITÉ: Vérifier le secret CRON (obligatoire)
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Reminder processing error:', error)
     return NextResponse.json(
-      { message: 'Error processing reminders', error: String(error) },
+      { message: 'Error processing reminders' },
       { status: 500 }
     )
   }
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create reminder error:', error)
     return NextResponse.json(
-      { message: 'Error creating reminder', error: String(error) },
+      { message: 'Error creating reminder' },
       { status: 500 }
     )
   }

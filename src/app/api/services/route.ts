@@ -27,7 +27,7 @@ export async function GET() {
   } catch (error) {
     console.error('Get services error:', error)
     return NextResponse.json(
-      { message: 'Error fetching services', error: String(error) },
+      { message: 'Error fetching services' },
       { status: 500 }
     )
   }
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create service error:', error)
     return NextResponse.json(
-      { message: 'Error creating service', error: String(error) },
+      { message: 'Error creating service' },
       { status: 500 }
     )
   }
@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('Update service error:', error)
     return NextResponse.json(
-      { message: 'Error updating service', error: String(error) },
+      { message: 'Error updating service' },
       { status: 500 }
     )
   }
@@ -209,7 +209,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('Delete service error:', error)
     return NextResponse.json(
-      { message: 'Error deleting service', error: String(error) },
+      { message: 'Error deleting service' },
       { status: 500 }
     )
   }

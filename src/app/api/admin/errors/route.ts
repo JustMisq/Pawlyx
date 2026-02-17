@@ -47,6 +47,12 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/errors - Créer une erreur (pour les erreurs frontend)
 export async function POST(request: NextRequest) {
   try {
+    // ✅ SÉCURITÉ: Vérifier l'authentification
+    const session = await getServerSession(authConfig)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
+
     const { message, stack, severity, url, method, userAgent, ipAddress } = await request.json()
 
     const errorLog = await prisma.errorLog.create({

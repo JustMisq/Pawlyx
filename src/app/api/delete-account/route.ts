@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    // Supprimer toutes les données en cascade
+    // ✅ FIX: Utiliser $transaction séquentielle pour éviter les violations de FK
     if (salon) {
-      await Promise.all([
+      await prisma.$transaction([
         prisma.invoice.deleteMany({ where: { salonId: salon.id } }),
         prisma.appointment.deleteMany({ where: { salonId: salon.id } }),
         prisma.inventoryItem.deleteMany({ where: { salonId: salon.id } }),
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Delete account error:', error)
     return NextResponse.json(
-      { message: 'Error deleting account', error: String(error) },
+      { message: 'Error deleting account' },
       { status: 500 }
     )
   }

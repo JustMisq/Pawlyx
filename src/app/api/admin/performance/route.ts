@@ -33,28 +33,23 @@ export async function GET(request: NextRequest) {
     const total = await prisma.performanceMetric.count({ where })
     const totalPages = Math.ceil(total / limit)
 
-    // Get average response times per endpoint
-    const allMetrics = await prisma.performanceMetric.findMany({ where })
-    const averages = allMetrics.reduce((acc: any, m) => {
-      const key = m.metric
-      if (!acc[key]) {
-        acc[key] = { values: [], endpoint: m.endpoint }
-      }
-      acc[key].values.push(m.value)
-      return acc
-    }, {})
+    // ✅ PERF: Utiliser les agrégations Prisma au lieu de charger toutes les métriques
+    const groupedMetrics = await prisma.performanceMetric.groupBy({
+      by: ['metric', 'endpoint'],
+      where,
+      _avg: { value: true },
+      _max: { value: true },
+      _min: { value: true },
+      _count: { metric: true },
+    })
 
-    const summary = Object.entries(averages).reduce((acc: any, [key, data]: any) => {
-      const values = data.values
-      const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length
-      const max = Math.max(...values)
-      const min = Math.min(...values)
-      acc[key] = {
-        average: Math.round(avg * 100) / 100,
-        max,
-        min,
-        count: values.length,
-        endpoint: data.endpoint,
+    const summary = groupedMetrics.reduce((acc: any, g) => {
+      acc[g.metric] = {
+        average: Math.round((g._avg.value || 0) * 100) / 100,
+        max: g._max.value || 0,
+        min: g._min.value || 0,
+        count: g._count.metric,
+        endpoint: g.endpoint,
       }
       return acc
     }, {})
@@ -73,6 +68,12 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/performance - Enregistrer une métrique
 export async function POST(request: NextRequest) {
   try {
+    // ✅ SÉCURITÉ: Vérifier l'authentification admin
+    const session = await getServerSession(authConfig)
+    if (!session?.user?.id || !session.user.isAdmin) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
+    }
+
     const { metric, value, endpoint, userId, salonId, isSlowQuery } = await request.json()
 
     const perfMetric = await prisma.performanceMetric.create({

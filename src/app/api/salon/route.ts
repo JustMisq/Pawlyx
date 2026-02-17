@@ -52,6 +52,29 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // ✅ SÉCURITÉ: Whitelist des champs autorisés (empêche l'injection de userId, id, etc.)
+    const allowedFields = {
+      name: body.name,
+      description: body.description,
+      phone: body.phone,
+      address: body.address,
+      city: body.city,
+      postalCode: body.postalCode,
+      email: body.email,
+      logo: body.logo,
+      siret: body.siret,
+      tvaNumber: body.tvaNumber,
+      legalName: body.legalName,
+      legalForm: body.legalForm,
+      invoiceTerms: body.invoiceTerms,
+      invoiceNotes: body.invoiceNotes,
+    }
+
+    // Retirer les clés undefined
+    const sanitizedData = Object.fromEntries(
+      Object.entries(allowedFields).filter(([_, v]) => v !== undefined)
+    )
+
     let salon = await prisma.salon.findUnique({
       where: { userId: session.user.id },
     })
@@ -60,13 +83,14 @@ export async function POST(request: NextRequest) {
       salon = await prisma.salon.create({
         data: {
           userId: session.user.id,
-          ...body,
+          name: sanitizedData.name || `Salon de ${session.user.name || 'utilisateur'}`,
+          ...sanitizedData,
         },
       })
     } else {
       salon = await prisma.salon.update({
         where: { id: salon.id },
-        data: body,
+        data: sanitizedData,
       })
     }
 
