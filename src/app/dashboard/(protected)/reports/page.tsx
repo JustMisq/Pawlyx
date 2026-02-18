@@ -8,6 +8,8 @@ import toast from 'react-hot-toast'
 interface Invoice {
   id: string
   invoiceNumber: string
+  type: string
+  items: string | null  // JSON string
   subtotal: number
   taxRate: number
   taxAmount: number
@@ -24,11 +26,43 @@ interface Invoice {
   } | null
 }
 
+interface InvoiceItem {
+  service?: string
+  product?: string
+  description: string
+  quantity: number
+  unit?: string
+  pricePerUnit: number
+}
+
 export default function ReportsPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
+
+  // Helper: Parser les items JSON
+  const parseItems = (itemsJson: string | null): InvoiceItem[] => {
+    if (!itemsJson) return []
+    try {
+      return JSON.parse(itemsJson)
+    } catch {
+      return []
+    }
+  }
+
+  // Helper: Afficher les items de manière lisible
+  const formatItems = (invoice: Invoice): string => {
+    const items = parseItems(invoice.items)
+    if (items.length === 0) return '-'
+    
+    return items.map(item => {
+      const name = item.service || item.product || 'Produit'
+      const qty = item.quantity > 1 ? ` (x${item.quantity})` : ''
+      const unit = item.unit ? ` ${item.unit}` : ''
+      return `${name}${qty}${unit}`
+    }).join(', ')
+  }
 
   // Charger les factures
   useEffect(() => {
@@ -128,10 +162,16 @@ export default function ReportsPage() {
 
   const exportCSV = () => {
     const csv = [
-      ['Numéro', 'Client', 'HT', 'TVA', 'TTC', 'Statut', 'Date'],
+      ['Numéro', 'Type', 'Client', 'Produit/Service', 'Quantité', 'HT', 'TVA', 'TTC', 'Statut', 'Date'],
       ...filteredInvoices.map(inv => [
         inv.invoiceNumber,
+        inv.type === 'stock_sale' ? 'Stock' : 'Appointment',
         `${inv.client.firstName} ${inv.client.lastName}`,
+        formatItems(inv),
+        (() => {
+          const items = parseItems(inv.items)
+          return items.length > 0 ? items.map(i => i.quantity).reduce((a, b) => a + b, 0) : '-'
+        })(),
         inv.subtotal.toFixed(2),
         inv.taxAmount.toFixed(2),
         inv.total.toFixed(2),
@@ -368,6 +408,8 @@ export default function ReportsPage() {
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Facture</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Client</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Produit/Service</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Quantité</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">HT</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">TVA</th>
@@ -377,71 +419,83 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium text-gray-900">{invoice.invoiceNumber}</td>
-                    <td className="px-6 py-4">
-                      <p className="text-gray-900">
-                        {invoice.client.firstName} {invoice.client.lastName}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4 text-right text-gray-900">
-                      {invoice.subtotal.toFixed(2)}€
-                    </td>
-                    <td className="px-6 py-4 text-right text-gray-900">
-                      {invoice.taxAmount.toFixed(2)}€
-                    </td>
-                    <td className="px-6 py-4 text-right font-semibold text-primary">
-                      {invoice.total.toFixed(2)}€
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={invoice.status}
-                        onChange={(e) => handleStatusChange(invoice.id, e.target.value)}
-                        className={`px-3 py-1 rounded-full text-sm font-medium border-0 outline-none cursor-pointer ${
-                          invoice.status === 'paid'
-                            ? 'bg-green-100 text-green-700'
-                            : invoice.status === 'cancelled'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        <option value="draft">Brouillon</option>
-                        <option value="sent">Envoyée</option>
-                        <option value="paid">Payée</option>
-                        <option value="cancelled">Annulée</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openPDFPreview(invoice.id)}
-                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors"
-                          title="Voir la facture"
+                {filteredInvoices.map((invoice) => {
+                  const items = parseItems(invoice.items)
+                  return (
+                    <tr key={invoice.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 font-medium text-gray-900">{invoice.invoiceNumber}</td>
+                      <td className="px-6 py-4">
+                        <p className="text-gray-900">
+                          {invoice.client.firstName} {invoice.client.lastName}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {formatItems(invoice)}
+                      </td>
+                      <td className="px-6 py-4 text-center text-sm text-gray-600">
+                        {items.length > 0 && items[0].quantity > 0 
+                          ? items.map(i => i.quantity).reduce((a, b) => a + b, 0)
+                          : '-'
+                        }
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-900">
+                        {invoice.subtotal.toFixed(2)}€
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-900">
+                        {invoice.taxAmount.toFixed(2)}€
+                      </td>
+                      <td className="px-6 py-4 text-right font-semibold text-primary">
+                        {invoice.total.toFixed(2)}€
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={invoice.status}
+                          onChange={(e) => handleStatusChange(invoice.id, e.target.value)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium border-0 outline-none cursor-pointer ${
+                            invoice.status === 'paid'
+                              ? 'bg-green-100 text-green-700'
+                              : invoice.status === 'cancelled'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}
                         >
-                          👁️
-                        </button>
-                        <button
-                          onClick={() => downloadPDF(invoice.id, invoice.invoiceNumber)}
-                          className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
-                          title="Télécharger PDF"
-                        >
-                          📄
-                        </button>
-                        <button
-                          onClick={() => handleDelete(invoice.id)}
-                          className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
-                          title="Supprimer"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <option value="draft">Brouillon</option>
+                          <option value="sent">Envoyée</option>
+                          <option value="paid">Payée</option>
+                          <option value="cancelled">Annulée</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openPDFPreview(invoice.id)}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors"
+                            title="Voir la facture"
+                          >
+                            👁️
+                          </button>
+                          <button
+                            onClick={() => downloadPDF(invoice.id, invoice.invoiceNumber)}
+                            className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
+                            title="Télécharger PDF"
+                          >
+                            📄
+                          </button>
+                          <button
+                            onClick={() => handleDelete(invoice.id)}
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
+                            title="Supprimer"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

@@ -224,18 +224,67 @@ function generateInvoiceHTML(invoice: any) {
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>
-            <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
-            <span style="color: #6b7280; font-size: 11px;">
-              ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}` : ''}<br>
-              ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
-            </span>
-          </td>
-          <td>1</td>
-          <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
-          <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
-        </tr>
+        ${(() => {
+          try {
+            const items = invoice.items ? JSON.parse(invoice.items) : []
+            if (items.length > 0) {
+              return items.map((item: any) => {
+                const itemName = item.service || item.product || 'Produit'
+                const quantity = item.quantity || 1
+                const pricePerUnit = item.pricePerUnit || (invoice.subtotal / quantity)
+                const totalItem = pricePerUnit * quantity
+                
+                return `
+                <tr>
+                  <td>
+                    <strong>${escapeHtml(itemName)}</strong><br>
+                    <span style="color: #6b7280; font-size: 11px;">
+                      ${item.description ? escapeHtml(item.description) : ''}
+                      ${appointment?.animal && invoice.type === 'appointment' ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                      ${appointment && invoice.type === 'appointment' ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                    </span>
+                  </td>
+                  <td>${quantity}${item.unit ? ' ' + escapeHtml(item.unit) : ''}</td>
+                  <td class="text-right">${pricePerUnit.toFixed(2)} €</td>
+                  <td class="text-right">${totalItem.toFixed(2)} €</td>
+                </tr>
+                `
+              }).join('')
+            }
+            
+            // Fallback si pas d'items
+            return `
+            <tr>
+              <td>
+                <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
+                <span style="color: #6b7280; font-size: 11px;">
+                  ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                  ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                </span>
+              </td>
+              <td>1</td>
+              <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
+              <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
+            </tr>
+            `
+          } catch (e) {
+            // Si erreur de parse JSON
+            return `
+            <tr>
+              <td>
+                <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
+                <span style="color: #6b7280; font-size: 11px;">
+                  ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                  ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                </span>
+              </td>
+              <td>1</td>
+              <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
+              <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
+            </tr>
+            `
+          }
+        })()}
         
         <!-- Sous-total -->
         <tr>

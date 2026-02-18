@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       const latestInvoice = await tx.invoice.findFirst({
         where: {
           salonId: salon.id,
-          invoiceNumber: { startsWith: `INV-${year}-` },
+          invoiceNumber: { startsWith: `APT-${year}-` },
         },
         orderBy: { invoiceNumber: 'desc' },
       })
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
         const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
         nextNumber = lastNum + 1
       }
-      const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
+      const invoiceNumber = `APT-${year}-${String(nextNumber).padStart(3, '0')}`
 
       const taxRate = 20
       const subtotal = service.price

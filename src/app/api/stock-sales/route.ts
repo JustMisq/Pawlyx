@@ -64,12 +64,12 @@ export async function POST(request: NextRequest) {
       const taxAmount = (subtotal * taxRate) / 100
       const totalTTC = subtotal + taxAmount
 
-      // Générer le numéro de facture
+      // Générer le numéro de facture (STK pour stock)
       const year = new Date().getFullYear()
       const latestInvoice = await tx.invoice.findFirst({
         where: {
           salonId: salon.id,
-          invoiceNumber: { startsWith: `INV-${year}-` },
+          invoiceNumber: { startsWith: `STK-${year}-` },
         },
         orderBy: { invoiceNumber: 'desc' },
       })
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
         nextNumber = lastNum + 1
       }
-      const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
+      const invoiceNumber = `STK-${year}-${String(nextNumber).padStart(3, '0')}`
 
       // Créer la facture
       const invoice = await tx.invoice.create({

@@ -52,13 +52,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, quantity, unit, price } = body
+    const { name, description, quantity, unit, price, categoryId } = body
 
     if (!name || quantity === undefined || !unit || price === undefined) {
       return NextResponse.json(
         { message: 'name, quantity, unit, and price are required' },
         { status: 400 }
       )
+    }
+
+    // Vérifier que la catégorie appartient au salon (si fournie)
+    if (categoryId) {
+      const category = await prisma.inventoryCategory.findFirst({
+        where: { id: categoryId, salonId: salon.id },
+      })
+      if (!category) {
+        return NextResponse.json(
+          { message: 'Category not found' },
+          { status: 404 }
+        )
+      }
     }
 
     const item = await prisma.inventoryItem.create({
@@ -69,7 +82,11 @@ export async function POST(request: NextRequest) {
         unit,
         price: parseFloat(price),
         salonId: salon.id,
+        categoryId: categoryId || null,
         lastRestocked: new Date(),
+      },
+      include: {
+        category: true,
       },
     })
 
@@ -102,7 +119,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, name, description, quantity, unit, price } = body
+    const { id, name, description, quantity, unit, price, categoryId } = body
 
     if (!id || !name || quantity === undefined || !unit || price === undefined) {
       return NextResponse.json(
@@ -123,6 +140,19 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Vérifier que la catégorie appartient au salon (si fournie)
+    if (categoryId) {
+      const category = await prisma.inventoryCategory.findFirst({
+        where: { id: categoryId, salonId: salon.id },
+      })
+      if (!category) {
+        return NextResponse.json(
+          { message: 'Category not found' },
+          { status: 404 }
+        )
+      }
+    }
+
     const updated = await prisma.inventoryItem.update({
       where: { id },
       data: {
@@ -131,7 +161,11 @@ export async function PUT(request: NextRequest) {
         quantity: parseInt(quantity),
         unit,
         price: parseFloat(price),
+        categoryId: categoryId || null,
         lastRestocked: new Date(),
+      },
+      include: {
+        category: true,
       },
     })
 

@@ -13,7 +13,7 @@ let sentryInitialized = false
  */
 
 // Routes qui nécessitent une authentification
-const protectedRoutes = ['/dashboard', '/api/salon', '/api/clients', '/api/animals', '/api/appointments', '/api/services', '/api/inventory', '/api/invoices', '/api/stats', '/api/support', '/api/reminders', '/api/export', '/api/delete']
+const protectedRoutes = ['/dashboard', '/api/salon', '/api/clients', '/api/animals', '/api/appointments', '/api/services', '/api/inventory', '/api/invoices', '/api/stats', '/api/support', '/api/reminders', '/api/export', '/api/delete', '/api/stock-sales']
 // Routes admin
 const adminRoutes = ['/admin', '/api/admin']
 

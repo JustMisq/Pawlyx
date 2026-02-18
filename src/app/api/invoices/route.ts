@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { clientId, appointmentId, subtotal, taxRate } = body
+    const { clientId, appointmentId, subtotal, taxRate, type, items } = body
 
     if (!clientId || subtotal === undefined) {
       return NextResponse.json(
@@ -76,11 +76,15 @@ export async function POST(request: NextRequest) {
     // ✅ FIX: Utiliser une transaction pour éviter les race conditions sur le numéro
     const invoice = await prisma.$transaction(async (tx) => {
       const year = new Date().getFullYear()
+      // Déterminer le type et le préfixe
+      const invoiceType = type || 'appointment'
+      const prefix = invoiceType === 'stock_sale' ? 'STK' : 'APT'
+      
       const latestInvoice = await tx.invoice.findFirst({
         where: {
           salonId: salon.id,
           invoiceNumber: {
-            startsWith: `INV-${year}-`,
+            startsWith: `${prefix}-${year}-`,
           },
         },
         orderBy: { invoiceNumber: 'desc' },
@@ -91,15 +95,44 @@ export async function POST(request: NextRequest) {
         const lastNum = parseInt(latestInvoice.invoiceNumber.split('-')[2])
         nextNumber = lastNum + 1
       }
-      const invoiceNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`
+      const invoiceNumber = `${prefix}-${year}-${String(nextNumber).padStart(3, '0')}`
 
       const finalTaxRate = taxRate || 20
       const taxAmount = (subtotal * finalTaxRate) / 100
       const total = subtotal + taxAmount
 
+      // Déterminer les items
+      let invoiceItems = items // Peut être fourni par le client
+      
+      // Si pas d'items fournis et c'est un appointment, charger les détails du service
+      if (!invoiceItems && appointmentId && invoiceType === 'appointment') {
+        const appointment = await tx.appointment.findFirst({
+          where: {
+            id: appointmentId,
+            salonId: salon.id,
+          },
+          include: {
+            service: true,
+          },
+        })
+        
+        if (appointment?.service) {
+          invoiceItems = JSON.stringify([
+            {
+              service: appointment.service.name,
+              description: appointment.service.description || 'Prestation de toilettage',
+              quantity: 1,
+              pricePerUnit: subtotal,
+            },
+          ])
+        }
+      }
+
       return tx.invoice.create({
         data: {
           invoiceNumber,
+          type: invoiceType,
+          items: invoiceItems || null,
           clientId,
           appointmentId: appointmentId || null,
           subtotal,
