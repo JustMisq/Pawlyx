@@ -53,6 +53,7 @@ model Salon {
   clients       Client[]
   services      Service[]
   inventory     InventoryItem[]
+  stockSales    StockSale[] @relation("SalonStockSales")
   appointments  Appointment[]
   invoices      Invoice[]
   auditLogs     AuditLog[]
@@ -79,6 +80,7 @@ model Client {
   animals       Animal[]
   appointments  Appointment[]
   invoices      Invoice[]
+  stockSales    StockSale[] @relation("ClientStockSales")
   
   @@index([salonId])
   @@index([deletedAt])
@@ -184,8 +186,32 @@ model InventoryItem {
   
   salonId       String
   salon         Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  stockSales    StockSale[] @relation("InventoryItemStockSales")
   
   @@index([salonId])
+}
+
+model StockSale {
+  id            String    @id @default(cuid())
+  quantity      Int
+  pricePerUnit  Float
+  total         Float     // quantity * pricePerUnit
+  notes         String?
+  createdAt     DateTime  @default(now())
+  
+  salonId       String
+  salon         Salon     @relation("SalonStockSales", fields: [salonId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client    @relation("ClientStockSales", fields: [clientId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem InventoryItem @relation("InventoryItemStockSales", fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  invoiceId     String?
+  invoice       Invoice?  @relation("InvoiceStockSales", fields: [invoiceId], references: [id], onDelete: SetNull)
+  
+  @@index([salonId])
+  @@index([clientId])
+  @@index([inventoryItemId])
+  @@index([invoiceId])
 }
 
 model Subscription {
@@ -208,6 +234,8 @@ model Subscription {
 model Invoice {
   id            String    @id @default(cuid())
   invoiceNumber String    @unique  // ex: INV-2025-001
+  type          String    @default("appointment")  // appointment ou stock_sale
+  items         String?   // JSON: [{product, description, quantity, unit, pricePerUnit}]
   subtotal      Float     // Total HT
   taxRate       Float     @default(20)  // TVA %
   taxAmount     Float     // Montant TVA
@@ -226,10 +254,12 @@ model Invoice {
   client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  stockSales    StockSale[] @relation("InvoiceStockSales")
   
   @@index([salonId])
   @@index([clientId])
   @@index([appointmentId])
+  @@index([type])
   @@index([status])
   @@index([deletedAt])
 }

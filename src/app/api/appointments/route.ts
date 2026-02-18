@@ -179,6 +179,15 @@ export async function POST(request: NextRequest) {
       await tx.invoice.create({
         data: {
           invoiceNumber,
+          type: 'appointment',
+          items: JSON.stringify([
+            {
+              service: service.name,
+              description: service.description || 'Prestation de toilettage',
+              quantity: 1,
+              pricePerUnit: service.price,
+            },
+          ]),
           clientId,
           appointmentId: newAppointment.id,
           subtotal,
@@ -220,12 +229,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/appointments - Mettre à jour un rendez-vous
+// PUT /api/appointments?id=xxx - Mettre à jour un rendez-vous
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authConfig)
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ message: 'ID required' }, { status: 400 })
     }
 
     const salon = await prisma.salon.findUnique({
@@ -237,11 +253,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, status, notes, internalNotes, cancellationReason } = body
-
-    if (!id) {
-      return NextResponse.json({ message: 'ID required' }, { status: 400 })
-    }
+    const { status, notes, internalNotes, cancellationReason } = body
 
     // Vérifier que le RDV appartient au salon
     const existingAppointment = await prisma.appointment.findFirst({

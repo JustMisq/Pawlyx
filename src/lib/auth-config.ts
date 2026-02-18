@@ -24,11 +24,45 @@ export const authConfig: NextAuthOptions = {
   // ✅ SÉCURITÉ: Secret requis pour JWT
   secret: process.env.NEXTAUTH_SECRET,
   
+  // ✅ CONFIGURATION URLs - Critique pour session persistence
+  // Utiliser NEXTAUTH_URL si disponible, sinon construire depuis VERCEL_URL
+  ...(process.env.NEXTAUTH_URL && { url: process.env.NEXTAUTH_URL }),
+  
+  // ✅ CONFIGURATION Pages de redirection
+  pages: {
+    signIn: "/auth/login",
+    error: "/auth/login",
+  },
+  
   // ✅ SÉCURITÉ: JWT strategy pour les APIs
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 jours
     updateAge: 24 * 60 * 60,   // Refresh token après 1 jour d'inactivité
+  },
+
+  // ✅ CONFIGURATION COOKIES - Critical pour la persistance
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60, // 30 jours
+      },
+    },
+    callbackUrl: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60,
+      },
+    },
   },
 
   providers: [
@@ -117,10 +151,6 @@ export const authConfig: NextAuthOptions = {
       }
       return session
     },
-  },
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/login",
   },
   // ✅ DEBUG en development uniquement
   debug: process.env.NODE_ENV === 'development',
