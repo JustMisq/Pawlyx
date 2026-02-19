@@ -33,17 +33,17 @@ export const authConfig: NextAuthOptions = {
   // ✅ SÉCURITÉ: JWT strategy pour les APIs
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 jours
-    updateAge: 24 * 60 * 60,   // Refresh token après 1 jour d'inactivité
+    maxAge: 30 * 24 * 60 * 60, // 30 jours - session remain valid
   },
 
   // ✅ CONFIGURATION COOKIES - Critical pour la persistance
+  useSecureCookies: true, // Force les secure cookies même en dev si HTTPS
   cookies: {
     sessionToken: {
       name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https'),
         sameSite: 'lax',
         path: '/',
         maxAge: 30 * 24 * 60 * 60, // 30 jours
@@ -53,7 +53,7 @@ export const authConfig: NextAuthOptions = {
       name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https'),
         sameSite: 'lax',
         path: '/',
         maxAge: 24 * 60 * 60,
