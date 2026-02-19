@@ -37,15 +37,15 @@ export default function OnboardingPage() {
       })
 
       if (!res.ok) {
-        toast.error('Erreur lors de la configuration du salon')
+        toast.error('Erro ao configurar o salão')
         return
       }
 
-      toast.success('Salon configuré avec succès!')
+      toast.success('Salão configurado com sucesso!')
       router.push('/dashboard')
     } catch (error) {
       console.error('Error updating salon:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setLoading(false)
     }
@@ -56,22 +56,26 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center px-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-8">
+    <div className="min-h-screen bg-gray-50/50 flex items-center justify-center px-4 py-12">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 w-full max-w-2xl p-8">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-4">✂️</div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Bienvenue sur Groomly!
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-teal">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bem-vindo(a) ao Pawlyx!
           </h1>
-          <p className="text-gray-600 mt-2">
-            Configurons votre salon de toilettage
+          <p className="text-gray-500 mt-2">
+            Vamos configurar o seu salão de tosquia
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nom du salon *
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Nome do salão *
             </label>
             <input
               type="text"
@@ -79,42 +83,42 @@ export default function OnboardingPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-              placeholder="Ex: Salon de Toilettage des Anges"
+              className="input-base"
+              placeholder="Ex: Salão de Tosquia dos Anjos"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Descrição
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition resize-none"
-              placeholder="Décrivez votre salon, votre spécialité..."
+              className="input-base resize-none"
+              placeholder="Descreva o seu salão, a sua especialidade..."
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Telefone
               </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-                placeholder="06 12 34 56 78"
+                className="input-base"
+                placeholder="912 345 678"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email
               </label>
               <input
@@ -122,76 +126,79 @@ export default function OnboardingPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+                className="input-base"
                 placeholder="contact@salon.com"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adresse
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Morada
             </label>
             <input
               type="text"
               name="address"
               value={formData.address}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-              placeholder="123 Rue de la Toilette"
+              className="input-base"
+              placeholder="Rua da Tosquia, 123"
             />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ville
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Cidade
               </label>
               <input
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-                placeholder="Paris"
+                className="input-base"
+                placeholder="Lisboa"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Code postal
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Código postal
               </label>
               <input
                 type="text"
                 name="postalCode"
                 value={formData.postalCode}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-                placeholder="75001"
+                className="input-base"
+                placeholder="1000-001"
               />
             </div>
           </div>
 
-          <div className="flex gap-4 mt-8">
+          <div className="flex gap-3 pt-4">
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-primary hover:bg-primary/90"
+              className="flex-1"
+              size="lg"
             >
-              {loading ? 'Configuration...' : 'Continuer'}
+              {loading ? 'A configurar...' : 'Continuar'}
             </Button>
             <Button
               type="button"
               onClick={handleSkip}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900"
+              variant="outline"
+              className="flex-1"
+              size="lg"
             >
-              Passer
+              Saltar
             </Button>
           </div>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Vous pourrez toujours modifier ces informations plus tard dans les paramètres
+        <p className="text-center text-xs text-gray-400 mt-6">
+          Pode alterar estas informações mais tarde nas definições
         </p>
       </div>
     </div>

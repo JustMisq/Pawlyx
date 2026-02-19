@@ -20,11 +20,11 @@ interface AnimalHealthFormProps {
 }
 
 const TEMPERAMENT_OPTIONS = [
-  { value: 'calm', label: '😊 Calme', color: 'bg-green-100 text-green-800' },
-  { value: 'anxious', label: '😰 Anxieux', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'playful', label: '🎾 Joueur', color: 'bg-blue-100 text-blue-800' },
-  { value: 'aggressive', label: '😾 Agressif', color: 'bg-red-100 text-red-800' },
-  { value: 'mixed', label: '🔄 Variable', color: 'bg-gray-100 text-gray-800' },
+  { value: 'calm', label: '😊 Calmo', color: 'bg-green-100 text-green-800' },
+  { value: 'anxious', label: '😰 Ansioso', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'playful', label: '🎾 Brincalhão', color: 'bg-blue-100 text-blue-800' },
+  { value: 'aggressive', label: '😾 Agressivo', color: 'bg-red-100 text-red-800' },
+  { value: 'mixed', label: '🔄 Variável', color: 'bg-gray-100 text-gray-800' },
 ]
 
 export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = false }: AnimalHealthFormProps) {
@@ -42,14 +42,14 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
       })
 
       if (res.ok) {
-        toast.success('Fiche santé mise à jour')
+        toast.success('Ficha de saúde atualizada')
         onUpdate?.(data)
       } else {
-        toast.error('Erreur lors de la sauvegarde')
+        toast.error('Erro ao guardar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setSaving(false)
     }
@@ -66,10 +66,10 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">🏥</span>
-          <span className="font-medium text-gray-900">Fiche santé & comportement</span>
+          <span className="font-medium text-gray-900">Ficha de saúde e comportamento</span>
           {hasData && (
             <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
-              Renseignée
+              Preenchida
             </span>
           )}
         </div>
@@ -83,7 +83,7 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
           {/* Tempérament */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tempérament
+              Temperamento
             </label>
             <div className="flex flex-wrap gap-2">
               {TEMPERAMENT_OPTIONS.map((option) => (
@@ -107,7 +107,7 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
           {/* Poids */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Poids (kg)
+              Peso (kg)
             </label>
             <input
               type="number"
@@ -125,7 +125,7 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
           {/* Allergies */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              ⚠️ Allergies connues
+              ⚠️ Alergias conhecidas
             </label>
             <input
               type="text"
@@ -133,14 +133,14 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
               onChange={(e) => setData({ ...data, allergies: e.target.value })}
               disabled={readOnly}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100"
-              placeholder="ex: Allergie aux parfums, sensibilité shampooing..."
+              placeholder="ex: Alergia a perfumes, sensibilidade a champô..."
             />
           </div>
 
           {/* Notes santé */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              💊 Contraintes santé
+              💊 Condições de saúde
             </label>
             <textarea
               value={data.healthNotes || ''}
@@ -148,17 +148,17 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
               disabled={readOnly}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 resize-none"
-              placeholder="ex: Arthrose pattes arrières, problèmes de peau, opération récente..."
+              placeholder="ex: Artrose nas patas traseiras, problemas de pele, operação recente..."
             />
             <p className="text-xs text-gray-500 mt-1">
-              Informations non médicales utiles pour le toilettage
+              Informações não médicas úteis para a tosquia
             </p>
           </div>
 
           {/* Notes toilettage */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              ✂️ Préférences toilettage
+              ✂️ Preferências de tosquia
             </label>
             <textarea
               value={data.groomingNotes || ''}
@@ -166,7 +166,7 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
               disabled={readOnly}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 resize-none"
-              placeholder="ex: Coupe spéciale oreilles, zones sensibles, ne pas toucher la queue..."
+              placeholder="ex: Corte especial nas orelhas, zonas sensíveis, não tocar na cauda..."
             />
           </div>
 
@@ -178,7 +178,7 @@ export function AnimalHealthForm({ animalId, initialData, onUpdate, readOnly = f
                 disabled={saving}
                 className="bg-primary hover:bg-primary/90"
               >
-                {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                {saving ? 'A guardar...' : 'Guardar'}
               </Button>
             </div>
           )}
@@ -201,12 +201,12 @@ export function AnimalHealthBadges({ data }: { data: AnimalHealthData }) {
       )}
       {data.allergies && (
         <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-          ⚠️ Allergies
+          ⚠️ Alergias
         </span>
       )}
       {data.healthNotes && (
         <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-          💊 Contraintes
+          💊 Condições
         </span>
       )}
       {data.weight && (

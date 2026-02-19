@@ -3,14 +3,32 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
 import { format, parse, startOfWeek, getDay } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { pt } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
+import {
+  CalendarDays,
+  Plus,
+  X,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Eye,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  UserRound,
+  PawPrint,
+  Scissors,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react'
 
-// Configuration du localizer avec la locale française
+// Configuração do localizer com a locale portuguesa
 const locales = {
-  'fr': fr,
+  'pt': pt,
 }
 
 const localizer = dateFnsLocalizer({
@@ -21,21 +39,21 @@ const localizer = dateFnsLocalizer({
   locales,
 })
 
-// Messages en français pour le calendrier
+// Mensagens em português para o calendário
 const messages = {
-  allDay: 'Journée',
-  previous: 'Précédent',
-  next: 'Suivant',
-  today: "Aujourd'hui",
-  month: 'Mois',
-  week: 'Semaine',
-  day: 'Jour',
+  allDay: 'Dia inteiro',
+  previous: 'Anterior',
+  next: 'Seguinte',
+  today: 'Hoje',
+  month: 'Mês',
+  week: 'Semana',
+  day: 'Dia',
   agenda: 'Agenda',
-  date: 'Date',
-  time: 'Heure',
-  event: 'Événement',
-  noEventsInRange: 'Aucun rendez-vous sur cette période',
-  showMore: (total: number) => `+ ${total} de plus`,
+  date: 'Data',
+  time: 'Hora',
+  event: 'Evento',
+  noEventsInRange: 'Nenhuma consulta neste período',
+  showMore: (total: number) => `+ ${total} mais`,
 }
 
 interface Appointment {
@@ -78,7 +96,7 @@ interface Service {
   duration: number
 }
 
-// Type pour les événements du calendrier
+// Tipo para os eventos do calendário
 interface CalendarEvent {
   id: string
   title: string
@@ -108,7 +126,7 @@ export default function AppointmentsPage() {
     notes: '',
   })
 
-  // Charger les données
+  // Carregar os dados
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -140,7 +158,7 @@ export default function AppointmentsPage() {
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       } finally {
         setLoading(false)
       }
@@ -149,7 +167,7 @@ export default function AppointmentsPage() {
     fetchData()
   }, [])
 
-  // Récupérer les animaux du client sélectionné
+  // Obter os animais do cliente selecionado
   useEffect(() => {
     const fetchAnimals = async () => {
       if (!formData.clientId) {
@@ -186,7 +204,7 @@ export default function AppointmentsPage() {
     e.preventDefault()
 
     if (!formData.clientId || !formData.animalId || !formData.serviceId || !formData.startTime) {
-      toast.error('Tous les champs sont requis')
+      toast.error('Todos os campos são obrigatórios')
       return
     }
 
@@ -212,7 +230,7 @@ export default function AppointmentsPage() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}))
-        toast.error(error.message || 'Erreur lors de la création du rendez-vous')
+        toast.error(error.message || 'Erro ao criar a consulta')
         return
       }
 
@@ -234,18 +252,18 @@ export default function AppointmentsPage() {
         notes: '',
       })
       setShowForm(false)
-      toast.success('Rendez-vous créé!')
+      toast.success('Consulta criada!')
     } catch (error) {
       console.error('Error creating appointment:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Supprimer un rendez-vous
+  // Eliminar uma consulta
   const handleDeleteAppointment = async (appointmentId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce rendez-vous ?')) return
+    if (!confirm('Tem a certeza que deseja eliminar esta consulta?')) return
 
     try {
       const res = await fetch(`/api/appointments?id=${appointmentId}`, {
@@ -255,17 +273,17 @@ export default function AppointmentsPage() {
       if (res.ok) {
         setAppointments(appointments.filter(apt => apt.id !== appointmentId))
         setSelectedAppointment(null)
-        toast.success('Rendez-vous supprimé')
+        toast.success('Consulta eliminada')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error deleting appointment:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
-  // Changer le statut d'un rendez-vous
+  // Alterar o estado de uma consulta
   const handleStatusChange = async (appointmentId: string, newStatus: string, reason?: string) => {
     try {
       const body: any = { status: newStatus }
@@ -287,24 +305,24 @@ export default function AppointmentsPage() {
         setSelectedAppointment(null)
         
         const statusLabels: Record<string, string> = {
-          confirmed: 'confirmé',
-          in_progress: 'démarré',
-          completed: 'terminé',
-          cancelled: 'annulé',
-          no_show: 'marqué comme non-présenté',
+          confirmed: 'confirmada',
+          in_progress: 'iniciada',
+          completed: 'concluída',
+          cancelled: 'cancelada',
+          no_show: 'marcada como não compareceu',
         }
-        toast.success(`Rendez-vous ${statusLabels[newStatus] || 'mis à jour'}`)
+        toast.success(`Consulta ${statusLabels[newStatus] || 'atualizada'}`)
       } else {
         const error = await res.json()
-        toast.error(error.message || 'Erreur lors de la mise à jour')
+        toast.error(error.message || 'Erro ao atualizar')
       }
     } catch (error) {
       console.error('Error updating appointment:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
-  // Obtenir la couleur du statut
+  // Obter a cor do estado
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       scheduled: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -317,20 +335,32 @@ export default function AppointmentsPage() {
     return colors[status] || 'bg-gray-100 text-gray-600'
   }
 
-  // Obtenir le label du statut
+  // Obter o rótulo do estado com ícone
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'scheduled': return <CalendarDays className="w-3.5 h-3.5" />
+      case 'confirmed': return <CheckCircle2 className="w-3.5 h-3.5" />
+      case 'in_progress': return <RefreshCw className="w-3.5 h-3.5" />
+      case 'completed': return <CheckCircle2 className="w-3.5 h-3.5" />
+      case 'cancelled': return <XCircle className="w-3.5 h-3.5" />
+      case 'no_show': return <AlertTriangle className="w-3.5 h-3.5" />
+      default: return <CalendarDays className="w-3.5 h-3.5" />
+    }
+  }
+
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      scheduled: '📅 Planifié',
-      confirmed: '✅ Confirmé',
-      in_progress: '🔄 En cours',
-      completed: '✔️ Terminé',
-      cancelled: '❌ Annulé',
-      no_show: '⚠️ Non présenté',
+      scheduled: 'Agendado',
+      confirmed: 'Confirmado',
+      in_progress: 'Em curso',
+      completed: 'Concluído',
+      cancelled: 'Cancelado',
+      no_show: 'Não compareceu',
     }
     return labels[status] || status
   }
 
-  // Obtenir la couleur du calendrier par statut
+  // Obter a cor do calendário por estado
   const getCalendarEventColor = (status: string) => {
     const colors: Record<string, string> = {
       scheduled: '#3b82f6', // blue
@@ -343,12 +373,12 @@ export default function AppointmentsPage() {
     return colors[status] || '#3b82f6'
   }
 
-  // Gestion du clic sur un événement
+  // Gestão do clique num evento
   const handleSelectEvent = useCallback((event: any) => {
     setSelectedAppointment(event)
   }, [])
 
-  // Événements formatés pour le calendrier (avec useMemo pour optimisation)
+  // Eventos formatados para o calendário (com useMemo para otimização)
   const calendarEvents = useMemo(() => {
     return appointments
       .filter(apt => apt.startTime && apt.endTime && apt.client && apt.animal)
@@ -362,47 +392,57 @@ export default function AppointmentsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-500">Chargement des rendez-vous...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
+          <p className="text-gray-500">A carregar consultas...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Rendez-vous</h1>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <CalendarDays className="w-8 h-8 text-teal-500" />
+          Consultas
+        </h1>
         <Button
           onClick={() => {
             setSelectedDate(new Date())
             setShowForm(!showForm)
           }}
-          className="bg-primary hover:bg-primary/90"
+          variant={showForm ? 'outline' : 'default'}
         >
-          {showForm ? '❌ Annuler' : '➕ Nouveau RDV'}
+          {showForm ? (
+            <><X className="w-4 h-4 mr-2" /> Cancelar</>
+          ) : (
+            <><Plus className="w-4 h-4 mr-2" /> Nova consulta</>
+          )}
         </Button>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg p-6 border border-gray-200 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Créer un rendez-vous</h2>
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-100 mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-teal-500" />
+            Criar uma consulta
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client *
+                  Cliente *
                 </label>
                 <select
                   value={formData.clientId}
                   onChange={(e) =>
                     setFormData({ ...formData, clientId: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 >
-                  <option value="">Sélectionner un client</option>
+                  <option value="">Selecionar um cliente</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id}>
                       {client.firstName} {client.lastName}
@@ -421,12 +461,12 @@ export default function AppointmentsPage() {
                     setFormData({ ...formData, animalId: e.target.value })
                   }
                   disabled={!formData.clientId}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none disabled:bg-gray-100"
+                  className="input-base disabled:bg-gray-100"
                 >
                   <option value="">
                     {formData.clientId
-                      ? 'Sélectionner un animal'
-                      : 'Choisir un client d\'abord'}
+                      ? 'Selecionar um animal'
+                      : 'Escolher um cliente primeiro'}
                   </option>
                   {animals.map((animal) => (
                     <option key={animal.id} value={animal.id}>
@@ -440,16 +480,16 @@ export default function AppointmentsPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Service *
+                  Serviço *
                 </label>
                 <select
                   value={formData.serviceId}
                   onChange={(e) =>
                     setFormData({ ...formData, serviceId: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 >
-                  <option value="">Sélectionner un service</option>
+                  <option value="">Selecionar um serviço</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.name} - {service.price}€ ({service.duration}min)
@@ -460,7 +500,7 @@ export default function AppointmentsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Heure *
+                  Hora *
                 </label>
                 <input
                   type="time"
@@ -468,69 +508,85 @@ export default function AppointmentsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, startTime: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                Notas
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                placeholder="Notes supplémentaires..."
+                className="input-base resize-none"
+                placeholder="Notas adicionais..."
                 rows={2}
               />
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50">
-              {isSubmitting ? 'Création en cours...' : 'Créer le rendez-vous'}
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? (
+                <><Loader2 className="w-4 h-4 animate-spin mr-2" /> A criar...</>
+              ) : (
+                <><Plus className="w-4 h-4 mr-2" /> Criar consulta</>
+              )}
             </Button>
           </form>
         </div>
       )}
 
-      {/* Modal de détails du rendez-vous */}
+      {/* Modal de detalhes da consulta */}
       {selectedAppointment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Détails du rendez-vous</h2>
-                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedAppointment.status || 'scheduled')}`}>
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-teal-500" />
+                  Detalhes da consulta
+                </h2>
+                <span className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedAppointment.status || 'scheduled')}`}>
+                  {getStatusIcon(selectedAppointment.status || 'scheduled')}
                   {getStatusLabel(selectedAppointment.status || 'scheduled')}
                 </span>
               </div>
               <button 
                 onClick={() => setSelectedAppointment(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
             </div>
             
             <div className="space-y-3">
               <div>
-                <span className="text-sm text-gray-500">Client</span>
+                <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <UserRound className="w-3.5 h-3.5" /> Cliente
+                </span>
                 <p className="font-medium">{selectedAppointment.client.firstName} {selectedAppointment.client.lastName}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">Animal</span>
-                <p className="font-medium">🐾 {selectedAppointment.animal.name}</p>
+                <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <PawPrint className="w-3.5 h-3.5" /> Animal
+                </span>
+                <p className="font-medium">{selectedAppointment.animal.name}</p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">Service</span>
-                <p className="font-medium">{selectedAppointment.service.name} - {selectedAppointment.totalPrice || selectedAppointment.service.price}€</p>
+                <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <Scissors className="w-3.5 h-3.5" /> Service
+                </span>
+                <p className="font-medium">{selectedAppointment.service.name} - <span className="text-teal-600 font-semibold">{selectedAppointment.totalPrice || selectedAppointment.service.price}€</span></p>
               </div>
               <div>
-                <span className="text-sm text-gray-500">Date et heure</span>
+                <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Data e hora
+                </span>
                 <p className="font-medium">
-                  {new Date(selectedAppointment.startTime).toLocaleString('fr-FR', {
+                  {new Date(selectedAppointment.startTime).toLocaleString('pt-PT', {
                     dateStyle: 'full',
                     timeStyle: 'short',
                   })}
@@ -538,26 +594,26 @@ export default function AppointmentsPage() {
               </div>
               {selectedAppointment.notes && (
                 <div>
-                  <span className="text-sm text-gray-500">Notes</span>
+                  <span className="text-sm text-gray-500">Notas</span>
                   <p className="font-medium">{selectedAppointment.notes}</p>
                 </div>
               )}
               {selectedAppointment.isLateCancel && (
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                  <p className="text-sm text-orange-800">
-                    ⚠️ Annulation tardive (moins de 24h avant le RDV)
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3">
+                  <p className="text-sm text-orange-800 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4" /> Cancelamento tardio (menos de 24h antes da consulta)
                   </p>
                 </div>
               )}
               {selectedAppointment.cancellationReason && (
                 <div>
-                  <span className="text-sm text-gray-500">Raison d&apos;annulation</span>
+                  <span className="text-sm text-gray-500">Motivo do cancelamento</span>
                   <p className="text-sm text-red-600">{selectedAppointment.cancellationReason}</p>
                 </div>
               )}
             </div>
 
-            {/* Actions selon le statut */}
+            {/* Ações conforme o estado */}
             <div className="mt-6 space-y-3">
               {(selectedAppointment.status === 'scheduled' || !selectedAppointment.status) && (
                 <div className="grid grid-cols-2 gap-3">
@@ -565,16 +621,16 @@ export default function AppointmentsPage() {
                     onClick={() => handleStatusChange(selectedAppointment.id, 'confirmed')}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
-                    ✅ Confirmer
+                    <CheckCircle2 className="w-4 h-4 mr-2" /> Confirmar
                   </Button>
                   <Button 
                     onClick={() => {
-                      const reason = prompt('Raison de l\'annulation (optionnel):')
+                      const reason = prompt('Motivo do cancelamento (opcional):')
                       handleStatusChange(selectedAppointment.id, 'cancelled', reason || undefined)
                     }}
                     className="bg-red-500 hover:bg-red-600 text-white"
                   >
-                    ❌ Annuler
+                    <XCircle className="w-4 h-4 mr-2" /> Cancelar
                   </Button>
                 </div>
               )}
@@ -585,13 +641,13 @@ export default function AppointmentsPage() {
                     onClick={() => handleStatusChange(selectedAppointment.id, 'in_progress')}
                     className="bg-yellow-500 hover:bg-yellow-600 text-white"
                   >
-                    🔄 Démarrer
+                    <RefreshCw className="w-4 h-4 mr-2" /> Iniciar
                   </Button>
                   <Button 
                     onClick={() => handleStatusChange(selectedAppointment.id, 'no_show')}
                     className="bg-orange-500 hover:bg-orange-600 text-white"
                   >
-                    ⚠️ Non présenté
+                    <AlertTriangle className="w-4 h-4 mr-2" /> Não compareceu
                   </Button>
                 </div>
               )}
@@ -601,13 +657,13 @@ export default function AppointmentsPage() {
                   onClick={() => handleStatusChange(selectedAppointment.id, 'completed')}
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
-                  ✔️ Terminer et facturer
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Concluir e faturar
                 </Button>
               )}
 
               {['completed', 'cancelled', 'no_show'].includes(selectedAppointment.status || '') && (
                 <div className="text-center text-sm text-gray-500 py-2">
-                  Ce rendez-vous est terminé et ne peut plus être modifié.
+                  Esta consulta está concluída e já não pode ser alterada.
                 </div>
               )}
             </div>
@@ -615,16 +671,18 @@ export default function AppointmentsPage() {
             <div className="flex gap-3 mt-4 pt-4 border-t">
               <Button 
                 onClick={() => setSelectedAppointment(null)}
-                className="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                variant="outline"
+                className="flex-1"
               >
-                Fermer
+                Fechar
               </Button>
               {!['completed', 'cancelled', 'no_show'].includes(selectedAppointment.status || '') && (
                 <Button 
                   onClick={() => handleDeleteAppointment(selectedAppointment.id)}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                  variant="ghost"
+                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
-                  🗑️ Supprimer
+                  <Trash2 className="w-4 h-4 mr-2" /> Eliminar
                 </Button>
               )}
             </div>
@@ -632,7 +690,7 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
         <Calendar
           localizer={localizer}
           events={calendarEvents}
@@ -644,7 +702,7 @@ export default function AppointmentsPage() {
           selectable
           popup
           messages={messages}
-          culture="fr"
+          culture="pt"
           views={['month', 'week', 'day', 'agenda']}
           defaultView="month"
           view={currentView}
@@ -677,14 +735,16 @@ export default function AppointmentsPage() {
         />
       </div>
 
-      {/* Afficher les RDV du jour */}
+      {/* Mostrar as consultas do dia */}
       <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Prochains rendez-vous
+        <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-teal-500" />
+          Próximas consultas
         </h2>
         {appointments.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <p className="text-gray-500">Aucun rendez-vous pour le moment</p>
+          <div className="bg-gray-50 rounded-2xl p-8 text-center">
+            <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Nenhuma consulta de momento</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -699,7 +759,7 @@ export default function AppointmentsPage() {
               .map((apt) => (
                 <div
                   key={apt.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="bg-white border-2 border-gray-100 rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => setSelectedAppointment(apt)}
                 >
                   <div className="flex justify-between items-start">
@@ -708,27 +768,30 @@ export default function AppointmentsPage() {
                         <h3 className="font-semibold text-gray-900">
                           {apt.client.firstName} {apt.client.lastName}
                         </h3>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(apt.status || 'scheduled')}`}>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(apt.status || 'scheduled')}`}>
+                          {getStatusIcon(apt.status || 'scheduled')}
                           {getStatusLabel(apt.status || 'scheduled')}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        🐾 {apt.animal.name} - {apt.service.name}
+                      <p className="text-sm text-gray-600 flex items-center gap-1.5">
+                        <PawPrint className="w-3.5 h-3.5" /> {apt.animal.name} - {apt.service.name}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        🕐{' '}
-                        {new Date(apt.startTime).toLocaleString('fr-FR', {
+                      <p className="text-sm text-gray-500 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        {new Date(apt.startTime).toLocaleString('pt-PT', {
                           dateStyle: 'short',
                           timeStyle: 'short',
                         })}
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-lg font-semibold text-primary">
+                      <span className="text-lg font-semibold text-teal-600">
                         {apt.totalPrice || apt.service.price}€
                       </span>
                       {apt.isLateCancel && (
-                        <p className="text-xs text-orange-600 mt-1">⚠️ Annulation tardive</p>
+                        <p className="text-xs text-orange-600 mt-1 flex items-center gap-1 justify-end">
+                          <AlertTriangle className="w-3 h-3" /> Cancelamento tardio
+                        </p>
                       )}
                     </div>
                   </div>

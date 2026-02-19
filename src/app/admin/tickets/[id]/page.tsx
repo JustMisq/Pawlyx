@@ -5,6 +5,21 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import {
+  TicketCheck,
+  ArrowLeft,
+  AlertCircle,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Send,
+  MessageSquare,
+  User,
+  Calendar,
+  Tag,
+  Loader2,
+  ChevronLeft,
+} from 'lucide-react'
 
 interface TicketMessage {
   id: string
@@ -61,13 +76,13 @@ export default function TicketDetailPage() {
     try {
       setLoading(true)
       const res = await fetch(`/api/admin/tickets/${ticketId}`)
-      if (!res.ok) throw new Error('Ticket non trouvé')
+      if (!res.ok) throw new Error('Ticket não encontrado')
 
       const data = await res.json()
       setTicket(data.ticket)
     } catch (error) {
-      console.error('Erreur:', error)
-      toast.error('Impossible de charger le ticket')
+      console.error('Erro:', error)
+      toast.error('Impossível carregar o ticket')
     } finally {
       setLoading(false)
     }
@@ -84,13 +99,13 @@ export default function TicketDetailPage() {
         body: JSON.stringify({ content: messageContent }),
       })
 
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error('Erro')
 
-      toast.success('Message envoyé')
+      toast.success('Mensagem enviada')
       setMessageContent('')
       fetchTicket()
     } catch (error) {
-      toast.error('Erreur lors de l\'envoi du message')
+      toast.error('Erro ao enviar a mensagem')
     } finally {
       setSendingMessage(false)
     }
@@ -104,222 +119,327 @@ export default function TicketDetailPage() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error('Erro')
 
-      toast.success('Ticket mis à jour')
+      if (newStatus === 'closed') {
+        toast.success('Ticket fechado')
+      } else if (newStatus === 'open') {
+        toast.success('Ticket reaberto')
+      } else {
+        toast.success('Ticket atualizado')
+      }
       fetchTicket()
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
+      toast.error('Erro ao atualizar')
+    }
+  }
+
+  const getPriorityLabel = (p: string) => {
+    switch (p) {
+      case 'urgent': return 'Urgente'
+      case 'high': return 'Alta'
+      case 'normal': return 'Normal'
+      case 'low': return 'Baixa'
+      default: return p
+    }
+  }
+
+  const getPriorityColor = (p: string) => {
+    switch (p) {
+      case 'urgent': return 'bg-red-100 text-red-700'
+      case 'high': return 'bg-orange-100 text-orange-700'
+      case 'normal': return 'bg-blue-100 text-blue-700'
+      case 'low': return 'bg-gray-100 text-gray-700'
+      default: return 'bg-gray-100 text-gray-700'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'open': return <AlertCircle className="w-4 h-4 text-red-500" />
+      case 'in_progress': return <Clock className="w-4 h-4 text-yellow-500" />
+      case 'resolved': return <CheckCircle className="w-4 h-4 text-green-500" />
+      case 'closed': return <XCircle className="w-4 h-4 text-gray-400" />
+      default: return <AlertCircle className="w-4 h-4 text-gray-400" />
+    }
+  }
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open': return 'Aberto'
+      case 'in_progress': return 'Em curso'
+      case 'resolved': return 'Resolvido'
+      case 'closed': return 'Fechado'
+      default: return status
+    }
+  }
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-red-100 text-red-700'
+      case 'in_progress': return 'bg-yellow-100 text-yellow-700'
+      case 'resolved': return 'bg-green-100 text-green-700'
+      case 'closed': return 'bg-gray-100 text-gray-500'
+      default: return 'bg-gray-100 text-gray-500'
     }
   }
 
   if (!session?.user?.isAdmin) {
-    return <div className="p-8"><p className="text-gray-600">Accès refusé</p></div>
-  }
-
-  if (loading) {
-    return <div className="p-8"><div className="animate-spin text-4xl">⏳</div></div>
-  }
-
-  if (!ticket) {
     return (
-      <div className="p-8">
-        <p className="text-gray-600">Ticket non trouvé</p>
-        <Link href="/admin/tickets" className="text-primary hover:underline mt-4 inline-block">
-          ← Retour aux tickets
-        </Link>
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium">Acesso negado</p>
+        </div>
       </div>
     )
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-100 text-red-800'
-      case 'high':
-        return 'bg-orange-100 text-orange-800'
-      case 'normal':
-        return 'bg-blue-100 text-blue-800'
-      case 'low':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      </div>
+    )
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return '🔴 Ouvert'
-      case 'in_progress':
-        return '🟡 En cours'
-      case 'resolved':
-        return '✅ Résolu'
-      case 'closed':
-        return '⚫ Fermé'
-      default:
-        return status
-    }
+  if (!ticket) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
+          <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-600 font-medium mb-4">Ticket não encontrado</p>
+          <Link
+            href="/admin/tickets"
+            className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar aos tickets
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">🎫 {ticket.ticketNumber}</h1>
-          <p className="text-gray-600 mt-2">{ticket.subject}</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
+            <TicketCheck className="w-5 h-5 text-teal-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{ticket.ticketNumber}</h1>
+            <p className="text-sm text-gray-500">{ticket.subject}</p>
+          </div>
         </div>
         <Link
           href="/admin/tickets"
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
         >
-          ← Retour
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
         </Link>
       </div>
 
-      {/* Info Card */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <p className="text-sm text-gray-600">Priorité</p>
-          <span className={`inline-block mt-1 px-3 py-1 rounded-full text-sm font-semibold ${getPriorityColor(ticket.priority)}`}>
-            {ticket.priority}
-          </span>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Statut</p>
-          <p className="text-lg font-semibold mt-1">{getStatusColor(ticket.status)}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Catégorie</p>
-          <p className="text-lg font-semibold mt-1">{ticket.category}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Messages</p>
-          <p className="text-lg font-semibold mt-1">💬 {ticket.messages.length}</p>
+      {/* Detalhes do ticket */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Tag className="w-5 h-5 text-teal-500" />
+          Detalhes do ticket
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Prioridade</p>
+            <span className={`rounded-full px-3 py-1 text-xs font-medium inline-block ${getPriorityColor(ticket.priority)}`}>
+              {getPriorityLabel(ticket.priority)}
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Estado</p>
+            <span className={`rounded-full px-3 py-1 text-xs font-medium inline-flex items-center gap-1.5 ${getStatusBadgeColor(ticket.status)}`}>
+              {getStatusIcon(ticket.status)}
+              {getStatusLabel(ticket.status)}
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Categoria</p>
+            <p className="text-sm font-semibold text-gray-900">{ticket.category}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Mensagens</p>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+              <MessageSquare className="w-4 h-4 text-teal-500" />
+              {ticket.messages.length}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Client Info */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">👤 Informations Client</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Informações do utilizador */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <User className="w-5 h-5 text-teal-500" />
+          Informações do utilizador
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-sm text-gray-600">Nom</p>
-            <p className="text-lg font-semibold text-gray-900">{ticket.user.name}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Nome</p>
+            <p className="text-sm font-semibold text-gray-900">{ticket.user.name}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Email</p>
-            <p className="text-lg font-semibold text-gray-900">{ticket.user.email}</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Email</p>
+            <p className="text-sm font-semibold text-gray-900">{ticket.user.email}</p>
           </div>
           {ticket.salon && (
             <div>
-              <p className="text-sm text-gray-600">Salon</p>
-              <p className="text-lg font-semibold text-gray-900">{ticket.salon.name}</p>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Salão</p>
+              <p className="text-sm font-semibold text-gray-900">{ticket.salon.name}</p>
             </div>
           )}
           <div>
-            <p className="text-sm text-gray-600">Créé le</p>
-            <p className="text-lg font-semibold text-gray-900">
-              {new Date(ticket.createdAt).toLocaleDateString('fr-FR', {
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Criado em</p>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+              <Calendar className="w-4 h-4 text-teal-500" />
+              {new Date(ticket.createdAt).toLocaleString('pt-PT', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
               })}
-            </p>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Description */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">📝 Description</h2>
-        <div className="prose prose-sm prose-blue max-w-none">
-          <p className="text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
+      {/* Descrição */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Tag className="w-5 h-5 text-teal-500" />
+          Descrição
+        </h2>
+        <div className="bg-gray-50 rounded-xl p-4">
+          <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{ticket.description}</p>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">💬 Messages ({ticket.messages.length})</h2>
-        
+      {/* Histórico de mensagens */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-teal-500" />
+          Histórico de mensagens ({ticket.messages.length})
+        </h2>
+
         <div className="space-y-4 mb-6">
           {ticket.messages.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">Aucun message pour le moment</p>
+            <div className="text-center py-8">
+              <MessageSquare className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">Nenhuma mensagem por enquanto</p>
+            </div>
           ) : (
             ticket.messages.map((message) => (
-              <div key={message.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div key={message.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold text-gray-900">{message.user.name}</p>
-                    <p className="text-xs text-gray-500">{message.user.email}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{message.user.name}</p>
+                      <p className="text-xs text-gray-400">{message.user.email}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    {new Date(message.createdAt).toLocaleDateString('fr-FR', {
+                  <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(message.createdAt).toLocaleString('pt-PT', {
                       year: 'numeric',
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
-                  </p>
+                  </span>
                 </div>
-                <p className="text-gray-700 whitespace-pre-wrap">{message.content}</p>
+                <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed ml-9">{message.content}</p>
               </div>
             ))
           )}
         </div>
 
-        {/* Send Message Form */}
+        {/* Formulário de resposta */}
         {ticket.status !== 'closed' && (
-          <div className="border-t border-gray-200 pt-6">
+          <div className="border-t-2 border-gray-100 pt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ajouter un message
+              Responder
             </label>
             <textarea
               value={messageContent}
               onChange={(e) => setMessageContent(e.target.value)}
-              placeholder="Écrivez votre message ici..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+              placeholder="Escreva a sua resposta..."
+              className="input-base resize-none"
               rows={4}
             />
             <button
               onClick={sendMessage}
               disabled={sendingMessage || !messageContent.trim()}
-              className="mt-3 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-3 bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {sendingMessage ? '📤 Envoi...' : '📤 Envoyer'}
+              {sendingMessage ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A enviar...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Enviar
+                </>
+              )}
             </button>
           </div>
         )}
       </div>
 
-      {/* Status Update */}
-      {ticket.status !== 'closed' && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Changer le statut</h2>
-          <div className="flex gap-2">
-            {['open', 'in_progress', 'resolved', 'closed'].map((status) => (
-              <button
-                key={status}
-                onClick={() => updateStatus(status)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                  ticket.status === status
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                }`}
-              >
-                {status === 'open' && '🔴 Ouvert'}
-                {status === 'in_progress' && '🟡 En cours'}
-                {status === 'resolved' && '✅ Résolu'}
-                {status === 'closed' && '⚫ Fermé'}
-              </button>
-            ))}
-          </div>
+      {/* Alterar estado */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-teal-500" />
+          Alterar estado
+        </h2>
+        <div className="flex flex-wrap gap-2">
+          {ticket.status === 'closed' ? (
+            <button
+              onClick={() => updateStatus('open')}
+              className="bg-teal-500 hover:bg-teal-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors inline-flex items-center gap-2"
+            >
+              <AlertCircle className="w-4 h-4" />
+              Reabrir
+            </button>
+          ) : (
+            <>
+              {['open', 'in_progress', 'resolved', 'closed'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => updateStatus(status)}
+                  className={`rounded-xl px-5 py-2.5 text-sm font-medium transition-colors inline-flex items-center gap-2 ${
+                    ticket.status === status
+                      ? 'bg-teal-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {getStatusIcon(status)}
+                  {status === 'open' && 'Aberto'}
+                  {status === 'in_progress' && 'Em curso'}
+                  {status === 'resolved' && 'Resolvido'}
+                  {status === 'closed' && 'Fechar o ticket'}
+                </button>
+              ))}
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

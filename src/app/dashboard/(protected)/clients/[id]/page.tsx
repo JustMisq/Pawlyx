@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ArrowLeft, Mail, Phone, MapPin, StickyNote, PawPrint, Plus, X, Save, Pencil, CalendarDays, FileText, Eye, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Animal {
@@ -45,6 +46,8 @@ interface Invoice {
   createdAt: string
 }
 
+const speciesLabels: Record<string, string> = { dog: 'Cão', cat: 'Gato', rabbit: 'Coelho', bird: 'Pássaro', other: 'Outro' }
+
 export default function ClientDetailsPage() {
   const params = useParams()
   const router = useRouter()
@@ -67,7 +70,6 @@ export default function ClientDetailsPage() {
     notes: '',
   })
 
-  // Charger le client
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -91,7 +93,6 @@ export default function ClientDetailsPage() {
         
         if (appointmentsRes.ok) {
           const allApts = await appointmentsRes.json()
-          // Filtrer les rendez-vous de ce client
           const clientApts = allApts.filter((apt: any) => 
             animals.some(a => a.id === apt.animalId)
           )
@@ -108,7 +109,7 @@ export default function ClientDetailsPage() {
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       } finally {
         setLoading(false)
       }
@@ -124,32 +125,22 @@ export default function ClientDetailsPage() {
       const res = await fetch('/api/animals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId,
-          ...formData,
-        }),
+        body: JSON.stringify({ clientId, ...formData }),
       })
 
       if (!res.ok) {
-        toast.error('Erreur lors de l\'ajout de l\'animal')
+        toast.error('Erro ao adicionar o animal')
         return
       }
 
       const newAnimal = await res.json()
       setAnimals([newAnimal, ...animals])
-      setFormData({
-        name: '',
-        species: 'dog',
-        breed: '',
-        color: '',
-        dateOfBirth: '',
-        notes: '',
-      })
+      setFormData({ name: '', species: 'dog', breed: '', color: '', dateOfBirth: '', notes: '' })
       setShowAddForm(false)
-      toast.success('Animal ajouté!')
+      toast.success('Animal adicionado!')
     } catch (error) {
       console.error('Error adding animal:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
@@ -162,274 +153,181 @@ export default function ClientDetailsPage() {
       })
 
       if (res.ok) {
-        toast.success('Notes sauvegardées!')
+        toast.success('Notas guardadas!')
         setEditingNotes(false)
         if (client) setClient({ ...client, notes: clientNotes })
       } else {
-        toast.error('Erreur lors de la sauvegarde')
+        toast.error('Erro ao guardar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
 
   return (
-    <div className="p-8 max-w-5xl">
-      {/* En-tête */}
-      <div className="mb-8">
-        <Link href="/dashboard/clients" className="text-primary hover:underline text-sm mb-4 inline-block">
-          ← Retour aux clients
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
+      {/* Header */}
+      <div className="mb-6">
+        <Link href="/dashboard/clients" className="text-teal-600 hover:text-teal-700 text-sm font-medium mb-4 inline-flex items-center gap-1.5 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Voltar aos clientes
         </Link>
         {client && (
-          <>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              {client.firstName} {client.lastName}
-            </h1>
-            <p className="text-gray-600">
-              Client depuis {new Date(client.createdAt).toLocaleDateString('fr-FR')}
-            </p>
-          </>
+          <div className="flex items-center gap-4 mt-2">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-teal">
+              {client.firstName[0]}{client.lastName[0]}
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{client.firstName} {client.lastName}</h1>
+              <p className="text-gray-500 text-sm">Cliente desde {new Date(client.createdAt).toLocaleDateString('pt-PT')}</p>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Infos de base */}
+      {/* Contact info */}
       {client && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Informations</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Informações</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
             {client.email && (
-              <p className="text-gray-700">
-                <span className="font-medium">Email :</span> {client.email}
-              </p>
+              <div className="flex items-center gap-2.5 text-gray-700">
+                <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+                <span className="text-sm">{client.email}</span>
+              </div>
             )}
             {client.phone && (
-              <p className="text-gray-700">
-                <span className="font-medium">Téléphone :</span> {client.phone}
-              </p>
+              <div className="flex items-center gap-2.5 text-gray-700">
+                <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                <span className="text-sm">{client.phone}</span>
+              </div>
             )}
             {client.address && (
-              <p className="text-gray-700 col-span-2">
-                <span className="font-medium">Adresse :</span> {client.address}
-              </p>
+              <div className="flex items-center gap-2.5 text-gray-700 sm:col-span-2">
+                <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                <span className="text-sm">{client.address}</span>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Suivi & Notes */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-blue-900">📝 Suivi & Notes</h2>
-          <Button
-            onClick={() => setEditingNotes(!editingNotes)}
-            className={`${
-              editingNotes
-                ? 'bg-gray-500 hover:bg-gray-600'
-                : 'bg-blue-500 hover:bg-blue-600'
-            } text-white`}
-          >
-            {editingNotes ? '❌ Annuler' : '✏️ Modifier'}
+      {/* Notes */}
+      <div className="bg-teal-50/50 border-2 border-teal-100 rounded-2xl p-5 mb-5">
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <StickyNote className="w-4 h-4 text-teal-600" />
+            <h2 className="font-semibold text-gray-900">Acompanhamento e Notas</h2>
+          </div>
+          <Button onClick={() => setEditingNotes(!editingNotes)} variant={editingNotes ? 'outline' : 'ghost'} size="sm">
+            {editingNotes ? <><X className="w-3.5 h-3.5" /> Cancelar</> : <><Pencil className="w-3.5 h-3.5" /> Editar</>}
           </Button>
         </div>
 
         {editingNotes ? (
           <div className="space-y-3">
-            <textarea
-              value={clientNotes}
-              onChange={(e) => setClientNotes(e.target.value)}
-              rows={5}
-              className="w-full px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Notes sur le client, préférences, comportement des animaux, allergies, etc."
-            />
-            <Button
-              onClick={handleSaveClientNotes}
-              className="bg-green-500 hover:bg-green-600 text-white w-full"
-            >
-              ✅ Sauvegarder
+            <textarea value={clientNotes} onChange={(e) => setClientNotes(e.target.value)} rows={5} className="input-base" placeholder="Notas sobre o cliente, preferências, comportamento dos animais, alergias, etc." />
+            <Button onClick={handleSaveClientNotes} className="w-full">
+              <Save className="w-4 h-4" /> Guardar
             </Button>
           </div>
         ) : (
-          <div className="bg-white p-4 rounded border border-blue-300 min-h-[120px]">
+          <div className="bg-white p-4 rounded-xl border border-teal-100 min-h-[100px]">
             {clientNotes ? (
-              <p className="text-gray-700 whitespace-pre-wrap">{clientNotes}</p>
+              <p className="text-gray-700 text-sm whitespace-pre-wrap">{clientNotes}</p>
             ) : (
-              <p className="text-gray-400 italic">Aucune note pour le moment</p>
+              <p className="text-gray-400 italic text-sm">Nenhuma nota de momento</p>
             )}
           </div>
         )}
       </div>
 
-      {/* Animaux */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">🐕 Animaux ({animals.length})</h2>
-          <Button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {showAddForm ? '❌ Annuler' : '➕ Ajouter'}
+      {/* Animals */}
+      <div className="mb-5">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <PawPrint className="w-5 h-5 text-teal-600" />
+            <h2 className="text-lg font-bold text-gray-900">Animais ({animals.length})</h2>
+          </div>
+          <Button onClick={() => setShowAddForm(!showAddForm)} variant={showAddForm ? 'outline' : 'default'} size="sm">
+            {showAddForm ? <><X className="w-3.5 h-3.5" /> Cancelar</> : <><Plus className="w-3.5 h-3.5" /> Adicionar</>}
           </Button>
         </div>
 
-        {/* Add Animal Form */}
         {showAddForm && (
-          <div className="bg-white rounded-lg p-6 border border-gray-200 mb-6">
+          <div className="bg-white rounded-2xl p-5 border-2 border-gray-100 mb-4">
             <form onSubmit={handleAddAnimal} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="Ex: Rex"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome *</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required className="input-base" placeholder="Ex: Rex" />
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Espèce *
-                  </label>
-                  <select
-                    value={formData.species}
-                    onChange={(e) =>
-                      setFormData({ ...formData, species: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  >
-                    <option value="dog">Chien</option>
-                    <option value="cat">Chat</option>
-                    <option value="rabbit">Lapin</option>
-                    <option value="bird">Oiseau</option>
-                    <option value="other">Autre</option>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Espécie *</label>
+                  <select value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} className="input-base">
+                    <option value="dog">Cão</option>
+                    <option value="cat">Gato</option>
+                    <option value="rabbit">Coelho</option>
+                    <option value="bird">Pássaro</option>
+                    <option value="other">Outro</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Race
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.breed}
-                    onChange={(e) =>
-                      setFormData({ ...formData, breed: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                    placeholder="Ex: Golden Retriever"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Raça</label>
+                  <input type="text" value={formData.breed} onChange={(e) => setFormData({ ...formData, breed: e.target.value })} className="input-base" placeholder="Ex: Golden Retriever" />
                 </div>
               </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Couleur
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.color}
-                    onChange={(e) =>
-                      setFormData({ ...formData, color: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                    placeholder="Ex: Blond"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Cor</label>
+                  <input type="text" value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} className="input-base" placeholder="Ex: Dourado" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date de naissance
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dateOfBirth: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Data de nascimento</label>
+                  <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} className="input-base" />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="Ex: Allergies, comportement, etc."
-                  rows={3}
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+                <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="input-base resize-none" placeholder="Alergias, comportamento, etc." rows={3} />
               </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90"
-              >
-                Ajouter l&apos;animal
-              </Button>
+              <Button type="submit" className="w-full">Adicionar o animal</Button>
             </form>
           </div>
         )}
 
-        {/* Animals List */}
         {animals.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-gray-500">Aucun animal pour ce client</p>
+          <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-gray-100">
+            <PawPrint className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500">Nenhum animal para este cliente</p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3">
             {animals.map((animal) => (
-              <div
-                key={animal.id}
-                className="bg-white rounded-lg p-6 border border-gray-200 hover:border-primary transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">
-                      {animal.name}
-                    </h3>
-                    <div className="mt-2 space-y-1 text-gray-600">
-                      <p>🐾 Espèce: {animal.species}</p>
-                      {animal.breed && <p>📋 Race: {animal.breed}</p>}
-                      {animal.color && <p>🎨 Couleur: {animal.color}</p>}
-                      {animal.dateOfBirth && (
-                        <p>
-                          🎂 Né le:{' '}
-                          {new Date(animal.dateOfBirth).toLocaleDateString(
-                            'fr-FR'
-                          )}
-                        </p>
-                      )}
-                      {animal.notes && (
-                        <p className="text-blue-700 font-medium">📝 {animal.notes}</p>
-                      )}
+              <div key={animal.id} className="bg-white rounded-2xl p-5 border-2 border-gray-100 hover:border-teal-200 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-900">{animal.name}</h3>
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-teal-50 text-teal-700 px-2 py-1 rounded-lg">
+                        <PawPrint className="w-3 h-3" /> {speciesLabels[animal.species] || animal.species}
+                      </span>
+                      {animal.breed && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.breed}</span>}
+                      {animal.color && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.color}</span>}
+                      {animal.dateOfBirth && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">Nascido em {new Date(animal.dateOfBirth).toLocaleDateString('pt-PT')}</span>}
                     </div>
+                    {animal.notes && <p className="text-sm text-teal-700 mt-2">{animal.notes}</p>}
                   </div>
                   <Link href={`/dashboard/animals/${animal.id}`}>
-                    <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-                      Voir détails
-                    </Button>
+                    <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /> Detalhes</Button>
                   </Link>
                 </div>
               </div>
@@ -438,44 +336,36 @@ export default function ClientDetailsPage() {
         )}
       </div>
 
-      {/* Rendez-vous */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">📅 Rendez-vous ({appointments.length})</h2>
+      {/* Appointments */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="w-5 h-5 text-teal-600" />
+          <h2 className="font-bold text-gray-900">Consultas ({appointments.length})</h2>
+        </div>
         
         {appointments.length === 0 ? (
-          <p className="text-gray-500">Aucun rendez-vous</p>
+          <p className="text-gray-400 text-sm">Nenhuma consulta</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {appointments.map(apt => (
-              <div key={apt.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div className="flex justify-between items-start">
+              <div key={apt.id} className="p-3.5 border border-gray-100 rounded-xl hover:bg-gray-50/50 transition-colors">
+                <div className="flex justify-between items-start gap-3">
                   <div>
-                    <p className="font-medium text-gray-900">{apt.service?.name || 'Service'}</p>
-                    <p className="text-sm text-gray-600">
-                      {new Date(apt.startTime).toLocaleDateString('fr-FR')} à{' '}
-                      {new Date(apt.startTime).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                    <p className="font-medium text-gray-900 text-sm">{apt.service?.name || 'Service'}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {new Date(apt.startTime).toLocaleDateString('pt-PT')} às {new Date(apt.startTime).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        apt.status === 'completed'
-                          ? 'bg-green-100 text-green-700'
-                          : apt.status === 'cancelled'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
-                    >
-                      {apt.status === 'completed'
-                        ? '✅ Complété'
-                        : apt.status === 'cancelled'
-                        ? '❌ Annulé'
-                        : '⏳ Planifié'}
+                  <div className="text-right shrink-0">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                      apt.status === 'completed' ? 'bg-emerald-50 text-emerald-700'
+                        : apt.status === 'cancelled' ? 'bg-red-50 text-red-700'
+                        : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {apt.status === 'completed' ? <CheckCircle2 className="w-3 h-3" /> : apt.status === 'cancelled' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {apt.status === 'completed' ? 'Concluído' : apt.status === 'cancelled' ? 'Cancelado' : 'Agendado'}
                     </span>
-                    <p className="text-gray-900 font-medium mt-2">{apt.totalPrice}€</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{apt.totalPrice}€</p>
                   </div>
                 </div>
               </div>
@@ -484,43 +374,31 @@ export default function ClientDetailsPage() {
         )}
       </div>
 
-      {/* Factures */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">💰 Factures ({invoices.length})</h2>
+      {/* Invoices */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="w-5 h-5 text-teal-600" />
+          <h2 className="font-bold text-gray-900">Faturas ({invoices.length})</h2>
+        </div>
         
         {invoices.length === 0 ? (
-          <p className="text-gray-500">Aucune facture</p>
+          <p className="text-gray-400 text-sm">Nenhuma fatura</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {invoices.map(invoice => (
-              <div
-                key={invoice.id}
-                className="p-4 border border-gray-200 rounded-lg flex justify-between items-center hover:bg-gray-50"
-              >
+              <div key={invoice.id} className="p-3.5 border border-gray-100 rounded-xl flex justify-between items-center hover:bg-gray-50/50 transition-colors">
                 <div>
-                  <p className="font-medium text-gray-900">{invoice.invoiceNumber}</p>
-                  <p className="text-sm text-gray-600">
-                    {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
-                  </p>
+                  <p className="font-medium text-gray-900 text-sm">{invoice.invoiceNumber}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{new Date(invoice.createdAt).toLocaleDateString('pt-PT')}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-medium text-gray-900">{invoice.total}€</p>
-                  <span
-                    className={`text-xs px-3 py-1 rounded-full font-medium inline-block ${
-                      invoice.status === 'paid'
-                        ? 'bg-green-100 text-green-700'
-                        : invoice.status === 'sent'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
-                  >
-                    {invoice.status === 'paid'
-                      ? '✅ Payée'
-                      : invoice.status === 'sent'
-                      ? '📧 Envoyée'
-                      : invoice.status === 'draft'
-                      ? '📝 Brouillon'
-                      : '❌ Annulée'}
+                  <p className="font-semibold text-gray-900 text-sm">{invoice.total}€</p>
+                  <span className={`text-xs px-2 py-0.5 rounded-lg font-medium inline-block mt-1 ${
+                    invoice.status === 'paid' ? 'bg-emerald-50 text-emerald-700'
+                      : invoice.status === 'sent' ? 'bg-blue-50 text-blue-700'
+                      : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {invoice.status === 'paid' ? 'Paga' : invoice.status === 'sent' ? 'Enviada' : invoice.status === 'draft' ? 'Rascunho' : 'Cancelada'}
                   </span>
                 </div>
               </div>

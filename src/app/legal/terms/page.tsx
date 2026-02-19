@@ -1,306 +1,306 @@
 export default function TermsPage() {
   return (
     <article className="bg-white rounded-lg p-8 shadow-sm">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Conditions d'Utilisation</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Termos de Utilização</h1>
 
       <div className="bg-blue-50 p-4 rounded-lg mb-8 border border-blue-200">
         <p className="text-sm text-gray-700">
-          <strong>Dernière mise à jour :</strong> 5 février 2026<br/>
-          Ces conditions d'utilisation régissent l'accès et l'utilisation de la plateforme Groomly. 
-          En utilisant Groomly, vous acceptez ces conditions.
+          <strong>Última atualização:</strong> 5 de fevereiro de 2026<br/>
+          Estes termos de utilização regem o acesso e a utilização da plataforma Pawlyx. 
+          Ao utilizar a Pawlyx, aceita estes termos.
         </p>
       </div>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Définitions</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Definições</h2>
         
         <div className="space-y-2 text-gray-700">
-          <p><strong>"Service" :</strong> La plateforme Groomly et ses fonctionnalités</p>
-          <p><strong>"Utilisateur" :</strong> Vous, la personne physique utilisant le Service</p>
-          <p><strong>"Contenu" :</strong> Tous les données, informations saisies par l'Utilisateur</p>
-          <p><strong>"Groomly Portugal" :</strong> L'entité exploitant la plateforme</p>
+          <p><strong>"Serviço":</strong> A plataforma Pawlyx e as suas funcionalidades</p>
+          <p><strong>"Utilizador":</strong> Você, a pessoa singular que utiliza o Serviço</p>
+          <p><strong>"Conteúdo":</strong> Todos os dados, informações introduzidos pelo Utilizador</p>
+          <p><strong>"Pawlyx Portugal":</strong> A entidade que explora a plataforma</p>
         </div>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Accès et compte utilisateur</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Acesso e conta de utilizador</h2>
         
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">2.1 Créer un compte</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">2.1 Criar uma conta</h3>
         <p className="text-gray-700 mb-3">
-          Pour utiliser Groomly, vous devez :
+          Para utilizar a Pawlyx, deve:
         </p>
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Être âgé d'au moins 18 ans</li>
-          <li>Fournir des informations exactes et complètes</li>
-          <li>Accepter ces conditions</li>
-          <li>Être autorisé par la loi à utiliser le Service</li>
+          <li>Ter pelo menos 18 anos de idade</li>
+          <li>Fornecer informações exatas e completas</li>
+          <li>Aceitar estes termos</li>
+          <li>Estar autorizado por lei a utilizar o Serviço</li>
         </ul>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">2.2 Responsabilité de votre compte</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">2.2 Responsabilidade da sua conta</h3>
         <p className="text-gray-700">
-          Vous êtes responsable de la confidentialité de votre mot de passe et de toute activité effectuée sous votre compte. 
-          Vous acceptez de nous notifier immédiatement de tout accès non autorisé.
+          É responsável pela confidencialidade da sua palavra-passe e por toda a atividade realizada na sua conta. 
+          Aceita notificar-nos imediatamente de qualquer acesso não autorizado.
         </p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-4">2.3 Résiliation de compte</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-4">2.3 Rescisão de conta</h3>
         <p className="text-gray-700">
-          Vous pouvez résilier votre compte à tout moment. Votre abonnement restera actif jusqu'à la fin de la période de facturation.
+          Pode rescindir a sua conta a qualquer momento. A sua subscrição manter-se-á ativa até ao final do período de faturação.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Abonnement et paiement</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Subscrição e pagamento</h2>
         
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.1 Les plans</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.1 Os planos</h3>
         <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-gray-700 mb-4">
-          <p><strong>Plan Mensuel :</strong> 15€ HT / 18,45€ TTC (+ 23% IVA)</p>
-          <p><strong>Plan Annuel :</strong> 150€ HT / 184,50€ TTC (+ 23% IVA)</p>
-          <p className="text-sm"><strong>Note :</strong> Prix nets affichés pour professionnels HT. Consommateurs finaux payènt TTC.</p>
-          <p className="text-sm">Les prix peuvent être modifiés avec 30 jours de préavis.</p>
+          <p><strong>Plano Mensal:</strong> 15€ sem IVA / 18,45€ com IVA (+ 23% IVA)</p>
+          <p><strong>Plano Anual:</strong> 150€ sem IVA / 184,50€ com IVA (+ 23% IVA)</p>
+          <p className="text-sm"><strong>Nota:</strong> Preços líquidos apresentados para profissionais sem IVA. Consumidores finais pagam com IVA.</p>
+          <p className="text-sm">Os preços podem ser alterados com 30 dias de aviso prévio.</p>
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.2 Renouvellement automatique</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.2 Renovação automática</h3>
         <p className="text-gray-700 mb-3">
-          Votre abonnement se renouvelle automatiquement à la fin de chaque période. 
-          Vous pouvez annuler à tout moment via votre compte.
+          A sua subscrição renova-se automaticamente no final de cada período. 
+          Pode cancelar a qualquer momento através da sua conta.
         </p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.3 Paiement</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.3 Pagamento</h3>
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Les paiements s'effectuent via Stripe de manière sécurisée</li>
-          <li>Nous conservons vos données de paiement conformément aux normes PCI-DSS</li>
-          <li>Les factures sont générées automatiquement après chaque paiement</li>
-          <li>Les factures sont conservées 6 ans selon le droit fiscal portugais</li>
+          <li>Os pagamentos são efetuados através da Stripe de forma segura</li>
+          <li>Conservamos os seus dados de pagamento em conformidade com as normas PCI-DSS</li>
+          <li>As faturas são geradas automaticamente após cada pagamento</li>
+          <li>As faturas são conservadas 6 anos segundo o direito fiscal português</li>
         </ul>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.4 Droit de rétractation</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">3.4 Direito de retratação</h3>
         <p className="text-gray-700 mb-4">
-          Conformément au Código do Consumidor portugais, vous avez le droit de vous rétracter dans les 14 jours suivant votre achat, 
-          sans avoir à justifier votre décision. <strong>Ce droit s'applique uniquement aux particuliers (consommateurs finaux)</strong>.
+          Em conformidade com o Código do Consumidor português, tem o direito de se retratar no prazo de 14 dias após a sua compra, 
+          sem ter de justificar a sua decisão. <strong>Este direito aplica-se apenas a particulares (consumidores finais)</strong>.
         </p>
         <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4 text-sm text-gray-700">
-          <p><strong>⚠️ Pour les professionnels :</strong> Les toiletteurs utilisant Groomly pour leur activité professionnelle ne bénéficient pas du droit de rétractation. 
-          Les conditions commerciales standard s'appliquent.</p>
+          <p><strong>⚠️ Para profissionais:</strong> Os tosquiadores que utilizam a Pawlyx para a sua atividade profissional não beneficiam do direito de retratação. 
+          Aplicam-se as condições comerciais padrão.</p>
         </div>
-        <p className="text-gray-700">Contactez contact@groomly.pt pour exercer ce droit (particuliers uniquement).</p>
+        <p className="text-gray-700">Contacte contact@pawlyx.com para exercer este direito (apenas particulares).</p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-4">3.5 Remboursements</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3 mt-4">3.5 Reembolsos</h3>
         <p className="text-gray-700">
-          Les remboursements sont traités selon les conditions du Código do Consumidor. 
-          Après annulation pendant la période de rétractation, le remboursement s'effectue dans 14 jours.
+          Os reembolsos são tratados conforme as condições do Código do Consumidor. 
+          Após cancelamento durante o período de retratação, o reembolso é efetuado no prazo de 14 dias.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Restrictions et interdictions</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Restrições e proibições</h2>
         
-        <p className="text-gray-700 mb-4">Vous acceptez de ne pas :</p>
+        <p className="text-gray-700 mb-4">Aceita não:</p>
         
         <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>Utiliser le Service de manière illégale ou contraire à la loi portugaise</li>
-          <li>Partager votre compte avec des tiers</li>
-          <li>Accéder aux données de manière non autorisée (hacking, reverse engineering)</li>
-          <li>Diffuser du contenu offensant, discriminatoire ou contraire à l'éthique</li>
-          <li>Utiliser le Service de manière excessive ou abusive</li>
-          <li>Transférer votre compte sans consentement écrit</li>
-          <li>Contourner les limitations techniques du Service</li>
-          <li>Exploiter des vulnérabilités (divulguer responsablement à security@groomly.pt)</li>
+          <li>Utilizar o Serviço de forma ilegal ou contrária à lei portuguesa</li>
+          <li>Partilhar a sua conta com terceiros</li>
+          <li>Aceder aos dados de forma não autorizada (hacking, engenharia reversa)</li>
+          <li>Difundir conteúdo ofensivo, discriminatório ou contrário à ética</li>
+          <li>Utilizar o Serviço de forma excessiva ou abusiva</li>
+          <li>Transferir a sua conta sem consentimento escrito</li>
+          <li>Contornar as limitações técnicas do Serviço</li>
+          <li>Explorar vulnerabilidades (divulgar responsavelmente a security@pawlyx.com)</li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Propriété du contenu</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Propriedade do conteúdo</h2>
         
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.1 Contenu Groomly</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.1 Conteúdo Pawlyx</h3>
         <p className="text-gray-700 mb-4">
-          Tous les logos, textes, interfaces, graphiques et codes de Groomly sont la propriété exclusive de Groomly Portugal 
-          ou de ses partenaires autorisés. Vous n'avez pas le droit de les reproduire ou modifier.
+          Todos os logótipos, textos, interfaces, gráficos e códigos da Pawlyx são propriedade exclusiva da Pawlyx Portugal 
+          ou dos seus parceiros autorizados. Não tem o direito de os reproduzir ou modificar.
         </p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.2 Votre contenu</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.2 O seu conteúdo</h3>
         <p className="text-gray-700 mb-4">
-          Vous conservez tous les droits sur le contenu que vous créez (clients, animaux, photos, etc.). 
-          En utilisant Groomly, vous nous accordez une licence pour stocker et traiter vos données selon cette politique.
+          Mantém todos os direitos sobre o conteúdo que cria (clientes, animais, fotos, etc.). 
+          Ao utilizar a Pawlyx, concede-nos uma licença para armazenar e tratar os seus dados conforme esta política.
         </p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.3 Données clients</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">5.3 Dados de clientes</h3>
         <p className="text-gray-700">
-          Si vous utilisez Groomly pour gérer les données de clients, vous êtes responsable du traitement de ces données 
-          conformément à la LPDP et au RGPD. Groomly est votre sous-traitant.
+          Se utiliza a Pawlyx para gerir os dados de clientes, é responsável pelo tratamento desses dados 
+          em conformidade com a LPDP e o RGPD. A Pawlyx é o seu subcontratante.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Limitation de responsabilité</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Limitação de responsabilidade</h2>
         
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.1 Déclaration de non-garantie</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.1 Declaração de não-garantia</h3>
         <p className="text-gray-700 mb-4">
-          Le Service est fourni "tel quel", sans garantie d'aucune sorte. Nous ne garantissons pas :
+          O Serviço é fornecido "tal como está", sem garantia de qualquer tipo. Não garantimos:
         </p>
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Que le Service fonctionnera sans interruption</li>
-          <li>Que le Service ne contiendra pas d'erreurs</li>
-          <li>Que les données seront toujours disponibles</li>
-          <li>Que les pannes internet de l'utilisateur n'affecteront pas l'accès au Service</li>
+          <li>Que o Serviço funcionará sem interrupção</li>
+          <li>Que o Serviço não conterá erros</li>
+          <li>Que os dados estarão sempre disponíveis</li>
+          <li>Que as falhas de internet do utilizador não afetarão o acesso ao Serviço</li>
         </ul>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.2 Qualité de la connexion internet</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.2 Qualidade da ligação à internet</h3>
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 text-gray-700">
           <p className="mb-2">
-            <strong>L'utilisateur est responsable de :</strong>
+            <strong>O utilizador é responsável por:</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 text-sm">
-            <li>La qualité de sa connexion internet</li>
-            <li>La maintenance de son matériel informatique</li>
-            <li>La sécurité de ses identifiants</li>
-            <li>La conformité de son système d'exploitation</li>
+            <li>A qualidade da sua ligação à internet</li>
+            <li>A manutenção do seu equipamento informático</li>
+            <li>A segurança das suas credenciais</li>
+            <li>A conformidade do seu sistema operativo</li>
           </ul>
           <p className="mt-3 text-sm">
-            Groomly ne peut être tenu responsable des pannes internet, des problèmes de connectivité ou des équipements de l'utilisateur.
+            A Pawlyx não pode ser responsabilizada por falhas de internet, problemas de conectividade ou equipamentos do utilizador.
           </p>
         </div>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.3 Limitations de dommages</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">6.3 Limitações de danos</h3>
         <p className="text-gray-700 mb-4">
-          Sauf si interdit par la loi, Groomly Portugal ne sera pas responsable de :
+          Exceto se proibido por lei, a Pawlyx Portugal não será responsável por:
         </p>
         <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>Dommages indirects, incidents ou consécutifs</li>
-          <li>Pertes de profits ou de revenus</li>
-          <li>Pertes de données dues à vos actions</li>
-          <li>Dommages causés par des tiers ou des contretemps externes</li>
+          <li>Danos indiretos, incidentais ou consequentes</li>
+          <li>Perdas de lucros ou receitas</li>
+          <li>Perdas de dados devidas às suas ações</li>
+          <li>Danos causados por terceiros ou contratempos externos</li>
         </ul>
 
         <p className="text-gray-700 mt-4">
-          Notre responsabilité est limitée au montant de votre dernier paiement réel à Groomly.
+          A nossa responsabilidade está limitada ao montante do seu último pagamento efetivo à Pawlyx.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Force Majeure</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Força Maior</h2>
         
         <p className="text-gray-700 mb-4">
-          Groomly ne sera pas responsable de tout manquement ou délai dans l'exécution de ses obligations si cela résulte d'un événement indépendant de sa volonté, incluant :
+          A Pawlyx não será responsável por qualquer incumprimento ou atraso na execução das suas obrigações se tal resultar de um evento fora do seu controlo, incluindo:
         </p>
         
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Cataclysmes naturels (tremblements de terre, inondations, tempetes)</li>
-          <li>Créises sanitaires (pandémies, épidémies)</li>
-          <li>Conflits armés ou attaques terroristes</li>
-          <li>Décisions gouvernementales ou restrictions légales</li>
-          <li>Pannes d'infrastructure dépassant notre contrôle (FAI, prestataires externes)</li>
-          <li>Attaques cybernétiques massives indéfendables</li>
+          <li>Catástrofes naturais (sismos, inundações, tempestades)</li>
+          <li>Crises sanitárias (pandemias, epidemias)</li>
+          <li>Conflitos armados ou ataques terroristas</li>
+          <li>Decisões governamentais ou restrições legais</li>
+          <li>Falhas de infraestrutura fora do nosso controlo (ISP, prestadores externos)</li>
+          <li>Ataques cibernéticos massivos indefénsáveis</li>
         </ul>
         
         <p className="text-gray-700">
-          En cas de force majeure, Groomly fera les efforts raisonnables pour minimiser l'impact et notifiera les utilisateurs.
+          Em caso de força maior, a Pawlyx fará esforços razoáveis para minimizar o impacto e notificará os utilizadores.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Droit d'utilisation du Service</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Direito de utilização do Serviço</h2>
         
-        <p className="text-gray-700 mb-4">Groomly se réserve le droit de :</p>
+        <p className="text-gray-700 mb-4">A Pawlyx reserva-se o direito de:</p>
         
         <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>Suspendre ou terminer votre accès en cas de violation de ces conditions</li>
-          <li>Modifier le Service (avec préavis de 30 jours si c'est significatif)</li>
-          <li>Ajuster la tarification (avec 30 jours de préavis)</li>
-          <li>Interrompre le Service temporairement pour maintenance</li>
-          <li>Refuser l'accès à certains utilisateurs</li>
+          <li>Suspender ou terminar o seu acesso em caso de violação destes termos</li>
+          <li>Modificar o Serviço (com aviso prévio de 30 dias se for significativo)</li>
+          <li>Ajustar a tarifação (com 30 dias de aviso prévio)</li>
+          <li>Interromper o Serviço temporariamente para manutenção</li>
+          <li>Recusar o acesso a determinados utilizadores</li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Protection du consommateur</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Proteção do consumidor</h2>
         
         <p className="text-gray-700 mb-4">
-          Ces conditions sont régies par le <strong>Código do Consumidor portugais</strong> et les lois de protection des consommateurs.
+          Estes termos são regidos pelo <strong>Código do Consumidor português</strong> e pelas leis de proteção dos consumidores.
         </p>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">9.1 Droits du consommateur</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">9.1 Direitos do consumidor</h3>
         <p className="text-gray-700">
-          Si vous être un consommateur, <strong>vous bénéficiez de droits non renonçables</strong>, notamment :
+          Se é consumidor, <strong>beneficia de direitos irrenunciáveis</strong>, nomeadamente:
         </p>
         <ul className="list-disc list-inside space-y-2 text-gray-700 mb-4">
-          <li>Droit de rétractation (14 jours)</li>
-          <li>Protection contre les clauses abusives</li>
-          <li>Droit à l'information claire</li>
-          <li>Droit à la résolution de litiges</li>
+          <li>Direito de retratação (14 dias)</li>
+          <li>Proteção contra cláusulas abusivas</li>
+          <li>Direito à informação clara</li>
+          <li>Direito à resolução de litígios</li>
         </ul>
 
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">9.2 Résolution de litiges</h3>
+        <h3 className="text-lg font-semibold text-gray-800 mb-3">9.2 Resolução de litígios</h3>
         <p className="text-gray-700 mb-3">
-          En cas de litige, nous vous invitons à nous contacter pour trouver une solution amiable.
+          Em caso de litígio, convidamo-lo a contactar-nos para encontrar uma solução amigável.
         </p>
 
         <div className="bg-blue-50 p-4 rounded-lg text-gray-700">
-          <p><strong>Email :</strong> contact@groomly.pt</p>
+          <p><strong>Email:</strong> contact@pawlyx.com</p>
           <p className="mt-2">
-            Si le litige persiste, vous pouvez saisir les juridictions compétentes au Portugal ou utiliser la 
-            plateforme de résolution des litiges en ligne de l'UE : https://ec.europa.eu/consumers/odr
+            Se o litígio persistir, pode recorrer às jurisdições competentes em Portugal ou utilizar a 
+            plataforma de resolução de litígios online da UE: https://ec.europa.eu/consumers/odr
           </p>
         </div>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Conformité légale</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Conformidade legal</h2>
         
         <p className="text-gray-700">
-          Ces conditions d'utilisation sont conformes à :
+          Estes termos de utilização estão em conformidade com:
         </p>
         
         <ul className="list-disc list-inside space-y-2 text-gray-700">
-          <li>Código do Consumidor (Protection du Consommateur)</li>
-          <li>Lei de Protecção de Dados Pessoais (LPDP)</li>
-          <li>RGPD (Règlement UE 2016/679)</li>
-          <li>Lei das Telecomunicações Electrónicas (Directiva Cookies UE)</li>
+          <li>Código do Consumidor (Proteção do Consumidor)</li>
+          <li>Lei de Proteção de Dados Pessoais (LPDP)</li>
+          <li>RGPD (Regulamento UE 2016/679)</li>
+          <li>Lei das Telecomunicações Eletrónicas (Diretiva Cookies UE)</li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Modifications des conditions</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Alterações aos termos</h2>
         
         <p className="text-gray-700">
-          Groomly peut modifier ces conditions à tout moment. Les modifications significatives seront annoncées 
-          avec au minimum 30 jours de préavis par email. Votre utilisation continue du Service signifie votre acceptation.
+          A Pawlyx pode alterar estes termos a qualquer momento. As alterações significativas serão anunciadas 
+          com um mínimo de 30 dias de aviso prévio por email. A sua utilização contínua do Serviço significa a sua aceitação.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Droit applicable et juridiction</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">12. Lei aplicável e jurisdição</h2>
         
         <p className="text-gray-700 mb-4">
-          Ces conditions d'utilisation sont régies par la <strong>loi portugaise</strong>.
+          Estes termos de utilização são regidos pela <strong>lei portuguesa</strong>.
         </p>
 
         <p className="text-gray-700">
-          Tout litige découlant ou en rapport avec ces conditions sera soumis à la juridiction compétente au Portugal.
+          Qualquer litígio decorrente ou relacionado com estes termos será submetido à jurisdição competente em Portugal.
         </p>
 
         <div className="bg-yellow-50 p-4 rounded-lg mt-4 text-gray-700 border border-yellow-200">
           <p className="text-sm">
-            <strong>Exception :</strong> Si vous êtes un consommateur au Portugal, vous pouvez saisir le tribunal civil 
-            ou la juridiction compétente selon le droit portugais.
+            <strong>Exceção:</strong> Se é consumidor em Portugal, pode recorrer ao tribunal cível 
+            ou à jurisdição competente segundo o direito português.
           </p>
         </div>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">13. Contact</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">13. Contacto</h2>
         
         <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-gray-700">
-          <p><strong>Questions sur ces conditions ?</strong></p>
-          <p>Email : contact@groomly.pt</p>
-          <p>Support : support@groomly.pt</p>
-          <p className="text-sm mt-4">Nous répondrons à votre requête dans les 10 jours ouvrables.</p>
+          <p><strong>Questões sobre estes termos?</strong></p>
+          <p>Email: contact@pawlyx.com</p>
+          <p>Suporte: support@pawlyx.com</p>
+          <p className="text-sm mt-4">Responderemos ao seu pedido no prazo de 10 dias úteis.</p>
         </div>
       </section>
 
       <section className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <p className="text-sm text-gray-700">
-          <strong>Dernière mise à jour :</strong> 5 février 2026<br/>
-          <strong>Entrée en vigueur :</strong> 5 février 2026
+          <strong>Última atualização:</strong> 5 de fevereiro de 2026<br/>
+          <strong>Entrada em vigor:</strong> 5 de fevereiro de 2026
         </p>
       </section>
     </article>

@@ -1,5 +1,5 @@
 /**
- * Sentry Configuration for Groomly
+ * Sentry Configuration for Pawlyx
  * Error tracking and performance monitoring
  */
 

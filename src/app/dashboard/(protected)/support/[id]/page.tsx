@@ -3,6 +3,8 @@
 import { useEffect, useState, use, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { ArrowLeft, Send, CheckCircle2, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Message {
   id: string
@@ -35,17 +37,17 @@ interface Ticket {
 }
 
 const categoryLabels: Record<string, string> = {
-  general: 'Général',
-  billing: 'Facturation',
-  technical: 'Technique',
-  feature_request: 'Suggestion',
+  general: 'Geral',
+  billing: 'Faturação',
+  technical: 'Técnico',
+  feature_request: 'Sugestão',
   bug: 'Bug',
 }
 
 const priorityLabels: Record<string, string> = {
-  low: 'Basse',
-  normal: 'Normale',
-  high: 'Haute',
+  low: 'Baixa',
+  normal: 'Normal',
+  high: 'Alta',
   urgent: 'Urgente',
 }
 
@@ -57,11 +59,11 @@ const priorityColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  open: 'Ouvert',
-  in_progress: 'En cours',
-  waiting_customer: 'En attente de réponse',
-  resolved: 'Résolu',
-  closed: 'Fermé',
+  open: 'Aberto',
+  in_progress: 'Em curso',
+  waiting_customer: 'A aguardar resposta',
+  resolved: 'Resolvido',
+  closed: 'Fechado',
 }
 
 const statusColors: Record<string, string> = {
@@ -90,11 +92,11 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         setTicket(data.ticket)
         setIsAdmin(data.isAdmin)
       } else {
-        toast.error('Ticket non trouvé')
+        toast.error('Ticket não encontrado')
         router.push('/dashboard/support')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     } finally {
       setLoading(false)
     }
@@ -123,13 +125,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         setNewMessage('')
         setIsInternal(false)
         fetchTicket()
-        toast.success('Message envoyé')
+        toast.success('Mensagem enviada')
       } else {
         const data = await res.json()
-        toast.error(data.message || 'Erreur')
+        toast.error(data.message || 'Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     } finally {
       setSending(false)
     }
@@ -145,17 +147,17 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
       if (res.ok) {
         fetchTicket()
-        toast.success('Statut mis à jour')
+        toast.success('Estado atualizado')
       } else {
-        toast.error('Erreur')
+        toast.error('Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     }
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    return new Date(dateString).toLocaleDateString('pt-PT', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
@@ -167,7 +169,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
@@ -177,7 +179,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -185,10 +187,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             onClick={() => router.push('/dashboard/support')}
             className="text-gray-500 hover:text-gray-700 mb-2 flex items-center gap-1"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Retour
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
           </button>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{ticket.ticketNumber}</h1>
@@ -208,38 +208,38 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             <select
               value={ticket.status}
               onChange={(e) => handleUpdateStatus(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+              className="input-base text-sm"
             >
-              <option value="open">Ouvert</option>
-              <option value="in_progress">En cours</option>
-              <option value="waiting_customer">En attente client</option>
-              <option value="resolved">Résolu</option>
-              <option value="closed">Fermé</option>
+              <option value="open">Aberto</option>
+              <option value="in_progress">Em curso</option>
+              <option value="waiting_customer">A aguardar cliente</option>
+              <option value="resolved">Resolvido</option>
+              <option value="closed">Fechado</option>
             </select>
           </div>
         )}
       </div>
 
       {/* Infos ticket */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-4">
         <div className="flex flex-wrap gap-6 text-sm">
           <div>
-            <span className="text-gray-500">Catégorie:</span>
+            <span className="text-gray-500">Categoria:</span>
             <span className="ml-2 font-medium">{categoryLabels[ticket.category]}</span>
           </div>
           <div>
-            <span className="text-gray-500">Créé le:</span>
+            <span className="text-gray-500">Criado em:</span>
             <span className="ml-2 font-medium">{formatDate(ticket.createdAt)}</span>
           </div>
           {isAdmin && (
             <div>
-              <span className="text-gray-500">Utilisateur:</span>
+              <span className="text-gray-500">Utilizador:</span>
               <span className="ml-2 font-medium">{ticket.user.email}</span>
             </div>
           )}
           {ticket.resolvedAt && (
             <div>
-              <span className="text-gray-500">Résolu le:</span>
+              <span className="text-gray-500">Resolvido em:</span>
               <span className="ml-2 font-medium">{formatDate(ticket.resolvedAt)}</span>
             </div>
           )}
@@ -251,25 +251,25 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
         {ticket.messages.map((message) => (
           <div
             key={message.id}
-            className={`rounded-xl p-4 ${
+            className={`rounded-2xl p-4 ${
               message.isInternal
                 ? 'bg-yellow-50 border-2 border-yellow-200'
                 : message.isStaffReply
-                ? 'bg-pink-50 border border-pink-200 ml-8'
-                : 'bg-white border border-gray-200 mr-8'
+                ? 'bg-teal-50 border border-teal-100 ml-8'
+                : 'bg-white border-2 border-gray-100 mr-8'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
-                  message.isStaffReply ? 'bg-gradient-to-br from-pink-500 to-purple-500' : 'bg-gradient-to-br from-gray-400 to-gray-600'
+                  message.isStaffReply ? 'bg-gradient-to-br from-teal-400 to-teal-600' : 'bg-gradient-to-br from-gray-400 to-gray-600'
                 }`}>
-                  {message.isStaffReply ? '🎫' : message.authorName[0]?.toUpperCase()}
+                  {message.authorName[0]?.toUpperCase()}
                 </div>
                 <span className="font-medium text-gray-900">{message.authorName}</span>
                 {message.isInternal && (
                   <span className="px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs rounded-full">
-                    Note interne
+                    Nota interna
                   </span>
                 )}
               </div>
@@ -282,13 +282,13 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
 
       {/* Formulaire de réponse */}
       {ticket.status !== 'closed' && (
-        <form onSubmit={handleSendMessage} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <form onSubmit={handleSendMessage} className="bg-white rounded-2xl border-2 border-gray-100 p-4">
           <textarea
             rows={4}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Écrivez votre message..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+            placeholder="Escreva a sua mensagem..."
+            className="input-base resize-none"
           />
           <div className="flex items-center justify-between mt-3">
             <div>
@@ -298,47 +298,40 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                     type="checkbox"
                     checked={isInternal}
                     onChange={(e) => setIsInternal(e.target.checked)}
-                    className="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500"
+                    className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                   />
-                  Note interne (invisible pour l'utilisateur)
+                  Nota interna (invisível para o utilizador)
                 </label>
               )}
             </div>
-            <button
+            <Button
               type="submit"
               disabled={sending || !newMessage.trim()}
-              className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex items-center gap-2"
             >
               {sending ? (
                 <>
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Envoi...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A enviar...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                  Envoyer
+                  <Send className="w-4 h-4" />
+                  Enviar
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       )}
 
       {/* Message ticket fermé */}
       {ticket.status === 'closed' && (
-        <div className="bg-gray-100 rounded-xl p-6 text-center">
-          <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Ticket fermé</h3>
+        <div className="bg-gray-100 rounded-2xl p-6 text-center">
+          <CheckCircle2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Ticket fechado</h3>
           <p className="text-gray-500">
-            Ce ticket a été fermé. Si vous avez besoin d'aide supplémentaire, créez un nouveau ticket.
+            Este ticket foi fechado. Se precisar de ajuda adicional, crie um novo ticket.
           </p>
         </div>
       )}

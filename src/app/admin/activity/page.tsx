@@ -5,8 +5,22 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import {
+  Activity,
+  ArrowLeft,
+  Plus,
+  Edit,
+  Trash2,
+  LogIn,
+  LogOut,
+  Upload,
+  Download,
+  FileText,
+  Loader2,
+  Hash,
+} from 'lucide-react'
 
-interface Activity {
+interface ActivityItem {
   id: string
   action: string
   resource: string
@@ -16,10 +30,30 @@ interface Activity {
   createdAt: string
 }
 
+const ACTION_LABELS: Record<string, string> = {
+  create: 'Criar',
+  update: 'Modificar',
+  delete: 'Eliminar',
+  login: 'Login',
+  logout: 'Logout',
+  export: 'Exportar',
+  import: 'Importar',
+}
+
+const RESOURCE_LABELS: Record<string, string> = {
+  User: 'Utilizador',
+  Client: 'Cliente',
+  Animal: 'Animal',
+  Appointment: 'Consulta',
+  Invoice: 'Fatura',
+  Service: 'Serviço',
+  Subscription: 'Subscrição',
+}
+
 export default function AdminActivityPage() {
   const { data: session } = useSession()
   const router = useRouter()
-  const [activities, setActivities] = useState<Activity[]>([])
+  const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [resource, setResource] = useState('all')
@@ -41,130 +75,158 @@ export default function AdminActivityPage() {
       if (resource !== 'all') params.append('resource', resource)
 
       const res = await fetch(`/api/admin/activity?${params}`)
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error('Erro')
 
       const data = await res.json()
       setActivities(data.activities || [])
     } catch (error) {
-      console.error('Erreur:', error)
-      toast.error('Impossible de charger les activités')
+      console.error('Erro:', error)
+      toast.error('Impossível carregar as atividades')
     } finally {
       setLoading(false)
     }
   }
 
   const getActionIcon = (action: string) => {
+    const iconClass = 'w-5 h-5 text-teal-600'
     switch (action) {
       case 'create':
-        return '➕'
+        return <Plus className={iconClass} />
       case 'update':
-        return '✏️'
+        return <Edit className={iconClass} />
       case 'delete':
-        return '🗑️'
+        return <Trash2 className={iconClass} />
       case 'login':
-        return '🔓'
+        return <LogIn className={iconClass} />
       case 'logout':
-        return '🔒'
+        return <LogOut className={iconClass} />
       case 'export':
-        return '📤'
+        return <Upload className={iconClass} />
       case 'import':
-        return '📥'
+        return <Download className={iconClass} />
       default:
-        return '📋'
+        return <FileText className={iconClass} />
     }
   }
 
   if (!session?.user?.isAdmin) {
-    return <div className="p-8"><p className="text-gray-600">Accès refusé</p></div>
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center">
+          <p className="text-gray-600 text-lg">Acesso negado</p>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
-    return <div className="p-8"><div className="animate-spin text-4xl">⏳</div></div>
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6 p-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">📊 Activité Utilisateur</h1>
-          <p className="text-gray-600 mt-2">Journal des actions ({activities.length})</p>
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-teal-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Atividade do Utilizador</h1>
+            <p className="text-gray-500 text-sm mt-0.5">
+              Registo de ações ({activities.length})
+            </p>
+          </div>
         </div>
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-100 rounded-xl hover:border-teal-200 transition-all text-sm font-medium text-gray-700"
         >
-          ← Retour
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
         </Link>
       </div>
 
-      {/* Filtres */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Filtros */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Action
+            Ação
           </label>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="input-base w-full"
           >
-            <option value="all">Toutes les actions</option>
-            <option value="create">Créer</option>
-            <option value="update">Modifier</option>
-            <option value="delete">Supprimer</option>
-            <option value="login">Connexion</option>
-            <option value="logout">Déconnexion</option>
-            <option value="export">Export</option>
-            <option value="import">Import</option>
+            <option value="all">Todas as ações</option>
+            <option value="create">Criar</option>
+            <option value="update">Modificar</option>
+            <option value="delete">Eliminar</option>
+            <option value="login">Login</option>
+            <option value="logout">Logout</option>
+            <option value="export">Exportar</option>
+            <option value="import">Importar</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Ressource
+            Recurso
           </label>
           <select
             value={resource}
             onChange={(e) => setResource(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="input-base w-full"
           >
-            <option value="all">Toutes les ressources</option>
-            <option value="User">Utilisateur</option>
-            <option value="Client">Client</option>
+            <option value="all">Todos os recursos</option>
+            <option value="User">Utilizador</option>
+            <option value="Client">Cliente</option>
             <option value="Animal">Animal</option>
-            <option value="Appointment">Rendez-vous</option>
-            <option value="Invoice">Facture</option>
-            <option value="Service">Service</option>
-            <option value="Subscription">Abonnement</option>
+            <option value="Appointment">Consulta</option>
+            <option value="Invoice">Fatura</option>
+            <option value="Service">Serviço</option>
+            <option value="Subscription">Subscrição</option>
           </select>
         </div>
       </div>
 
-      {/* Activités */}
+      {/* Atividades */}
       {activities.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <p className="text-gray-500 text-lg">Aucune activité détectée</p>
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center mx-auto mb-3">
+            <Activity className="w-5 h-5 text-teal-400" />
+          </div>
+          <p className="text-gray-500 text-lg">Nenhuma atividade detetada</p>
         </div>
       ) : (
         <div className="space-y-3">
           {activities.map((activity) => (
             <div
               key={activity.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition flex items-center gap-4"
+              className="bg-white rounded-2xl border-2 border-gray-100 p-4 hover:border-teal-200 transition-all flex items-center gap-4"
             >
-              <span className="text-2xl">{getActionIcon(activity.action)}</span>
-              <div className="flex-1">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+                {getActionIcon(activity.action)}
+              </div>
+              <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900">
-                  <span className="capitalize">{activity.action}</span> {' '}
-                  <span className="text-gray-600">{activity.resource}</span>
+                  <span>{ACTION_LABELS[activity.action] || activity.action}</span>{' '}
+                  <span className="text-gray-500">
+                    {RESOURCE_LABELS[activity.resource] || activity.resource}
+                  </span>
                 </p>
-                <p className="text-sm text-gray-500">
-                  {new Date(activity.createdAt).toLocaleString('fr-FR')}
+                <p className="text-sm text-gray-400">
+                  {new Date(activity.createdAt).toLocaleString('pt-PT')}
                 </p>
               </div>
               {activity.resourceId && (
-                <code className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                <div className="flex items-center gap-1 text-xs bg-gray-50 px-2.5 py-1 rounded-lg text-gray-500 flex-shrink-0">
+                  <Hash className="w-3 h-3" />
                   {activity.resourceId.slice(0, 8)}
-                </code>
+                </div>
               )}
             </div>
           ))}

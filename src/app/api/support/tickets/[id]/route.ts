@@ -117,7 +117,7 @@ export async function POST(
         isStaffReply,
         isInternal: isStaffReply && isInternal === true,
         authorId: session.user.id,
-        authorName: isStaffReply ? 'Support Groomly' : (user?.name || 'Utilisateur'),
+        authorName: isStaffReply ? 'Support Pawlyx' : (user?.name || 'Utilisateur'),
       },
     })
 

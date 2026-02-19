@@ -5,7 +5,20 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import SalonCheckBanner from '@/components/salon-check-banner'
 import AdvancedStats from '@/components/advanced-stats'
+import { Modal } from '@/components/ui/modal'
 import { useState, useEffect } from 'react'
+import {
+  Plus,
+  CalendarDays,
+  Users,
+  Scissors,
+  BarChart3,
+  Clock,
+  PawPrint,
+  Sparkles,
+  AlertTriangle,
+  Loader2,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function DashboardPage() {
@@ -50,15 +63,15 @@ export default function DashboardPage() {
       
       if (res.ok) {
         const data = await res.json()
-        toast.success(`Données démo générées : ${data.clients} clients, ${data.appointments} RDV`)
+        toast.success(`Dados de demonstração gerados: ${data.clients} clientes, ${data.appointments} consultas`)
         setShowDemoModal(false)
         window.location.reload()
       } else {
         const error = await res.json()
-        toast.error(error.message || 'Erreur lors de la génération')
+        toast.error(error.message || 'Erro ao gerar dados')
       }
     } catch (error) {
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setGeneratingDemo(false)
     }
@@ -66,36 +79,36 @@ export default function DashboardPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      scheduled: 'bg-blue-100 text-blue-700',
-      confirmed: 'bg-green-100 text-green-700',
-      in_progress: 'bg-yellow-100 text-yellow-700',
-      completed: 'bg-gray-100 text-gray-700',
+      scheduled: 'bg-sky-100 text-sky-700',
+      confirmed: 'bg-emerald-100 text-emerald-700',
+      in_progress: 'bg-amber-100 text-amber-700',
+      completed: 'bg-gray-100 text-gray-600',
     }
     return colors[status] || 'bg-gray-100 text-gray-600'
   }
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      scheduled: 'Planifié',
-      confirmed: 'Confirmé',
-      in_progress: 'En cours',
-      completed: 'Terminé',
+      scheduled: 'Agendado',
+      confirmed: 'Confirmado',
+      in_progress: 'Em curso',
+      completed: 'Concluído',
     }
     return labels[status] || status
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <SalonCheckBanner />
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Bonjour, {session?.user?.name?.split(' ')[0]} 👋
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Olá, {session?.user?.name?.split(' ')[0]}
           </h1>
-          <p className="text-gray-600 mt-1">
-            {new Date().toLocaleDateString('fr-FR', { 
+          <p className="text-gray-500 mt-1 text-sm">
+            {new Date().toLocaleDateString('pt-PT', { 
               weekday: 'long', 
               day: 'numeric', 
               month: 'long', 
@@ -103,61 +116,77 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
-        <div className="mt-4 md:mt-0 flex gap-3">
+        <div className="flex gap-3">
           <Link href="/dashboard/appointments">
-            <Button className="bg-primary hover:bg-primary/90">
-              ➕ Nouveau RDV
+            <Button>
+              <Plus className="w-4 h-4" />
+              Nova consulta
             </Button>
           </Link>
           <button
             onClick={() => setShowDemoModal(true)}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
           >
-            🎭 Mode démo
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Modo demo</span>
           </button>
         </div>
       </div>
 
-      {/* RDV du jour */}
+      {/* Consultas de hoje */}
       {!loading && todayAppointments.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8 border border-blue-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              📅 Aujourd&apos;hui - {todayAppointments.length} rendez-vous
-            </h2>
-            <Link href="/dashboard/appointments" className="text-sm text-primary hover:underline">
-              Voir tout →
+        <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 mb-8 border border-teal-100">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+                <CalendarDays className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-900">
+                  Hoje
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {todayAppointments.length} consultas
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard/appointments"
+              className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
+            >
+              Ver tudo →
             </Link>
           </div>
           <div className="grid gap-3">
             {todayAppointments.slice(0, 4).map((apt) => (
               <div 
                 key={apt.id} 
-                className="bg-white rounded-lg p-4 flex items-center justify-between shadow-sm"
+                className="bg-white rounded-xl p-4 flex items-center justify-between shadow-sm border border-white hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-center bg-gray-100 rounded-lg px-3 py-2 min-w-[60px]">
-                    <p className="text-lg font-bold text-gray-900">
-                      {new Date(apt.startTime).toLocaleTimeString('fr-FR', { 
+                  <div className="text-center bg-gray-50 rounded-xl px-3 py-2 min-w-[60px]">
+                    <p className="text-sm font-bold text-gray-900">
+                      {new Date(apt.startTime).toLocaleTimeString('pt-PT', { 
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
                     </p>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 text-sm">
                       {apt.client?.firstName} {apt.client?.lastName}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      🐾 {apt.animal?.name} • {apt.service?.name}
+                    <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                      <PawPrint className="w-3 h-3" />
+                      {apt.animal?.name} • {apt.service?.name}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
                     {getStatusLabel(apt.status)}
                   </span>
-                  <span className="font-semibold text-primary">
+                  <span className="font-semibold text-teal-600 text-sm">
                     {apt.totalPrice?.toFixed(2) || apt.service?.price?.toFixed(2)}€
                   </span>
                 </div>
@@ -167,78 +196,93 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Stats avancées */}
+      {/* Estatísticas avançadas */}
       <AdvancedStats />
 
-      {/* Actions rapides */}
-      <div className="mt-8 grid md:grid-cols-3 gap-4">
-        <Link href="/dashboard/clients">
-          <div className="bg-white rounded-lg p-5 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">👥</span>
-              <div>
-                <p className="font-semibold text-gray-900">Clients</p>
-                <p className="text-sm text-gray-500">Gérer les fiches clients</p>
+      {/* Ações rápidas */}
+      <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[
+          {
+            href: '/dashboard/clients',
+            icon: Users,
+            title: 'Clientes',
+            description: 'Gerir fichas de clientes',
+            color: 'bg-blue-100 text-blue-600',
+          },
+          {
+            href: '/dashboard/services',
+            icon: Scissors,
+            title: 'Serviços',
+            description: 'Configurar serviços',
+            color: 'bg-purple-100 text-purple-600',
+          },
+          {
+            href: '/dashboard/reports',
+            icon: BarChart3,
+            title: 'Relatórios',
+            description: 'Acompanhamento de pagamentos',
+            color: 'bg-emerald-100 text-emerald-600',
+          },
+        ].map((action) => (
+          <Link key={action.href} href={action.href}>
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 hover:border-teal-200 hover:shadow-soft transition-all duration-200 cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className={`w-11 h-11 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <action.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">{action.title}</p>
+                  <p className="text-xs text-gray-500">{action.description}</p>
+                </div>
               </div>
             </div>
-          </div>
-        </Link>
-        <Link href="/dashboard/services">
-          <div className="bg-white rounded-lg p-5 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">✂️</span>
-              <div>
-                <p className="font-semibold text-gray-900">Services</p>
-                <p className="text-sm text-gray-500">Configurer les prestations</p>
-              </div>
-            </div>
-          </div>
-        </Link>
-        <Link href="/dashboard/reports">
-          <div className="bg-white rounded-lg p-5 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">📊</span>
-              <div>
-                <p className="font-semibold text-gray-900">Factures</p>
-                <p className="text-sm text-gray-500">Suivi des paiements</p>
-              </div>
-            </div>
-          </div>
-        </Link>
+          </Link>
+        ))}
       </div>
 
-      {/* Modal démo */}
-      {showDemoModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">🎭 Mode Démo</h2>
-            <p className="text-gray-600 mb-4">
-              Générer des données fictives pour explorer toutes les fonctionnalités de Groomly ?
+      {/* Modal demo */}
+      <Modal
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
+        title="Modo Demo"
+        description="Gerar dados fictícios para explorar as funcionalidades"
+      >
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <div className="flex gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">
+              Esta ação vai criar clientes, animais, consultas e faturas fictícios.
+              Os seus dados existentes serão mantidos.
             </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
-              <p className="text-sm text-yellow-800">
-                ⚠️ Cette action va créer des clients, animaux, rendez-vous et factures fictifs.
-                Vos données existantes seront conservées.
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDemoModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <Button
-                onClick={handleGenerateDemo}
-                disabled={generatingDemo}
-                className="flex-1 bg-primary hover:bg-primary/90"
-              >
-                {generatingDemo ? 'Génération...' : 'Générer les données'}
-              </Button>
-            </div>
           </div>
         </div>
-      )}
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowDemoModal(false)}
+            className="flex-1"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleGenerateDemo}
+            disabled={generatingDemo}
+            className="flex-1"
+          >
+            {generatingDemo ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                A gerar...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Gerar dados
+              </>
+            )}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

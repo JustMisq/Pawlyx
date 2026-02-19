@@ -207,7 +207,7 @@ function generateReminderEmail(appointment: any) {
       <p><strong>L'équipe ${appointment.salon.name}</strong></p>
     </div>
     <div class="footer">
-      <p>Cet email a été envoyé automatiquement par Groomly.</p>
+      <p>Cet email a été envoyé automatiquement par Pawlyx.</p>
       <p>${appointment.salon.name} - ${appointment.salon.address || ''}</p>
     </div>
   </div>

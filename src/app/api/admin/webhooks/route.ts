@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       webhooks.map(webhook =>
         sendWebhookNotification(webhook, {
           type: 'test',
-          message: testMessage || 'Test de notification webhook depuis Groomly Admin',
+          message: testMessage || 'Test de notification webhook depuis Pawlyx Admin',
           timestamp: new Date().toISOString(),
         })
       )

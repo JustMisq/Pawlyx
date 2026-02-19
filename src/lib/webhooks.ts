@@ -73,7 +73,7 @@ async function sendSlackNotification(webhookUrl: string, data: WebhookData): Pro
           ...(data.errorId ? [{ title: 'Error ID', value: data.errorId, short: true }] : []),
           ...(data.additionalInfo?.url ? [{ title: 'URL', value: data.additionalInfo.url, short: false }] : []),
         ],
-        footer: 'Groomly Admin Alerts',
+        footer: 'Pawlyx Admin Alerts',
       },
     ],
   }
@@ -111,7 +111,7 @@ async function sendDiscordNotification(webhookUrl: string, data: WebhookData): P
       ...(data.errorId ? [{ name: 'Error ID', value: data.errorId, inline: true }] : []),
       ...(data.additionalInfo?.url ? [{ name: 'URL', value: data.additionalInfo.url, inline: false }] : []),
     ],
-    footer: { text: 'Groomly Admin Alerts' },
+    footer: { text: 'Pawlyx Admin Alerts' },
   }
 
   const res = await fetch(webhookUrl, {

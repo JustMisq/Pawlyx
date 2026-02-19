@@ -6,6 +6,20 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
+import {
+  Users,
+  Crown,
+  Settings,
+  User,
+  Eye,
+  X,
+  Plus,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  Loader2,
+} from 'lucide-react'
 
 interface SalonMember {
   id: string
@@ -41,12 +55,12 @@ export default function StaffPage() {
   const fetchMembers = async () => {
     try {
       const res = await fetch('/api/salon/members')
-      if (!res.ok) throw new Error('Erreur lors de la récupération des membres')
+      if (!res.ok) throw new Error('Erro ao obter os membros')
       const data = await res.json()
       setMembers(data.members || [])
     } catch (error) {
-      console.error('Erreur:', error)
-      toast.error('Impossible de charger les membres')
+      console.error('Erro:', error)
+      toast.error('Impossível carregar os membros')
     } finally {
       setLoading(false)
     }
@@ -55,7 +69,7 @@ export default function StaffPage() {
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inviteEmail) {
-      toast.error('Email requis')
+      toast.error('Email obrigatório')
       return
     }
 
@@ -72,45 +86,60 @@ export default function StaffPage() {
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.message || 'Erreur lors de l\'invitation')
+        throw new Error(error.message || 'Erro ao enviar o convite')
       }
 
-      toast.success('Invitation envoyée avec succès!')
+      toast.success('Convite enviado com sucesso!')
       setInviteEmail('')
       setShowInviteForm(false)
       fetchMembers()
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de l\'invitation')
+      toast.error(error.message || 'Erro ao enviar o convite')
     } finally {
       setInviting(false)
     }
   }
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce membre?')) return
+    if (!confirm('Tem a certeza que deseja eliminar este membro?')) return
 
     try {
       const res = await fetch(`/api/salon/members/${memberId}`, {
         method: 'DELETE',
       })
 
-      if (!res.ok) throw new Error('Erreur lors de la suppression')
+      if (!res.ok) throw new Error('Erro ao eliminar')
 
-      toast.success('Membre supprimé')
+      toast.success('Membro eliminado')
       fetchMembers()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error('Erro ao eliminar')
     }
   }
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      owner: '👑 Propriétaire',
-      admin: '⚙️ Admin',
-      staff: '👤 Staff',
-      readonly: '👁️ Lecture seule',
+      owner: 'Proprietário',
+      admin: 'Admin',
+      staff: 'Pessoal',
+      readonly: 'Apenas leitura',
     }
     return labels[role] || role
+  }
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'owner':
+        return <Crown className="w-4 h-4 inline-block mr-1 text-amber-500" />
+      case 'admin':
+        return <Settings className="w-4 h-4 inline-block mr-1 text-blue-500" />
+      case 'staff':
+        return <User className="w-4 h-4 inline-block mr-1 text-gray-500" />
+      case 'readonly':
+        return <Eye className="w-4 h-4 inline-block mr-1 text-gray-400" />
+      default:
+        return null
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -128,32 +157,39 @@ export default function StaffPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="animate-spin text-4xl">⏳</div>
+      <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       {/* En-tête */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">👥 Gestion du Staff</h1>
-          <p className="text-gray-600 mt-2">Gérez les membres de votre équipe et leurs permissions</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <Users className="w-8 h-8 text-teal-500" />
+            Gestão da Equipa
+          </h1>
+          <p className="text-gray-600 mt-2">Gerir os membros da sua equipa e as suas permissões</p>
         </div>
         <Button
           onClick={() => setShowInviteForm(!showInviteForm)}
-          className="bg-primary hover:bg-primary/90 text-white"
+          variant={showInviteForm ? 'outline' : 'default'}
         >
-          {showInviteForm ? '✕ Annuler' : '+ Inviter un membre'}
+          {showInviteForm ? (
+            <><X className="w-4 h-4 mr-2" /> Cancelar</>
+          ) : (
+            <><Plus className="w-4 h-4 mr-2" /> Convidar um membro</>
+          )}
         </Button>
       </div>
 
       {/* Formulaire d'invitation */}
       {showInviteForm && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Inviter un nouveau membre</h3>
+        <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-4 sm:p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Convidar um novo membro</h3>
           <form onSubmit={handleInviteMember} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -164,136 +200,195 @@ export default function StaffPage() {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="membre@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="input-base"
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rôle
+                Função
               </label>
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="input-base"
               >
-                <option value="staff">👤 Staff</option>
-                <option value="admin">⚙️ Admin</option>
-                <option value="readonly">👁️ Lecture seule</option>
+                <option value="staff">Pessoal</option>
+                <option value="admin">Admin</option>
+                <option value="readonly">Apenas leitura</option>
               </select>
             </div>
 
-            <div className="bg-white p-4 rounded border border-gray-200 text-sm text-gray-700">
-              <p className="font-semibold mb-2">Permissions par rôle</p>
+            <div className="bg-white p-4 rounded-2xl border-2 border-gray-100 text-sm text-gray-700">
+              <p className="font-semibold mb-2">Permissões por função</p>
               <ul className="space-y-1">
-                <li>👤 <strong>Staff</strong> : Clients, Animaux, RDV, Services, Stocks</li>
-                <li>⚙️ <strong>Admin</strong> : Staff + Factures, Rapports, Paramètres</li>
-                <li>👁️ <strong>Lecture seule</strong> : Lecture uniquement, pas de modification</li>
+                <li className="flex items-center gap-1.5"><User className="w-4 h-4 text-gray-500" /> <strong>Pessoal</strong> : Clientes, Animais, Marcações, Serviços, Stocks</li>
+                <li className="flex items-center gap-1.5"><Settings className="w-4 h-4 text-blue-500" /> <strong>Admin</strong> : Pessoal + Faturas, Relatórios, Definições</li>
+                <li className="flex items-center gap-1.5"><Eye className="w-4 h-4 text-gray-400" /> <strong>Apenas leitura</strong> : Consulta apenas, sem modificação</li>
               </ul>
             </div>
 
             <Button
               type="submit"
               disabled={inviting}
-              className="w-full bg-primary hover:bg-primary/90 text-white"
+              className="w-full"
             >
-              {inviting ? 'Envoi en cours...' : 'Envoyer l\'invitation'}
+              {inviting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> A enviar...</>
+              ) : (
+                'Enviar o convite'
+              )}
             </Button>
           </form>
         </div>
       )}
 
       {/* Liste des membres */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-xl font-semibold text-gray-900">
-            Membres ({members.length})
+            Membros ({members.length})
           </h2>
         </div>
 
         {members.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-gray-600">Aucun membre pour le moment</p>
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600">Nenhum membro de momento</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr className="border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Rôle
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Invité le
-                  </th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {members.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {member.user ? (
-                        member.user.name
-                      ) : (
-                        <span className="text-gray-500 italic">
-                          {member.firstName && member.lastName
-                            ? `${member.firstName} ${member.lastName}`
-                            : 'En attente...'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {member.user?.email || member.inviteEmail}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      {getRoleLabel(member.role)}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(member.status)}`}>
-                        {member.status === 'pending' && '⏳ En attente'}
-                        {member.status === 'active' && '✅ Actif'}
-                        {member.status === 'revoked' && '🚫 Révoqué'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(member.invitedAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-6 py-4 text-right text-sm space-x-2">
-                      {member.role !== 'owner' && (
-                        <>
-                          <Link
-                            href={`/dashboard/staff/${member.id}`}
-                            className="text-primary hover:underline"
-                          >
-                            Permissions
-                          </Link>
-                          <button
-                            onClick={() => handleRemoveMember(member.id)}
-                            className="text-red-600 hover:underline ml-2"
-                          >
-                            Supprimer
-                          </button>
-                        </>
-                      )}
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-100">
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Nome
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Função
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Convidado em
+                    </th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
+                      Ações
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {members.map((member) => (
+                    <tr key={member.id} className="hover:bg-gray-50 transition">
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {member.user ? (
+                          member.user.name
+                        ) : (
+                          <span className="text-gray-500 italic">
+                            {member.firstName && member.lastName
+                              ? `${member.firstName} ${member.lastName}`
+                              : 'Pendente...'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {member.user?.email || member.inviteEmail}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className="inline-flex items-center">
+                          {getRoleIcon(member.role)}
+                          {getRoleLabel(member.role)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(member.status)}`}>
+                          {member.status === 'pending' && <><Clock className="w-3 h-3" /> Pendente</>}
+                          {member.status === 'active' && <><CheckCircle2 className="w-3 h-3" /> Ativo</>}
+                          {member.status === 'revoked' && <><XCircle className="w-3 h-3" /> Revogado</>}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(member.invitedAt).toLocaleDateString('pt-PT')}
+                      </td>
+                      <td className="px-6 py-4 text-right text-sm space-x-2">
+                        {member.role !== 'owner' && (
+                          <>
+                            <Link
+                              href={`/dashboard/staff/${member.id}`}
+                              className="text-teal-600 hover:text-teal-700 hover:underline"
+                            >
+                              Permissões
+                            </Link>
+                            <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-red-600 hover:underline ml-2"
+                            >
+                              Eliminar
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {members.map((member) => (
+                <div key={member.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">
+                      {member.user
+                        ? member.user.name
+                        : member.firstName && member.lastName
+                          ? `${member.firstName} ${member.lastName}`
+                          : 'Pendente...'}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(member.status)}`}>
+                      {member.status === 'pending' && <><Clock className="w-3 h-3" /> Pendente</>}
+                      {member.status === 'active' && <><CheckCircle2 className="w-3 h-3" /> Ativo</>}
+                      {member.status === 'revoked' && <><XCircle className="w-3 h-3" /> Revogado</>}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">{member.user?.email || member.inviteEmail}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="inline-flex items-center text-gray-700">
+                      {getRoleIcon(member.role)}
+                      {getRoleLabel(member.role)}
+                    </span>
+                    <span className="text-gray-500">
+                      {new Date(member.invitedAt).toLocaleDateString('pt-PT')}
+                    </span>
+                  </div>
+                  {member.role !== 'owner' && (
+                    <div className="flex gap-3 pt-1">
+                      <Link
+                        href={`/dashboard/staff/${member.id}`}
+                        className="text-sm text-teal-600 hover:text-teal-700 hover:underline"
+                      >
+                        Permissões
+                      </Link>
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="text-sm text-red-600 hover:underline"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -301,9 +396,10 @@ export default function StaffPage() {
       <div className="flex gap-4">
         <Link
           href="/dashboard/staff/logs"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
+          className="inline-flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:border-teal-200 hover:text-teal-600 transition-all"
         >
-          📋 Voir les logs d'activité
+          <FileText className="w-4 h-4" />
+          Ver os logs de atividade
         </Link>
       </div>
     </div>

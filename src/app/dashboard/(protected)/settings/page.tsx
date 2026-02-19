@@ -4,9 +4,22 @@ import { useState, useEffect } from 'react'
 import { signOut, useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { DeleteModal } from '@/components/delete-modal'
+import {
+  User,
+  Store,
+  FileText,
+  Pencil,
+  X,
+  Save,
+  AlertTriangle,
+  Trash2,
+  Download,
+  Shield,
+  Loader2,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 
-interface User {
+interface UserData {
   id: string
   email: string
   name: string
@@ -23,7 +36,7 @@ interface Salon {
 
 export default function SettingsPage() {
   const { data: session } = useSession()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserData | null>(null)
   const [salon, setSalon] = useState<Salon | null>(null)
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState(false)
@@ -33,7 +46,7 @@ export default function SettingsPage() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deletingData, setDeletingData] = useState(false)
 
-  // Charger les données utilisateur et salon
+  // Carregar os dados do utilizador e salão
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -76,13 +89,13 @@ export default function SettingsPage() {
         const updated = await res.json()
         setUser(updated)
         setEditingUser(false)
-        toast.success('Profil mis à jour')
+        toast.success('Perfil atualizado')
       } else {
-        toast.error('Erreur lors de la mise à jour')
+        toast.error('Erro ao atualizar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
@@ -107,13 +120,13 @@ export default function SettingsPage() {
         const updated = await res.json()
         setSalon(updated)
         setEditingSalon(false)
-        toast.success('Salon mis à jour')
+        toast.success('Salão atualizado')
       } else {
-        toast.error('Erreur lors de la mise à jour')
+        toast.error('Erro ao atualizar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
@@ -127,16 +140,16 @@ export default function SettingsPage() {
           'href',
           'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2))
         )
-        element.setAttribute('download', `groomly-data-${new Date().toISOString().split('T')[0]}.json`)
+        element.setAttribute('download', `pawlyx-data-${new Date().toISOString().split('T')[0]}.json`)
         element.style.display = 'none'
         document.body.appendChild(element)
         element.click()
         document.body.removeChild(element)
-        toast.success('Données exportées')
+        toast.success('Dados exportados')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Erreur lors de l\'export')
+      toast.error('Erro ao exportar')
     }
   }
 
@@ -150,16 +163,16 @@ export default function SettingsPage() {
       })
 
       if (res.ok) {
-        toast.success('Toutes les données ont été supprimées')
+        toast.success('Todos os dados foram eliminados')
         setShowDeleteDataModal(false)
         setTimeout(() => window.location.reload(), 1000)
       } else {
         const error = await res.json()
-        toast.error(error.message || 'Erreur lors de la suppression')
+        toast.error(error.message || 'Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setDeletingData(false)
     }
@@ -175,15 +188,15 @@ export default function SettingsPage() {
       })
 
       if (res.ok) {
-        toast.success('Compte supprimé. Déconnexion...')
+        toast.success('Conta eliminada. A terminar sessão...')
         await signOut({ redirect: true, callbackUrl: '/' })
       } else {
         const error = await res.json()
-        toast.error(error.message || 'Erreur lors de la suppression')
+        toast.error(error.message || 'Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setDeletingAccount(false)
       setShowDeleteAccountModal(false)
@@ -192,40 +205,53 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-500">Chargement...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
+          <p className="text-gray-500">A carregar...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8 max-w-4xl">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Paramètres</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Definições</h1>
 
-      {/* Profil utilisateur */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      {/* Perfil do utilizador */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">👤 Profil</h2>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <User className="w-5 h-5 text-teal-500" />
+            Perfil
+          </h2>
           <Button
             onClick={() => setEditingUser(!editingUser)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            variant={editingUser ? 'ghost' : 'outline'}
           >
-            {editingUser ? '❌ Annuler' : '✏️ Modifier'}
+            {editingUser ? (
+              <>
+                <X className="w-4 h-4" />
+                Cancelar
+              </>
+            ) : (
+              <>
+                <Pencil className="w-4 h-4" />
+                Editar
+              </>
+            )}
           </Button>
         </div>
 
         {editingUser ? (
           <form onSubmit={handleUpdateUser} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
               <input
                 type="text"
                 name="name"
                 defaultValue={user?.name || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base"
               />
             </div>
             <div>
@@ -234,17 +260,18 @@ export default function SettingsPage() {
                 type="email"
                 name="email"
                 defaultValue={user?.email || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base"
               />
             </div>
-            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white w-full">
-              ✅ Sauvegarder
+            <Button type="submit" className="w-full">
+              <Save className="w-4 h-4" />
+              Guardar
             </Button>
           </form>
         ) : (
           <div className="space-y-2">
             <p className="text-gray-600">
-              <span className="font-medium">Nom :</span> {user?.name}
+              <span className="font-medium">Nome :</span> {user?.name}
             </p>
             <p className="text-gray-600">
               <span className="font-medium">Email :</span> {user?.email}
@@ -253,46 +280,59 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Paramètres du salon */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+      {/* Definições do salão */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">🏪 Salon</h2>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <Store className="w-5 h-5 text-teal-500" />
+            Salão
+          </h2>
           <Button
             onClick={() => setEditingSalon(!editingSalon)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            variant={editingSalon ? 'ghost' : 'outline'}
           >
-            {editingSalon ? '❌ Annuler' : '✏️ Modifier'}
+            {editingSalon ? (
+              <>
+                <X className="w-4 h-4" />
+                Cancelar
+              </>
+            ) : (
+              <>
+                <Pencil className="w-4 h-4" />
+                Editar
+              </>
+            )}
           </Button>
         </div>
 
         {editingSalon ? (
           <form onSubmit={handleUpdateSalon} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nom du salon</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nome do salão</label>
               <input
                 type="text"
                 name="name"
                 defaultValue={salon?.name || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
               <textarea
                 name="description"
                 defaultValue={salon?.description || ''}
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base resize-none"
               />
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
                 <input
                   type="tel"
                   name="phone"
                   defaultValue={salon?.phone || ''}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 />
               </div>
               <div>
@@ -301,36 +341,37 @@ export default function SettingsPage() {
                   type="email"
                   name="email"
                   defaultValue={salon?.email || ''}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Morada</label>
               <input
                 type="text"
                 name="address"
                 defaultValue={salon?.address || ''}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base"
               />
             </div>
-            <Button type="submit" className="bg-green-500 hover:bg-green-600 text-white w-full">
-              ✅ Sauvegarder
+            <Button type="submit" className="w-full">
+              <Save className="w-4 h-4" />
+              Guardar
             </Button>
           </form>
         ) : (
           <div className="space-y-2">
             <p className="text-gray-600">
-              <span className="font-medium">Nom :</span> {salon?.name}
+              <span className="font-medium">Nome :</span> {salon?.name}
             </p>
             {salon?.description && (
               <p className="text-gray-600">
-                <span className="font-medium">Description :</span> {salon.description}
+                <span className="font-medium">Descrição :</span> {salon.description}
               </p>
             )}
             {salon?.phone && (
               <p className="text-gray-600">
-                <span className="font-medium">Téléphone :</span> {salon.phone}
+                <span className="font-medium">Telefone :</span> {salon.phone}
               </p>
             )}
             {salon?.email && (
@@ -340,88 +381,101 @@ export default function SettingsPage() {
             )}
             {salon?.address && (
               <p className="text-gray-600">
-                <span className="font-medium">Adresse :</span> {salon.address}
+                <span className="font-medium">Morada :</span> {salon.address}
               </p>
             )}
           </div>
         )}
       </div>
 
-      {/* Données et confidentialité */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-blue-900 mb-4">📋 Données & Confidentialité (RGPD)</h2>
+      {/* Dados e privacidade */}
+      <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5 text-teal-500" />
+          Dados & Privacidade (RGPD)
+        </h2>
         <div className="space-y-3">
-          <p className="text-sm text-blue-800">
-            Conformément au RGPD, vous pouvez télécharger ou supprimer vos données personnelles.
+          <p className="text-sm text-gray-700">
+            Em conformidade com o RGPD, pode transferir ou eliminar os seus dados pessoais.
           </p>
           <div className="flex gap-3">
-            <Button
-              onClick={handleExportData}
-              className="bg-green-500 hover:bg-green-600 text-white"
-            >
-              📥 Télécharger mes données (JSON)
+            <Button onClick={handleExportData}>
+              <Download className="w-4 h-4" />
+              Transferir os meus dados (JSON)
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Zone danger */}
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-red-900 mb-4">⚠️ Zone Danger</h2>
+      {/* Zona de perigo */}
+      <div className="bg-red-50/50 border border-red-100 rounded-2xl p-6">
+        <h2 className="text-xl font-bold text-red-900 mb-4 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+          Zona de Perigo
+        </h2>
         <div className="space-y-4">
           
-          {/* Supprimer toutes les données */}
-          <div className="bg-white p-4 rounded border border-red-300">
-            <h3 className="font-bold text-red-700 mb-2">🗑️ Supprimer toutes les données commerciales</h3>
+          {/* Eliminar todos os dados */}
+          <div className="bg-white p-4 rounded-2xl border-2 border-gray-100">
+            <h3 className="font-bold text-red-700 mb-2 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Eliminar todos os dados comerciais
+            </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Supprimera tous les clients, animaux, rendez-vous, factures, services et stocks.<br/>
-              <span className="font-medium text-green-700">✓ Votre salon et votre compte restent actifs.</span>
+              Irá eliminar todos os clientes, animais, consultas, faturas, serviços e stocks.<br/>
+              <span className="font-medium text-teal-600">O seu salão e a sua conta permanecem ativos.</span>
             </p>
             <Button
               onClick={() => setShowDeleteDataModal(true)}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
             >
-              Supprimer les données
+              <Trash2 className="w-4 h-4" />
+              Eliminar dados
             </Button>
           </div>
 
-          {/* Supprimer le compte */}
-          <div className="bg-white p-4 rounded border border-red-400">
-            <h3 className="font-bold text-red-700 mb-2">💥 Supprimer le compte définitivement</h3>
+          {/* Eliminar a conta */}
+          <div className="bg-white p-4 rounded-2xl border-2 border-gray-100">
+            <h3 className="font-bold text-red-700 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Eliminar a conta definitivamente
+            </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Supprimera votre compte ET toutes vos données associées. Cette action est IRRÉVERSIBLE.
+              Irá eliminar a sua conta E todos os dados associados. Esta ação é IRREVERSÍVEL.
             </p>
             <Button
               onClick={() => setShowDeleteAccountModal(true)}
-              className="bg-red-700 hover:bg-red-800 text-white font-bold"
+              variant="destructive"
             >
-              💥 SUPPRIMER LE COMPTE
+              <AlertTriangle className="w-4 h-4" />
+              ELIMINAR A CONTA
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Infos légales */}
+      {/* Informações legais */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         <p className="text-xs text-gray-500 mb-2">
-          Version du compte : {session?.user?.id?.slice(0, 8)}
+          Versão da conta : {session?.user?.id?.slice(0, 8)}
         </p>
         <p className="text-xs text-gray-500 space-x-2">
-          <a href="/legal/privacy" className="text-primary hover:underline">Politique de confidentialité</a>
+          <a href="/legal/privacy" className="text-teal-500 hover:underline">Política de Privacidade</a>
           <span>•</span>
-          <a href="/legal/terms" className="text-primary hover:underline">Conditions d'utilisation</a>
+          <a href="/legal/terms" className="text-teal-500 hover:underline">Termos e Condições</a>
           <span>•</span>
-          <a href="/legal/gdpr" className="text-primary hover:underline">RGPD</a>
+          <a href="/legal/gdpr" className="text-teal-500 hover:underline">RGPD</a>
         </p>
       </div>
 
       {/* Modals */}
       <DeleteModal
         isOpen={showDeleteDataModal}
-        title="Supprimer toutes les données commerciales"
-        message={"Ceci va supprimer :\n• Tous les clients\n• Tous les animaux\n• Tous les rendez-vous\n• Toutes les factures\n• Tous les services\n• Tout l'inventaire\n\n✓ Votre salon et votre compte restent actifs\n✓ Vous pourrez continuer à utiliser Groomly"}
-        confirmText="Confirmer"
-        warningText="Cette action est IRRÉVERSIBLE"
+        title="Eliminar todos os dados comerciais"
+        message={"Isto irá eliminar:\n• Todos os clientes\n• Todos os animais\n• Todas as consultas\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n\n✓ O seu salão e a sua conta permanecem ativos\n✓ Poderá continuar a utilizar o Pawlyx"}
+        confirmText="Confirmar"
+        warningText="Esta ação é IRREVERSÍVEL"
         requirePassword={true}
         onConfirm={handleDeleteAllData}
         onCancel={() => setShowDeleteDataModal(false)}
@@ -431,10 +485,10 @@ export default function SettingsPage() {
 
       <DeleteModal
         isOpen={showDeleteAccountModal}
-        title="Supprimer le compte définitivement"
-        message="Ceci va supprimer :\n• Votre compte utilisateur\n• Votre salon\n• Tous les clients\n• Tous les rendez-vous\n• Toutes les factures\n• Tous les services\n• Tout l'inventaire\n• Votre abonnement\n\nCette action est définitive et irréversible."
-        confirmText="SUPPRIMER DÉFINITIVEMENT"
-        warningText="Ceci supprimera COMPLÈTEMENT votre compte"
+        title="Eliminar a conta definitivamente"
+        message="Isto irá eliminar:\n• A sua conta de utilizador\n• O seu salão\n• Todos os clientes\n• Todas as consultas\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n• A sua subscrição\n\nEsta ação é definitiva e irreversível."
+        confirmText="ELIMINAR DEFINITIVAMENTE"
+        warningText="Isto irá ELIMINAR COMPLETAMENTE a sua conta"
         requirePassword={true}
         onConfirm={handleDeleteAccount}
         onCancel={() => setShowDeleteAccountModal(false)}

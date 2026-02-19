@@ -2,9 +2,25 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, ReactNode } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import {
+  BarChart3,
+  ArrowLeft,
+  Banknote,
+  TrendingUp,
+  Users,
+  Sparkles,
+  CreditCard,
+  TrendingDown,
+  Heart,
+  Target,
+  Timer,
+  Loader2,
+  Info,
+  PieChart,
+} from 'lucide-react'
 
 interface Analytics {
   totalRevenue: number
@@ -44,158 +60,187 @@ export default function AdminAnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       const res = await fetch('/api/admin/analytics')
-      if (!res.ok) throw new Error('Erreur')
+      if (!res.ok) throw new Error('Erro')
 
       const data = await res.json()
       setAnalytics(data)
     } catch (error) {
-      console.error('Erreur:', error)
-      toast.error('Impossible de charger les analytics')
+      console.error('Erro:', error)
+      toast.error('Impossível carregar os analytics')
     } finally {
       setLoading(false)
     }
   }
 
   if (!session?.user?.isAdmin) {
-    return <div className="p-8"><p className="text-gray-600">Accès refusé</p></div>
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
+          <p className="text-gray-600">Acesso negado</p>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
-    return <div className="p-8"><div className="animate-spin text-4xl">⏳</div></div>
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-8 p-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">📊 Analytics</h1>
-          <p className="text-gray-600 mt-2">Métriques détaillées de la plateforme</p>
+    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-teal-50 flex items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-teal-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Analytics</h1>
+            <p className="text-gray-500 mt-1">Métricas detalhadas da plataforma</p>
+          </div>
         </div>
         <Link
           href="/admin"
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-gray-100 rounded-2xl text-gray-700 hover:bg-gray-50 hover:border-gray-200 transition-all font-medium text-sm"
         >
-          ← Retour
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
         </Link>
       </div>
 
-      {/* Revenus */}
+      {/* Receitas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Revenu Total"
+          title="Receita Total"
           value={`${analytics?.totalRevenue?.toFixed(2) || 0}€`}
-          icon="💰"
-          color="green"
+          icon={<Banknote className="w-6 h-6 text-teal-600" />}
+          iconBg="bg-teal-50"
         />
         <MetricCard
           title="MRR"
           value={`${analytics?.mrr?.toFixed(2) || 0}€`}
-          icon="📈"
-          color="blue"
+          icon={<TrendingUp className="w-6 h-6 text-emerald-600" />}
+          iconBg="bg-emerald-50"
           subtitle="Monthly Recurring Revenue"
         />
         <MetricCard
           title="ARR"
           value={`${analytics?.arr?.toFixed(2) || 0}€`}
-          icon="📊"
-          color="purple"
+          icon={<PieChart className="w-6 h-6 text-violet-600" />}
+          iconBg="bg-violet-50"
           subtitle="Annual Recurring Revenue"
         />
         <MetricCard
-          title="Growth (Mois)"
+          title="Crescimento (Mensal)"
           value={`${analytics?.monthlyGrowth?.toFixed(1) || 0}%`}
-          icon="🚀"
-          color="orange"
+          icon={<TrendingUp className="w-6 h-6 text-amber-600" />}
+          iconBg="bg-amber-50"
         />
       </div>
 
-      {/* Utilisateurs */}
+      {/* Utilizadores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard
-          title="Utilisateurs Actifs"
+          title="Utilizadores Ativos"
           value={`${analytics?.activeUsers || 0}`}
-          icon="👥"
-          color="blue"
-          subtitle={`sur ${analytics?.totalUsers || 0} total`}
+          icon={<Users className="w-6 h-6 text-teal-600" />}
+          iconBg="bg-teal-50"
+          subtitle={`de ${analytics?.totalUsers || 0} total`}
         />
         <MetricCard
-          title="Nouveaux (Ce mois)"
+          title="Novos (Este mês)"
           value={`${analytics?.newUsersThisMonth || 0}`}
-          icon="✨"
-          color="green"
+          icon={<Sparkles className="w-6 h-6 text-emerald-600" />}
+          iconBg="bg-emerald-50"
         />
         <MetricCard
-          title="Souscriptions Actives"
+          title="Subscrições Ativas"
           value={`${analytics?.activeSubscriptions || 0}`}
-          icon="💳"
-          color="purple"
+          icon={<CreditCard className="w-6 h-6 text-violet-600" />}
+          iconBg="bg-violet-50"
         />
       </div>
 
-      {/* Métriques clés */}
+      {/* Métricas-chave */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DetailCard
-          label="Churn Rate"
+          label="Taxa de Churn"
           value={`${analytics?.churnRate?.toFixed(2) || 0}%`}
-          detail="Taux d'annulation mensuel"
+          detail="Taxa de cancelamento mensal"
+          icon={<TrendingDown className="w-5 h-5" />}
           warning={analytics?.churnRate ? analytics.churnRate > 5 : false}
         />
         <DetailCard
           label="LTV"
           value={`${analytics?.ltv?.toFixed(0) || 0}€`}
-          detail="Lifetime Value par client"
+          detail="Valor vitalício por cliente"
+          icon={<Heart className="w-5 h-5" />}
         />
         <DetailCard
           label="CAC"
           value={`${analytics?.cac?.toFixed(0) || 0}€`}
-          detail="Customer Acquisition Cost"
+          detail="Custo de Aquisição de Cliente"
+          icon={<Target className="w-5 h-5" />}
         />
         <DetailCard
-          label="Payback Period"
-          value={`${analytics?.paybackPeriod?.toFixed(1) || 0} mois`}
-          detail="Période de rentabilité"
+          label="Período de Retorno"
+          value={`${analytics?.paybackPeriod?.toFixed(1) || 0} meses`}
+          detail="Período de rentabilidade"
+          icon={<Timer className="w-5 h-5" />}
         />
       </div>
 
-      {/* Tendance (placeholder - à remplir avec le graphique) */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 Tendance (6 derniers mois)</h3>
+      {/* Tendência */}
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-teal-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Tendência (últimos 6 meses)</h3>
+        </div>
 
         {analytics?.growthTrend && analytics.growthTrend.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-gray-200">
-                <tr>
-                  <th className="text-left py-2 font-medium text-gray-700">Mois</th>
-                  <th className="text-right py-2 font-medium text-gray-700">Utilisateurs</th>
-                  <th className="text-right py-2 font-medium text-gray-700">Revenu</th>
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-600 rounded-l-xl">Mês</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-600">Utilizadores</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-600 rounded-r-xl">Receita</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {analytics.growthTrend.map((item) => (
-                  <tr key={item.month}>
-                    <td className="py-3">{item.month}</td>
-                    <td className="text-right">{item.users}</td>
-                    <td className="text-right font-medium">{item.revenue.toFixed(0)}€</td>
+                  <tr key={item.month} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="py-3 px-4 font-medium text-gray-900">{item.month}</td>
+                    <td className="text-right py-3 px-4 text-gray-600">{item.users}</td>
+                    <td className="text-right py-3 px-4 font-semibold text-gray-900">{item.revenue.toFixed(0)}€</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="text-gray-500">Données non disponibles</p>
+          <p className="text-gray-500">Dados não disponíveis</p>
         )}
       </div>
 
-      {/* Notes */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-        <p className="font-semibold mb-2">💡 Définitions</p>
-        <ul className="space-y-1 text-xs">
-          <li><strong>MRR:</strong> Revenu mensuel récurrent</li>
-          <li><strong>ARR:</strong> Revenu annuel récurrent (MRR × 12)</li>
-          <li><strong>LTV:</strong> Valeur totale apportée par un client</li>
-          <li><strong>CAC:</strong> Coût pour acquérir un client</li>
-          <li><strong>Churn:</strong> % d'utilisateurs non-renouvelés chaque mois</li>
+      {/* Definições */}
+      <div className="bg-teal-50/50 rounded-2xl border-2 border-teal-100 p-6 text-sm text-teal-800">
+        <div className="flex items-center gap-2 mb-3">
+          <Info className="w-5 h-5 text-teal-600" />
+          <p className="font-semibold">Definições</p>
+        </div>
+        <ul className="space-y-1.5 text-xs text-teal-700">
+          <li><strong>MRR:</strong> Receita mensal recorrente</li>
+          <li><strong>ARR:</strong> Receita anual recorrente (MRR × 12)</li>
+          <li><strong>LTV:</strong> Valor total trazido por um cliente</li>
+          <li><strong>CAC:</strong> Custo para adquirir um cliente</li>
+          <li><strong>Churn:</strong> % de utilizadores que não renovaram por mês</li>
         </ul>
       </div>
     </div>
@@ -206,31 +251,26 @@ function MetricCard({
   title,
   value,
   icon,
-  color,
+  iconBg,
   subtitle,
 }: {
   title: string
   value: string | number
-  icon: string
-  color: string
+  icon: ReactNode
+  iconBg: string
   subtitle?: string
 }) {
-  const colors: Record<string, string> = {
-    green: 'bg-green-50 border-green-200',
-    blue: 'bg-blue-50 border-blue-200',
-    purple: 'bg-purple-50 border-purple-200',
-    orange: 'bg-orange-50 border-orange-200',
-  }
-
   return (
-    <div className={`${colors[color]} border rounded-lg p-4`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+    <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 hover:border-teal-200 transition-all">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+          {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
         </div>
-        <span className="text-3xl">{icon}</span>
+        <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+          {icon}
+        </div>
       </div>
     </div>
   )
@@ -240,24 +280,31 @@ function DetailCard({
   label,
   value,
   detail,
+  icon,
   warning,
 }: {
   label: string
   value: string
   detail: string
+  icon: ReactNode
   warning?: boolean
 }) {
   return (
     <div
-      className={`border rounded-lg p-4 ${
-        warning ? 'bg-yellow-50 border-yellow-200' : 'bg-white border-gray-200'
+      className={`rounded-2xl border-2 p-6 transition-all ${
+        warning
+          ? 'bg-amber-50/50 border-amber-200 hover:border-amber-300'
+          : 'bg-white border-gray-100 hover:border-teal-200'
       }`}
     >
-      <p className={warning ? 'text-yellow-700 text-sm' : 'text-gray-600 text-sm'}>
-        {label}
-      </p>
-      <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-      <p className={warning ? 'text-xs text-yellow-600 mt-1' : 'text-xs text-gray-500 mt-1'}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className={warning ? 'text-amber-600' : 'text-gray-400'}>{icon}</span>
+        <p className={`text-sm font-medium ${warning ? 'text-amber-700' : 'text-gray-500'}`}>
+          {label}
+        </p>
+      </div>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <p className={`text-xs mt-2 ${warning ? 'text-amber-600' : 'text-gray-400'}`}>
         {detail}
       </p>
     </div>

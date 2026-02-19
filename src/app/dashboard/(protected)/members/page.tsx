@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { Plus, X, Users, Pencil, Loader2, Key, Crown, User, Eye, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Member {
   id: string
@@ -31,10 +33,10 @@ interface Member {
 }
 
 const roleLabels: Record<string, string> = {
-  owner: 'Propriétaire',
-  admin: 'Administrateur',
-  staff: 'Employé',
-  readonly: 'Lecture seule',
+  owner: 'Proprietário',
+  admin: 'Administrador',
+  staff: 'Funcionário',
+  readonly: 'Apenas leitura',
 }
 
 const roleColors: Record<string, string> = {
@@ -45,9 +47,9 @@ const roleColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  active: 'Actif',
-  revoked: 'Révoqué',
+  pending: 'Pendente',
+  active: 'Ativo',
+  revoked: 'Revogado',
 }
 
 const statusColors: Record<string, string> = {
@@ -84,10 +86,10 @@ export default function MembersPage() {
         const data = await res.json()
         setMembers(data)
       } else {
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     } finally {
       setLoading(false)
     }
@@ -103,16 +105,16 @@ export default function MembersPage() {
       })
 
       if (res.ok) {
-        toast.success('Invitation envoyée !')
+        toast.success('Convite enviado!')
         setShowInviteModal(false)
         setInviteForm({ email: '', role: 'staff', firstName: '', lastName: '', phone: '' })
         fetchMembers()
       } else {
         const data = await res.json()
-        toast.error(data.message || 'Erreur')
+        toast.error(data.message || 'Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     }
   }
 
@@ -128,21 +130,21 @@ export default function MembersPage() {
       })
 
       if (res.ok) {
-        toast.success('Membre mis à jour')
+        toast.success('Membro atualizado')
         setShowEditModal(false)
         setSelectedMember(null)
         fetchMembers()
       } else {
         const data = await res.json()
-        toast.error(data.message || 'Erreur')
+        toast.error(data.message || 'Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     }
   }
 
   const handleRevoke = async (memberId: string) => {
-    if (!confirm('Révoquer l\'accès de ce membre ?')) return
+    if (!confirm('Revogar o acesso deste membro?')) return
 
     try {
       const res = await fetch(`/api/salon/members?id=${memberId}`, {
@@ -150,64 +152,62 @@ export default function MembersPage() {
       })
 
       if (res.ok) {
-        toast.success('Accès révoqué')
+        toast.success('Acesso revogado')
         fetchMembers()
       } else {
-        toast.error('Erreur')
+        toast.error('Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Équipe du salon</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Equipa do salão</h1>
           <p className="mt-1 text-gray-600">
-            Gérez les accès et les permissions de votre équipe
+            Gerir os acessos e as permissões da sua equipa
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowInviteModal(true)}
-          className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center gap-2"
+          className="flex items-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Inviter un membre
-        </button>
+          <Plus className="w-5 h-5" />
+          <span className="hidden sm:inline">Convidar um membro</span>
+        </Button>
       </div>
 
-      {/* Liste des membres */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Liste des membres - Desktop */}
+      <div className="hidden md:block bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Membre
+                Membro
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rôle
+                Função
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Statut
+                Estado
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
+                Contacto
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                Ações
               </th>
             </tr>
           </thead>
@@ -216,14 +216,14 @@ export default function MembersPage() {
               <tr key={member.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-medium">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-medium">
                       {(member.firstName?.[0] || member.user?.name?.[0] || '?').toUpperCase()}
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">
                         {member.firstName && member.lastName
                           ? `${member.firstName} ${member.lastName}`
-                          : member.user?.name || 'Invitation en attente'}
+                          : member.user?.name || 'Convite pendente'}
                       </div>
                       <div className="text-sm text-gray-500">
                         {member.user?.email || member.inviteEmail}
@@ -252,20 +252,22 @@ export default function MembersPage() {
                           setSelectedMember(member)
                           setShowEditModal(true)
                         }}
-                        className="text-pink-600 hover:text-pink-900"
+                        className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 transition-colors"
                       >
-                        Modifier
+                        <Pencil className="w-4 h-4" />
+                        Editar
                       </button>
                       <button
                         onClick={() => handleRevoke(member.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="inline-flex items-center gap-1 text-red-500 hover:text-red-700 transition-colors"
                       >
-                        Révoquer
+                        <Shield className="w-4 h-4" />
+                        Revogar
                       </button>
                     </div>
                   )}
                   {member.isOwner && (
-                    <span className="text-gray-400">Propriétaire</span>
+                    <span className="text-gray-400">Proprietário</span>
                   )}
                 </td>
               </tr>
@@ -274,25 +276,93 @@ export default function MembersPage() {
         </table>
       </div>
 
+      {/* Liste des membres - Mobile */}
+      <div className="md:hidden space-y-4">
+        {members.map((member) => (
+          <div key={member.id} className="bg-white rounded-2xl border-2 border-gray-100 p-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-medium">
+                {(member.firstName?.[0] || member.user?.name?.[0] || '?').toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {member.firstName && member.lastName
+                    ? `${member.firstName} ${member.lastName}`
+                    : member.user?.name || 'Convite pendente'}
+                </div>
+                <div className="text-sm text-gray-500 truncate">
+                  {member.user?.email || member.inviteEmail}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleColors[member.role]}`}>
+                    {roleLabels[member.role]}
+                  </span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[member.status]}`}>
+                    {statusLabels[member.status]}
+                  </span>
+                </div>
+                {member.phone && (
+                  <div className="text-sm text-gray-500 mt-1">{member.phone}</div>
+                )}
+              </div>
+            </div>
+            {!member.isOwner && (
+              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setSelectedMember(member)
+                    setShowEditModal(true)
+                  }}
+                  className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleRevoke(member.id)}
+                  className="inline-flex items-center gap-1 text-sm text-red-500 hover:text-red-700 transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  Revogar
+                </button>
+              </div>
+            )}
+            {member.isOwner && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <span className="text-sm text-gray-400">Proprietário</span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
       {/* Légende des rôles */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-4 sm:p-6">
         <h3 className="font-semibold text-gray-900 mb-4">Niveaux d'accès</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-purple-50 rounded-lg">
-            <h4 className="font-medium text-purple-800">🔑 Propriétaire</h4>
+            <h4 className="font-medium text-purple-800 flex items-center gap-2">
+              <Key className="w-4 h-4" /> Propriétaire
+            </h4>
             <p className="text-sm text-purple-600 mt-1">Accès total, gestion de l'abonnement et des membres</p>
           </div>
           <div className="p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-800">👑 Administrateur</h4>
+            <h4 className="font-medium text-blue-800 flex items-center gap-2">
+              <Crown className="w-4 h-4" /> Administrateur
+            </h4>
             <p className="text-sm text-blue-600 mt-1">Gestion complète sauf abonnement et membres</p>
           </div>
           <div className="p-4 bg-green-50 rounded-lg">
-            <h4 className="font-medium text-green-800">👤 Employé</h4>
-            <p className="text-sm text-green-600 mt-1">Gestion des clients, animaux et rendez-vous</p>
+            <h4 className="font-medium text-green-800 flex items-center gap-2">
+              <User className="w-4 h-4" /> Funcionário
+            </h4>
+            <p className="text-sm text-green-600 mt-1">Gestão de clientes, animais e consultas</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-800">👁️ Lecture seule</h4>
-            <p className="text-sm text-gray-600 mt-1">Consultation uniquement, aucune modification</p>
+            <h4 className="font-medium text-gray-800 flex items-center gap-2">
+              <Eye className="w-4 h-4" /> Apenas leitura
+            </h4>
+            <p className="text-sm text-gray-600 mt-1">Consulta apenas, sem modificação</p>
           </div>
         </div>
       </div>
@@ -300,8 +370,16 @@ export default function MembersPage() {
       {/* Modal Invitation */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Inviter un membre</h2>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Convidar um membro</h2>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleInvite} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -312,22 +390,22 @@ export default function MembersPage() {
                   required
                   value={inviteForm.email}
                   onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="input-base w-full"
                   placeholder="email@exemple.com"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rôle *
+                  Função *
                 </label>
                 <select
                   value={inviteForm.role}
                   onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="input-base w-full"
                 >
-                  <option value="admin">Administrateur</option>
-                  <option value="staff">Employé</option>
-                  <option value="readonly">Lecture seule</option>
+                  <option value="admin">Administrador</option>
+                  <option value="staff">Funcionário</option>
+                  <option value="readonly">Apenas leitura</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -339,46 +417,43 @@ export default function MembersPage() {
                     type="text"
                     value={inviteForm.firstName}
                     onChange={(e) => setInviteForm({ ...inviteForm, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base w-full"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom
+                    Apelido
                   </label>
                   <input
                     type="text"
                     value={inviteForm.lastName}
                     onChange={(e) => setInviteForm({ ...inviteForm, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base w-full"
                   />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Téléphone
+                  Telefone
                 </label>
                 <input
                   type="tel"
                   value={inviteForm.phone}
                   onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="input-base w-full"
                 />
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-                >
-                  Envoyer l'invitation
-                </button>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Enviar o convite
+                </Button>
               </div>
             </form>
           </div>
@@ -388,83 +463,94 @@ export default function MembersPage() {
       {/* Modal Édition */}
       {showEditModal && selectedMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Modifier le membre</h2>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Editar o membro</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setSelectedMember(null)
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleUpdateMember} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rôle
+                  Função
                 </label>
                 <select
                   value={selectedMember.role}
                   onChange={(e) => setSelectedMember({ ...selectedMember, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="input-base w-full"
                 >
-                  <option value="admin">Administrateur</option>
-                  <option value="staff">Employé</option>
-                  <option value="readonly">Lecture seule</option>
+                  <option value="admin">Administrador</option>
+                  <option value="staff">Funcionário</option>
+                  <option value="readonly">Apenas leitura</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prénom
+                    Nome próprio
                   </label>
                   <input
                     type="text"
                     value={selectedMember.firstName || ''}
                     onChange={(e) => setSelectedMember({ ...selectedMember, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base w-full"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nom
+                    Apelido
                   </label>
                   <input
                     type="text"
                     value={selectedMember.lastName || ''}
                     onChange={(e) => setSelectedMember({ ...selectedMember, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base w-full"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Téléphone
+                  Telefone
                 </label>
                 <input
                   type="tel"
                   value={selectedMember.phone || ''}
                   onChange={(e) => setSelectedMember({ ...selectedMember, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="input-base w-full"
                 />
               </div>
 
-              {/* Permissions personnalisées */}
+              {/* Permissões personalizadas */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Permissions personnalisées
+                  Permissões personalizadas
                 </label>
                 <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
                   {[
-                    { key: 'canManageClients', label: 'Gérer les clients' },
-                    { key: 'canManageAnimals', label: 'Gérer les animaux' },
-                    { key: 'canManageAppointments', label: 'Gérer les rendez-vous' },
-                    { key: 'canManageServices', label: 'Gérer les services' },
-                    { key: 'canManageInventory', label: 'Gérer l\'inventaire' },
-                    { key: 'canViewReports', label: 'Voir les rapports' },
-                    { key: 'canManageBilling', label: 'Gérer la facturation' },
-                    { key: 'canManageSettings', label: 'Gérer les paramètres' },
+                    { key: 'canManageClients', label: 'Gerir clientes' },
+                    { key: 'canManageAnimals', label: 'Gerir animais' },
+                    { key: 'canManageAppointments', label: 'Gerir marcações' },
+                    { key: 'canManageServices', label: 'Gerir serviços' },
+                    { key: 'canManageInventory', label: 'Gerir inventário' },
+                    { key: 'canViewReports', label: 'Ver relatórios' },
+                    { key: 'canManageBilling', label: 'Gerir faturação' },
+                    { key: 'canManageSettings', label: 'Gerir definições' },
                   ].map(({ key, label }) => (
                     <label key={key} className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={selectedMember[key as keyof Member] as boolean}
                         onChange={(e) => setSelectedMember({ ...selectedMember, [key]: e.target.checked })}
-                        className="w-4 h-4 text-pink-600 rounded focus:ring-pink-500"
+                        className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                       />
                       <span className="text-sm text-gray-700">{label}</span>
                     </label>
@@ -473,22 +559,19 @@ export default function MembersPage() {
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => {
                     setShowEditModal(false)
                     setSelectedMember(null)
                   }}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-                >
-                  Enregistrer
-                </button>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Guardar
+                </Button>
               </div>
             </form>
           </div>

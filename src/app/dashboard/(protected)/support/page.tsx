@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { Plus, MessageSquare, ChevronRight, Loader2, Ticket as TicketIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Ticket {
   id: string
@@ -30,17 +32,17 @@ interface Ticket {
 }
 
 const categoryLabels: Record<string, string> = {
-  general: 'Général',
-  billing: 'Facturation',
-  technical: 'Technique',
-  feature_request: 'Suggestion',
+  general: 'Geral',
+  billing: 'Faturação',
+  technical: 'Técnico',
+  feature_request: 'Sugestão',
   bug: 'Bug',
 }
 
 const priorityLabels: Record<string, string> = {
-  low: 'Basse',
-  normal: 'Normale',
-  high: 'Haute',
+  low: 'Baixa',
+  normal: 'Normal',
+  high: 'Alta',
   urgent: 'Urgente',
 }
 
@@ -52,11 +54,11 @@ const priorityColors: Record<string, string> = {
 }
 
 const statusLabels: Record<string, string> = {
-  open: 'Ouvert',
-  in_progress: 'En cours',
-  waiting_customer: 'En attente de réponse',
-  resolved: 'Résolu',
-  closed: 'Fermé',
+  open: 'Aberto',
+  in_progress: 'Em curso',
+  waiting_customer: 'A aguardar resposta',
+  resolved: 'Resolvido',
+  closed: 'Fechado',
 }
 
 const statusColors: Record<string, string> = {
@@ -90,10 +92,10 @@ export default function SupportPage() {
         setTickets(data.tickets)
         setIsAdmin(data.isAdmin)
       } else {
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     } finally {
       setLoading(false)
     }
@@ -114,21 +116,21 @@ export default function SupportPage() {
 
       if (res.ok) {
         const ticket = await res.json()
-        toast.success('Ticket créé !')
+        toast.success('Ticket criado!')
         setShowNewModal(false)
         setNewTicket({ subject: '', description: '', category: 'general', priority: 'normal' })
         router.push(`/dashboard/support/${ticket.id}`)
       } else {
         const data = await res.json()
-        toast.error(data.message || 'Erreur')
+        toast.error(data.message || 'Erro')
       }
     } catch {
-      toast.error('Erreur réseau')
+      toast.error('Erro de rede')
     }
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
+    return new Date(dateString).toLocaleDateString('pt-PT', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -140,34 +142,32 @@ export default function SupportPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isAdmin ? '🎫 Gestion des tickets' : '💬 Support'}
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            {isAdmin ? <><TicketIcon className="w-6 h-6 text-teal-600" /> Gestão de tickets</> : <><MessageSquare className="w-6 h-6 text-teal-600" /> Suporte</>}
           </h1>
           <p className="mt-1 text-gray-600">
             {isAdmin
-              ? 'Gérez les demandes de support des utilisateurs'
-              : 'Besoin d\'aide ? Créez un ticket et notre équipe vous répondra.'}
+              ? 'Gerir os pedidos de suporte dos utilizadores'
+              : 'Precisa de ajuda? Crie um ticket e a nossa equipa responderá.'}
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowNewModal(true)}
-          className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center gap-2"
+          className="flex items-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Nouveau ticket
-        </button>
+          <Plus className="w-5 h-5" />
+          Novo ticket
+        </Button>
       </div>
 
       {/* Filtres */}
@@ -178,26 +178,24 @@ export default function SupportPage() {
             onClick={() => setFilter(status)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               filter === status
-                ? 'bg-pink-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                ? 'bg-teal-500 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-100'
             }`}
           >
-            {status === 'all' ? 'Tous' : statusLabels[status]}
+            {status === 'all' ? 'Todos' : statusLabels[status]}
           </button>
         ))}
       </div>
 
       {/* Liste des tickets */}
       {tickets.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-          <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-          </svg>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Aucun ticket</h3>
+        <div className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center">
+          <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhum ticket</h3>
           <p className="text-gray-500">
             {filter === 'all' 
-              ? 'Vous n\'avez pas encore créé de ticket de support.'
-              : 'Aucun ticket avec ce statut.'}
+              ? 'Ainda não criou nenhum ticket de suporte.'
+              : 'Nenhum ticket com este estado.'}
           </p>
         </div>
       ) : (
@@ -206,7 +204,7 @@ export default function SupportPage() {
             <div
               key={ticket.id}
               onClick={() => router.push(`/dashboard/support/${ticket.id}`)}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-white rounded-2xl border-2 border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -230,14 +228,12 @@ export default function SupportPage() {
                     {isAdmin && (
                       <>
                         <span>•</span>
-                        <span className="text-pink-600">{ticket.user.email}</span>
+                        <span className="text-teal-600">{ticket.user.email}</span>
                       </>
                     )}
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
               </div>
             </div>
           ))}
@@ -247,52 +243,52 @@ export default function SupportPage() {
       {/* Modal Nouveau ticket */}
       {showNewModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Nouveau ticket de support</h2>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg mx-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Novo ticket de suporte</h2>
             <form onSubmit={handleCreateTicket} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sujet *
+                  Assunto *
                 </label>
                 <input
                   type="text"
                   required
                   value={newTicket.subject}
                   onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Résumez votre problème en quelques mots"
+                  className="input-base"
+                  placeholder="Resuma o seu problema em poucas palavras"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Catégorie
+                    Categoria
                   </label>
                   <select
                     value={newTicket.category}
                     onChange={(e) => setNewTicket({ ...newTicket, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base"
                   >
-                    <option value="general">Général</option>
-                    <option value="billing">Facturation</option>
-                    <option value="technical">Technique</option>
-                    <option value="feature_request">Suggestion</option>
+                    <option value="general">Geral</option>
+                    <option value="billing">Faturação</option>
+                    <option value="technical">Técnico</option>
+                    <option value="feature_request">Sugestão</option>
                     <option value="bug">Bug</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Priorité
+                    Prioridade
                   </label>
                   <select
                     value={newTicket.priority}
                     onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="input-base"
                   >
-                    <option value="low">Basse</option>
-                    <option value="normal">Normale</option>
-                    <option value="high">Haute</option>
+                    <option value="low">Baixa</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">Alta</option>
                     <option value="urgent">Urgente</option>
                   </select>
                 </div>
@@ -300,32 +296,29 @@ export default function SupportPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description *
+                  Descrição *
                 </label>
                 <textarea
                   required
                   rows={5}
                   value={newTicket.description}
                   onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="Décrivez votre problème en détail. Plus vous donnez d'informations, plus nous pourrons vous aider rapidement."
+                  className="input-base"
+                  placeholder="Descreva o seu problema em detalhe. Quanto mais informações fornecer, mais rapidamente poderemos ajudá-lo."
                 />
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={() => setShowNewModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-                >
-                  Créer le ticket
-                </button>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Criar o ticket
+                </Button>
               </div>
             </form>
           </div>

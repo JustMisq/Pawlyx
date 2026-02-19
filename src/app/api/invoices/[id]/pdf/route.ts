@@ -332,7 +332,7 @@ function generateInvoiceHTML(invoice: any) {
       <div class="legal">
         ${escapeHtml(salon.legalName || salon.name)} ${salon.legalForm ? `- ${escapeHtml(salon.legalForm)}` : ''}<br>
         ${salon.siret ? `SIRET : ${escapeHtml(salon.siret)}` : ''} ${salon.tvaNumber ? `- TVA : ${escapeHtml(salon.tvaNumber)}` : ''}<br>
-        Document généré automatiquement par Groomly
+        Document généré automatiquement par Pawlyx
       </div>
     </div>
   </div>

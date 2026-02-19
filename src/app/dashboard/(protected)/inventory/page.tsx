@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
+import {
+  Package, Plus, X, Loader2, Pencil, Trash2, Search,
+  AlertTriangle, ShoppingCart, Tags, FolderOpen, CheckCircle2, DollarSign
+} from 'lucide-react'
 
 interface InventoryCategory {
   id: string
@@ -43,7 +47,7 @@ export default function InventoryPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [filterCategory, setFilterCategory] = useState('all')
   
-  // États pour le modal de vente de stock
+  // Estados para o modal de venda de stock
   const [showSaleModal, setShowSaleModal] = useState(false)
   const [saleItem, setSaleItem] = useState<InventoryItem | null>(null)
   const [saleData, setSaleData] = useState({
@@ -69,11 +73,11 @@ export default function InventoryPage() {
     icon: '📦',
   })
 
-  const units = ['ml', 'l', 'g', 'kg', 'pièces', 'bouteille', 'boîte', 'spray']
+  const units = ['ml', 'l', 'g', 'kg', 'peças', 'garrafa', 'caixa', 'spray']
   const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
   const icons = ['📦', '🧴', '🪮', '🎀', '🧼', '💄', '🩹', '🐾']
 
-  // Charger les stocks, catégories et clients
+  // Carregar os stocks, categorias e clientes
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -96,7 +100,7 @@ export default function InventoryPage() {
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       } finally {
         setLoading(false)
       }
@@ -157,7 +161,7 @@ export default function InventoryPage() {
     e.preventDefault()
 
     if (!formData.name || !formData.quantity || !formData.price) {
-      toast.error('Le nom, la quantité et le prix sont requis')
+      toast.error('O nome, a quantidade e o preço são obrigatórios')
       return
     }
 
@@ -184,7 +188,7 @@ export default function InventoryPage() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}))
-        toast.error(error.message || `Erreur lors de la ${editingItem ? 'modification' : 'création'}`)
+        toast.error(error.message || `Erro ao ${editingItem ? 'editar' : 'criar'}`)
         return
       }
 
@@ -192,16 +196,16 @@ export default function InventoryPage() {
 
       if (editingItem) {
         setItems(items.map(i => i.id === newItem.id ? newItem : i))
-        toast.success('Article modifié!')
+        toast.success('Artigo editado!')
       } else {
         setItems([...items, newItem])
-        toast.success('Article créé!')
+        toast.success('Artigo criado!')
       }
 
       resetForm()
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setIsSubmitting(false)
     }
@@ -211,7 +215,7 @@ export default function InventoryPage() {
     e.preventDefault()
 
     if (!categoryFormData.name.trim()) {
-      toast.error('Le nom de la catégorie est requis')
+      toast.error('O nome da categoria é obrigatório')
       return
     }
 
@@ -236,7 +240,7 @@ export default function InventoryPage() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}))
-        toast.error(error.message || `Erreur lors de la ${editingCategory ? 'modification' : 'création'}`)
+        toast.error(error.message || `Erro ao ${editingCategory ? 'editar' : 'criar'}`)
         return
       }
 
@@ -244,27 +248,27 @@ export default function InventoryPage() {
 
       if (editingCategory) {
         setCategories(categories.map(c => c.id === newCategory.id ? newCategory : c))
-        // Mettre à jour les items si la catégorie a changé
+        // Atualizar os itens se a categoria mudou
         setItems(items.map(item => 
           item.categoryId === newCategory.id ? { ...item, category: newCategory } : item
         ))
-        toast.success('Catégorie modifiée!')
+        toast.success('Categoria editada!')
       } else {
         setCategories([...categories, newCategory])
-        toast.success('Catégorie créée!')
+        toast.success('Categoria criada!')
       }
 
       resetCategoryForm()
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleDelete = async (itemId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return
+    if (!confirm('Tem a certeza que deseja eliminar este artigo?')) return
 
     try {
       const res = await fetch(`/api/inventory?id=${itemId}`, {
@@ -273,18 +277,18 @@ export default function InventoryPage() {
 
       if (res.ok) {
         setItems(items.filter(i => i.id !== itemId))
-        toast.success('Article supprimé')
+        toast.success('Artigo eliminado')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error deleting item:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ? Les articles seront conservés.')) return
+    if (!confirm('Tem a certeza que deseja eliminar esta categoria? Os artigos serão mantidos.')) return
 
     try {
       const res = await fetch(`/api/inventory/categories?id=${categoryId}`, {
@@ -296,13 +300,13 @@ export default function InventoryPage() {
         setItems(items.map(item => 
           item.categoryId === categoryId ? { ...item, categoryId: null, category: null } : item
         ))
-        toast.success('Catégorie supprimée')
+        toast.success('Categoria eliminada')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error deleting category:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
@@ -322,7 +326,7 @@ export default function InventoryPage() {
     e.preventDefault()
 
     if (!saleData.clientId || !saleData.quantity || parseInt(saleData.quantity) <= 0) {
-      toast.error('Veuillez sélectionner un client et une quantité valide')
+      toast.error('Selecione um cliente e uma quantidade válida')
       return
     }
 
@@ -344,64 +348,68 @@ export default function InventoryPage() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}))
-        toast.error(error.message || 'Erreur lors de la création de la facture')
+        toast.error(error.message || 'Erro ao criar a fatura')
         return
       }
 
       const { invoice } = await res.json()
 
-      // Mettre à jour la quantité locale
+      // Atualizar a quantidade local
       setItems(items.map(i =>
         i.id === saleItem.id
           ? { ...i, quantity: i.quantity - parseInt(saleData.quantity) }
           : i
       ))
 
-      toast.success(`Facture ${invoice.invoiceNumber} créée!`)
+      toast.success(`Fatura ${invoice.invoiceNumber} criada!`)
       closeSaleModal()
     } catch (error) {
       console.error('Error creating sale:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     } finally {
       setIsSubmittingSale(false)
     }
   }
 
-  // Calculer le stock total (valeur)
+  // Calcular o stock total (valor)
   const totalValue = items.reduce((acc, item) => acc + (item.quantity * item.price), 0)
 
-  // Articles en stock faible (moins de 5)
+  // Artigos com stock baixo (menos de 5)
   const lowStockItems = items.filter(item => item.quantity < 5)
 
-  // Filtrer les articles par catégorie
+  // Filtrar os artigos por categoria
   const filteredItems = filterCategory === 'all' 
     ? items 
     : items.filter(item => item.categoryId === filterCategory)
 
-  // Recalculer les statistiques filtrées
+  // Recalcular as estatísticas filtradas
   const filteredTotalValue = filteredItems.reduce((acc, item) => acc + (item.quantity * item.price), 0)
   const filteredLowStockItems = filteredItems.filter(item => item.quantity < 5)
 
-  // Articles sans catégorie
+  // Artigos sem categoria
   const uncategorizedCount = items.filter(item => !item.categoryId).length
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-500">Chargement des stocks...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
+          <p className="text-gray-500">A carregar stocks...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">📦 Gestion des stocks</h1>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <Package className="w-8 h-8 text-teal-500" />
+          Gestão de stocks
+        </h1>
         <div className="flex gap-2">
           <Button
+            variant={showCategoryForm ? 'outline' : 'default'}
             onClick={() => {
               if (showCategoryForm && !editingCategory) {
                 setShowCategoryForm(false)
@@ -410,11 +418,11 @@ export default function InventoryPage() {
                 setShowCategoryForm(true)
               }
             }}
-            className="bg-purple-500 hover:bg-purple-600"
           >
-            {showCategoryForm ? '❌ Annuler' : '🏷️ Nouvelle catégorie'}
+            {showCategoryForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Tags className="w-4 h-4" /> Nova categoria</>}
           </Button>
           <Button
+            variant={showForm ? 'outline' : 'default'}
             onClick={() => {
               if (showForm && !editingItem) {
                 setShowForm(false)
@@ -423,31 +431,31 @@ export default function InventoryPage() {
                 setShowForm(true)
               }
             }}
-            className="bg-primary hover:bg-primary/90"
           >
-            {showForm ? '❌ Annuler' : '➕ Nouveau article'}
+            {showForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Plus className="w-4 h-4" /> Novo artigo</>}
           </Button>
         </div>
       </div>
 
-      {/* Formulaire catégorie */}
+      {/* Formulário categoria */}
       {showCategoryForm && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingCategory ? 'Modifier la catégorie' : 'Ajouter une catégorie'}
+        <div className="bg-teal-50/50 rounded-2xl border-2 border-teal-100 p-4 sm:p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Tags className="w-5 h-5 text-teal-600" />
+            {editingCategory ? 'Editar categoria' : 'Adicionar uma categoria'}
           </h2>
           <form onSubmit={handleCategorySubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom *
+                  Nome *
                 </label>
                 <input
                   type="text"
                   value={categoryFormData.name}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  placeholder="Ex: Shampooings"
+                  className="input-base"
+                  placeholder="Ex: Champôs"
                 />
               </div>
 
@@ -461,10 +469,10 @@ export default function InventoryPage() {
                       key={icon}
                       type="button"
                       onClick={() => setCategoryFormData({ ...categoryFormData, icon })}
-                      className={`text-2xl px-3 py-2 rounded border-2 ${
+                      className={`text-2xl px-3 py-2 rounded-lg border-2 ${
                         categoryFormData.icon === icon
-                          ? 'border-purple-500 bg-purple-100'
-                          : 'border-gray-300'
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-gray-200'
                       }`}
                     >
                       {icon}
@@ -476,20 +484,20 @@ export default function InventoryPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                Descrição
               </label>
               <textarea
                 value={categoryFormData.description}
                 onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                placeholder="Description de la catégorie..."
+                className="input-base resize-none"
+                placeholder="Descrição da categoria..."
                 rows={2}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Couleur
+                Cor
               </label>
               <div className="flex gap-2">
                 {colors.map(color => (
@@ -497,10 +505,10 @@ export default function InventoryPage() {
                     key={color}
                     type="button"
                     onClick={() => setCategoryFormData({ ...categoryFormData, color })}
-                    className={`w-10 h-10 rounded border-2 ${
+                    className={`w-10 h-10 rounded-lg border-2 ${
                       categoryFormData.color === color
-                        ? 'border-gray-900'
-                        : 'border-gray-300'
+                        ? 'border-gray-900 ring-2 ring-offset-2 ring-teal-500'
+                        : 'border-gray-200'
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -508,53 +516,55 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-purple-500 hover:bg-purple-600 disabled:opacity-50">
-              {isSubmitting ? 'En cours...' : editingCategory ? 'Modifier la catégorie' : 'Créer la catégorie'}
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> A processar...</> : editingCategory ? 'Editar categoria' : 'Criar categoria'}
             </Button>
           </form>
         </div>
       )}
 
-      {/* Statistiques */}
+      {/* Estatísticas */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total articles</p>
-          <p className="text-3xl font-bold text-primary">{filteredItems.length}</p>
+        <div className="bg-white rounded-2xl p-6 border-2 border-gray-100">
+          <p className="text-sm text-gray-600 mb-1 flex items-center gap-1.5"><Package className="w-4 h-4" /> Total de artigos</p>
+          <p className="text-3xl font-bold text-teal-600">{filteredItems.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Valeur totale du stock</p>
-          <p className="text-3xl font-bold text-primary">{filteredTotalValue.toFixed(2)}€</p>
+        <div className="bg-white rounded-2xl p-6 border-2 border-gray-100">
+          <p className="text-sm text-gray-600 mb-1 flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> Valor total do stock</p>
+          <p className="text-3xl font-bold text-teal-600">{filteredTotalValue.toFixed(2)}€</p>
         </div>
-        <div className={`rounded-lg p-6 border ${filteredLowStockItems.length > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-          <p className={`text-sm ${filteredLowStockItems.length > 0 ? 'text-red-600' : 'text-green-600'} mb-1`}>
-            Articles en stock faible
+        <div className={`rounded-2xl p-6 border-2 ${filteredLowStockItems.length > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+          <p className={`text-sm ${filteredLowStockItems.length > 0 ? 'text-amber-600' : 'text-green-600'} mb-1 flex items-center gap-1.5`}>
+            <AlertTriangle className="w-4 h-4" /> Artigos com stock baixo
           </p>
-          <p className={`text-3xl font-bold ${filteredLowStockItems.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
+          <p className={`text-3xl font-bold ${filteredLowStockItems.length > 0 ? 'text-amber-600' : 'text-green-600'}`}>
             {filteredLowStockItems.length}
           </p>
         </div>
       </div>
 
-      {/* Catégories */}
+      {/* Categorias */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-3">📂 Catégories</h2>
+        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <FolderOpen className="w-5 h-5 text-teal-500" /> Categorias
+        </h2>
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilterCategory('all')}
-            className={`px-4 py-2 rounded-full font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filterCategory === 'all'
-                ? 'bg-primary text-white'
-                : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                ? 'bg-teal-500 text-white'
+                : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
             }`}
           >
-            Tous ({items.length})
+            Todos ({items.length})
           </button>
           
           {categories.map(cat => (
             <div key={cat.id} className="relative group">
               <button
                 onClick={() => setFilterCategory(cat.id)}
-                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                   filterCategory === cat.id
                     ? 'text-white'
                     : 'text-white hover:opacity-80'
@@ -566,19 +576,19 @@ export default function InventoryPage() {
                 {cat.icon} {cat.name} ({cat.items?.length || 0})
               </button>
 
-              {/* Menu contextuel au hover */}
-              <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              {/* Menu contextual ao hover */}
+              <div className="absolute right-0 mt-1 w-36 bg-white rounded-2xl shadow-lg border-2 border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 overflow-hidden">
                 <button
                   onClick={() => handleEditCategory(cat)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-t-lg"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                 >
-                  ✏️ Modifier
+                  <Pencil className="w-3.5 h-3.5" /> Editar
                 </button>
                 <button
                   onClick={() => handleDeleteCategory(cat.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-b-lg text-red-600"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
                 >
-                  🗑️ Supprimer
+                  <Trash2 className="w-3.5 h-3.5" /> Eliminar
                 </button>
               </div>
             </div>
@@ -587,48 +597,49 @@ export default function InventoryPage() {
           {uncategorizedCount > 0 && (
             <button
               onClick={() => setFilterCategory('uncategorized')}
-              className={`px-4 py-2 rounded-full font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filterCategory === 'uncategorized'
                   ? 'bg-gray-500 text-white'
-                  : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
               }`}
             >
-              Sans catégorie ({uncategorizedCount})
+              Sem categoria ({uncategorizedCount})
             </button>
           )}
         </div>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg p-6 border border-gray-200 mb-8">
-          <h2 className="text-xl font-semibold mb-4">
-            {editingItem ? 'Modifier l\'article' : 'Ajouter un article'}
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-100 mb-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Package className="w-5 h-5 text-teal-600" />
+            {editingItem ? 'Editar artigo' : 'Adicionar um artigo'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nom *
+                  Nome *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="Ex: Shampoing pour chien"
+                  className="input-base"
+                  placeholder="Ex: Champô para cão"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Catégorie
+                  Categoria
                 </label>
                 <select
                   value={formData.categoryId}
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 >
-                  <option value="">Aucune catégorie</option>
+                  <option value="">Sem categoria</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>
                       {cat.icon} {cat.name}
@@ -641,26 +652,26 @@ export default function InventoryPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Prix unitaire (€) *
+                  Preço unitário (€) *
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                   placeholder="10.50"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Unité *
+                  Unidade *
                 </label>
                 <select
                   value={formData.unit}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 >
                   {units.map(unit => (
                     <option key={unit} value={unit}>{unit}</option>
@@ -671,56 +682,56 @@ export default function InventoryPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                Descrição
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                placeholder="Notes sur le produit..."
+                className="input-base resize-none"
+                placeholder="Notas sobre o produto..."
                 rows={2}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantité *
+                Quantidade *
               </label>
               <input
                 type="number"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                className="input-base"
                 placeholder="10"
               />
             </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50">
-              {isSubmitting ? 'En cours...' : editingItem ? 'Modifier l\'article' : 'Ajouter l\'article'}
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> A processar...</> : editingItem ? 'Editar artigo' : 'Adicionar artigo'}
             </Button>
           </form>
         </div>
       )}
 
-      {/* Modal de vente de stock */}
+      {/* Modal de venda de stock */}
       {showSaleModal && saleItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">
-              💰 Vendre: {saleItem.name}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-teal-600" /> Vender: {saleItem.name}
             </h2>
 
             <form onSubmit={handleSaleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Client *
+                  Cliente *
                 </label>
                 <select
                   value={saleData.clientId}
                   onChange={(e) => setSaleData({ ...saleData, clientId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                  className="input-base"
                 >
-                  <option value="">Sélectionner un client...</option>
+                  <option value="">Selecionar um cliente...</option>
                   {clients.map(client => (
                     <option key={client.id} value={client.id}>
                       {client.firstName} {client.lastName}
@@ -731,7 +742,7 @@ export default function InventoryPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Quantité ({saleItem.unit}) *
+                  Quantidade ({saleItem.unit}) *
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -740,7 +751,7 @@ export default function InventoryPage() {
                     max={saleItem.quantity}
                     value={saleData.quantity}
                     onChange={(e) => setSaleData({ ...saleData, quantity: e.target.value })}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+                    className="input-base flex-1"
                     placeholder="1"
                   />
                   <span className="text-sm text-gray-600">
@@ -750,28 +761,28 @@ export default function InventoryPage() {
               </div>
 
               {saleData.quantity && (
-                <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">Total HT:</span> {(saleItem.price * parseInt(saleData.quantity || '0')).toFixed(2)}€
+                <div className="bg-teal-50 border-2 border-teal-100 rounded-2xl p-3">
+                  <p className="text-sm text-teal-900">
+                    <span className="font-semibold">Total s/ IVA:</span> {(saleItem.price * parseInt(saleData.quantity || '0')).toFixed(2)}€
                   </p>
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">TVA (20%):</span> {((saleItem.price * parseInt(saleData.quantity || '0') * 0.2)).toFixed(2)}€
+                  <p className="text-sm text-teal-900">
+                    <span className="font-semibold">IVA (23%):</span> {((saleItem.price * parseInt(saleData.quantity || '0') * 0.23)).toFixed(2)}€
                   </p>
-                  <p className="text-sm font-semibold text-blue-900 pt-2 border-t border-blue-200">
-                    <span>Total TTC:</span> {((saleItem.price * parseInt(saleData.quantity || '0')) * 1.2).toFixed(2)}€
+                  <p className="text-sm font-semibold text-teal-900 pt-2 border-t border-teal-200">
+                    <span>Total c/ IVA:</span> {((saleItem.price * parseInt(saleData.quantity || '0')) * 1.23).toFixed(2)}€
                   </p>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes (optionnel)
+                  Notas (opcional)
                 </label>
                 <textarea
                   value={saleData.notes}
                   onChange={(e) => setSaleData({ ...saleData, notes: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
-                  placeholder="Notes sur la vente..."
+                  className="input-base resize-none"
+                  placeholder="Notas sobre a venda..."
                   rows={2}
                 />
               </div>
@@ -779,17 +790,16 @@ export default function InventoryPage() {
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
+                  variant="outline"
                   onClick={closeSaleModal}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-900"
                 >
-                  Annuler
+                  Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmittingSale || !saleData.clientId || !saleData.quantity}
-                  className="bg-green-500 hover:bg-green-600 text-white disabled:opacity-50"
                 >
-                  {isSubmittingSale ? 'Création...' : '✅ Créer facture'}
+                  {isSubmittingSale ? <><Loader2 className="w-4 h-4 animate-spin" /> A criar...</> : <><CheckCircle2 className="w-4 h-4" /> Criar fatura</>}
                 </Button>
               </div>
             </form>
@@ -797,96 +807,102 @@ export default function InventoryPage() {
         </div>
       )}
 
-      {/* Articles en stock faible */}
+      {/* Artigos com stock baixo */}
       {filteredLowStockItems.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
-          <h3 className="font-semibold text-red-900 mb-3">⚠️ Articles en stock faible</h3>
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 mb-8">
+          <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" /> Artigos com stock baixo
+          </h3>
           <div className="grid gap-2">
             {filteredLowStockItems.map(item => (
-              <p key={item.id} className="text-sm text-red-700">
-                {item.name}: {item.quantity} {item.unit} restant(s)
+              <p key={item.id} className="text-sm text-amber-700 flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" /> {item.name}: {item.quantity} {item.unit} restante(s)
               </p>
             ))}
           </div>
         </div>
       )}
 
-      {/* Liste des articles */}
+      {/* Lista de artigos */}
       <div className="grid gap-4">
         {filteredItems.length === 0 ? (
-          <div className="bg-gray-50 rounded-lg p-8 text-center">
+          <div className="bg-gray-50 rounded-2xl p-8 text-center border-2 border-gray-100">
+            <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">
               {filterCategory === 'all' 
-                ? 'Aucun article en stock. Ajoutez-en un pour démarrer!'
-                : 'Aucun article dans cette catégorie.'}
+                ? 'Nenhum artigo em stock. Adicione um para começar!'
+                : 'Nenhum artigo nesta categoria.'}
             </p>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-white border-2 border-gray-100 rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nom</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Catégorie</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nome</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Categoria</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Stock</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Prix unitaire</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valeur totale</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Preço unitário</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Valor total</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {filteredItems.map((item) => (
-                    <tr key={item.id} className={item.quantity < 5 ? 'bg-red-50' : ''}>
+                    <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${item.quantity < 5 ? 'bg-amber-50' : ''}`}>
                       <td className="px-6 py-4">
                         <div>
                           <p className="font-medium text-gray-900">{item.name}</p>
                           {item.description && (
-                            <p className="text-sm text-gray-600">{item.description}</p>
+                            <p className="text-sm text-gray-500">{item.description}</p>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         {item.category ? (
-                          <span 
-                            className="px-3 py-1 rounded-full text-sm font-medium text-white"
-                            style={{ backgroundColor: item.category.color || '#3b82f6' }}
-                          >
+                          <span className="px-3 py-1 rounded-lg text-sm font-medium bg-teal-50 text-teal-700">
                             {item.category.icon} {item.category.name}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-500">-</span>
+                          <span className="text-sm text-gray-400">—</span>
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${item.quantity < 5 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${item.quantity < 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
                           {item.quantity} {item.unit}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-900">{item.price.toFixed(2)}€</td>
-                      <td className="px-6 py-4 text-gray-900 font-medium">
+                      <td className="px-6 py-4 text-teal-600 font-semibold">{item.price.toFixed(2)}€</td>
+                      <td className="px-6 py-4 text-teal-600 font-semibold">
                         {(item.quantity * item.price).toFixed(2)}€
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => openSaleModal(item)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 text-sm"
-                            title="Vendre du stock"
+                            title="Vender stock"
+                            className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
                           >
-                            💰 Vendre
+                            <ShoppingCart className="w-4 h-4" />
                           </Button>
                           <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleEdit(item)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm"
+                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
                           >
-                            ✏️
+                            <Pencil className="w-4 h-4" />
                           </Button>
                           <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleDelete(item.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 text-sm"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
                           >
-                            🗑️
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </td>

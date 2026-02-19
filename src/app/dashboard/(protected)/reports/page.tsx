@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { BarChart3, Plus, Download, FileText, Eye, Trash2, Loader2, ChevronDown, Receipt } from 'lucide-react'
 
 interface Invoice {
   id: string
@@ -57,7 +58,7 @@ export default function ReportsPage() {
     if (items.length === 0) return '-'
     
     return items.map(item => {
-      const name = item.service || item.product || 'Produit'
+      const name = item.service || item.product || 'Produto'
       const qty = item.quantity > 1 ? ` (x${item.quantity})` : ''
       const unit = item.unit ? ` ${item.unit}` : ''
       return `${name}${qty}${unit}`
@@ -74,7 +75,7 @@ export default function ReportsPage() {
         }
       } catch (error) {
         console.error('Error fetching invoices:', error)
-        toast.error('Erreur lors du chargement')
+        toast.error('Erro ao carregar')
       } finally {
         setLoading(false)
       }
@@ -130,18 +131,18 @@ export default function ReportsPage() {
       if (res.ok) {
         const updated = await res.json()
         setInvoices(invoices.map(inv => inv.id === invoiceId ? updated : inv))
-        toast.success('Facture mise à jour')
+        toast.success('Fatura atualizada')
       } else {
-        toast.error('Erreur lors de la mise à jour')
+        toast.error('Erro ao atualizar')
       }
     } catch (error) {
       console.error('Error:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
   const handleDelete = async (invoiceId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) return
+    if (!confirm('Tem a certeza de que deseja eliminar esta fatura?')) return
 
     try {
       const res = await fetch(`/api/invoices?id=${invoiceId}`, {
@@ -150,19 +151,19 @@ export default function ReportsPage() {
 
       if (res.ok) {
         setInvoices(invoices.filter(inv => inv.id !== invoiceId))
-        toast.success('Facture supprimée')
+        toast.success('Fatura eliminada')
       } else {
-        toast.error('Erreur lors de la suppression')
+        toast.error('Erro ao eliminar')
       }
     } catch (error) {
       console.error('Error deleting invoice:', error)
-      toast.error('Une erreur est survenue')
+      toast.error('Ocorreu um erro')
     }
   }
 
   const exportCSV = () => {
     const csv = [
-      ['Numéro', 'Type', 'Client', 'Produit/Service', 'Quantité', 'HT', 'TVA', 'TTC', 'Statut', 'Date'],
+      ['Número', 'Tipo', 'Cliente', 'Produto/Serviço', 'Quantidade', 'S/IVA', 'IVA', 'C/IVA', 'Estado', 'Data'],
       ...filteredInvoices.map(inv => [
         inv.invoiceNumber,
         inv.type === 'stock_sale' ? 'Stock' : 'Appointment',
@@ -176,7 +177,7 @@ export default function ReportsPage() {
         inv.taxAmount.toFixed(2),
         inv.total.toFixed(2),
         inv.status,
-        new Date(inv.createdAt).toLocaleDateString('fr-FR'),
+        new Date(inv.createdAt).toLocaleDateString('pt-PT'),
       ]),
     ]
       .map(row => row.join(','))
@@ -186,7 +187,7 @@ export default function ReportsPage() {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `rapports-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `relatorios-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
   }
 
@@ -198,7 +199,7 @@ export default function ReportsPage() {
       
       const res = await fetch(`/api/export/accounting?${params}`)
       if (!res.ok) {
-        toast.error('Erreur lors de l\'export')
+        toast.error('Erro ao exportar')
         return
       }
 
@@ -206,11 +207,11 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `export-comptable-${format}-${new Date().toISOString().split('T')[0]}.${format === 'fec' ? 'txt' : 'csv'}`
+      a.download = `export-contabilidade-${format}-${new Date().toISOString().split('T')[0]}.${format === 'fec' ? 'txt' : 'csv'}`
       a.click()
-      toast.success(`Export ${format.toUpperCase()} téléchargé`)
+      toast.success(`Exportação ${format.toUpperCase()} descarregada`)
     } catch (error) {
-      toast.error('Erreur lors de l\'export')
+      toast.error('Erro ao exportar')
     }
   }
 
@@ -218,7 +219,7 @@ export default function ReportsPage() {
     try {
       const res = await fetch(`/api/invoices/${invoiceId}/pdf`)
       if (!res.ok) {
-        toast.error('Erreur lors de la génération du PDF')
+        toast.error('Erro ao gerar o PDF')
         return
       }
 
@@ -226,11 +227,11 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `facture-${invoiceNumber}.html`
+      a.download = `fatura-${invoiceNumber}.html`
       a.click()
-      toast.success('Facture téléchargée')
+      toast.success('Fatura descarregada')
     } catch (error) {
-      toast.error('Erreur lors du téléchargement')
+      toast.error('Erro ao descarregar')
     }
   }
 
@@ -240,51 +241,60 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-500">Chargement des rapports...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
+          <p className="text-gray-500">A carregar relatórios...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">📊 Rapports & Factures</h1>
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+          <BarChart3 className="w-8 h-8 text-teal-500" />
+          Relatórios & Faturas
+        </h1>
         <div className="flex gap-3 flex-wrap">
           <Link href="/dashboard/appointments">
-            <Button className="bg-green-500 hover:bg-green-600 text-white">
-              ➕ Créer une facture
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Criar uma fatura
             </Button>
           </Link>
           <Button
+            variant="outline"
             onClick={exportCSV}
             disabled={filteredInvoices.length === 0}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
           >
-            📥 Exporter CSV
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
           </Button>
           <div className="relative group">
             <Button
+              variant="outline"
               disabled={filteredInvoices.length === 0}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              📋 Export comptable ▾
+              <Receipt className="w-4 h-4 mr-2" />
+              Exportação contabilística
+              <ChevronDown className="w-4 h-4 ml-2" />
             </Button>
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border-2 border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
               <button
                 onClick={() => exportAccounting('csv')}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 rounded-t-lg"
+                className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 rounded-t-2xl flex items-center gap-2"
               >
-                📄 Format CSV (Excel)
+                <FileText className="w-4 h-4 text-gray-500" />
+                Formato CSV (Excel)
               </button>
               <button
                 onClick={() => exportAccounting('fec')}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 rounded-b-lg"
+                className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 rounded-b-2xl flex items-center gap-2"
               >
-                🏛️ Format FEC (Comptable)
+                <Receipt className="w-4 h-4 text-gray-500" />
+                Formato FEC (Contabilidade)
               </button>
             </div>
           </div>
@@ -293,111 +303,113 @@ export default function ReportsPage() {
 
       {/* Statistiques */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total HT</p>
-          <p className="text-3xl font-bold text-primary">{stats.totalHT.toFixed(2)}€</p>
-          <p className="text-xs text-gray-500 mt-2">{stats.totalInvoices} facture(s)</p>
+        <div className="bg-white rounded-2xl p-6 border-2 border-gray-100">
+          <p className="text-sm text-gray-600 mb-1">Total s/IVA</p>
+          <p className="text-3xl font-bold text-teal-600">{stats.totalHT.toFixed(2)}€</p>
+          <p className="text-xs text-gray-500 mt-2">{stats.totalInvoices} fatura(s)</p>
         </div>
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Montant Payé</p>
+        <div className="bg-white rounded-2xl p-6 border-2 border-gray-100">
+          <p className="text-sm text-gray-600 mb-1">Montante Pago</p>
           <p className="text-3xl font-bold text-green-600">{stats.paidAmount.toFixed(2)}€</p>
-          <p className="text-xs text-gray-500 mt-2">Statut "Payé"</p>
+          <p className="text-xs text-gray-500 mt-2">Estado &quot;Pago&quot;</p>
         </div>
-        <div className="bg-white rounded-lg p-6 border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">En attente</p>
+        <div className="bg-white rounded-2xl p-6 border-2 border-gray-100">
+          <p className="text-sm text-gray-600 mb-1">Pendente</p>
           <p className="text-3xl font-bold text-orange-600">{stats.pendingAmount.toFixed(2)}€</p>
-          <p className="text-xs text-gray-500 mt-2">À recevoir</p>
+          <p className="text-xs text-gray-500 mt-2">A receber</p>
         </div>
       </div>
 
       {/* Détails TVA */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-blue-900 mb-4">Détails Fiscaux</h3>
+      <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-6 mb-8">
+        <h3 className="font-semibold text-gray-900 mb-4">Detalhes Fiscais</h3>
         <div className="grid md:grid-cols-4 gap-4">
           <div>
-            <p className="text-sm text-blue-600">Total HT</p>
-            <p className="text-2xl font-bold text-blue-900">{stats.totalHT.toFixed(2)}€</p>
+            <p className="text-sm text-teal-600">Total s/IVA</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalHT.toFixed(2)}€</p>
           </div>
           <div>
-            <p className="text-sm text-blue-600">TVA (20%)</p>
-            <p className="text-2xl font-bold text-blue-900">{stats.totalTax.toFixed(2)}€</p>
+            <p className="text-sm text-teal-600">IVA (20%)</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalTax.toFixed(2)}€</p>
           </div>
           <div>
-            <p className="text-sm text-blue-600">Total TTC</p>
-            <p className="text-2xl font-bold text-blue-900">{stats.totalTTC.toFixed(2)}€</p>
+            <p className="text-sm text-teal-600">Total c/IVA</p>
+            <p className="text-2xl font-bold text-gray-900">{stats.totalTTC.toFixed(2)}€</p>
           </div>
           <div>
-            <p className="text-sm text-blue-600">Taux moyen</p>
-            <p className="text-2xl font-bold text-blue-900">20%</p>
+            <p className="text-sm text-teal-600">Taxa média</p>
+            <p className="text-2xl font-bold text-gray-900">20%</p>
           </div>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-        <h3 className="font-semibold text-gray-900 mb-4">Filtres</h3>
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 mb-8">
+        <h3 className="font-semibold text-gray-900 mb-4">Filtros</h3>
         <div className="grid md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Statut
+              Estado
             </label>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+              className="input-base"
             >
-              <option value="all">Tous</option>
-              <option value="draft">Brouillon</option>
-              <option value="sent">Envoyée</option>
-              <option value="paid">Payée</option>
-              <option value="cancelled">Annulée</option>
+              <option value="all">Todos</option>
+              <option value="draft">Rascunho</option>
+              <option value="sent">Enviada</option>
+              <option value="paid">Paga</option>
+              <option value="cancelled">Cancelada</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de début
+              Data de início
             </label>
             <input
               type="date"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+              className="input-base"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date de fin
+              Data de fim
             </label>
             <input
               type="date"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+              className="input-base"
             />
           </div>
         </div>
       </div>
 
       {/* Liste des factures */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
         {filteredInvoices.length === 0 ? (
-          <div className="p-12 text-center bg-gradient-to-br from-blue-50 to-indigo-50">
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">📄 Aucune facture pour le moment</h3>
+          <div className="p-12 text-center">
+            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma fatura de momento</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Les factures sont créées automatiquement lorsque vous planifiez un rendez-vous avec un client.
+              As faturas são criadas automaticamente quando agenda uma consulta com um cliente.
             </p>
             <div className="space-y-3">
-              <p className="text-sm text-gray-600 font-medium">Voici comment faire :</p>
+              <p className="text-sm text-gray-600 font-medium">Como fazer:</p>
               <ol className="text-left inline-block space-y-2 text-sm text-gray-600">
-                <li>1️⃣ Allez à <strong>Rendez-vous</strong></li>
-                <li>2️⃣ Créez un nouveau rendez-vous</li>
-                <li>3️⃣ Sélectionnez le client, l&apos;animal et le service</li>
-                <li>4️⃣ Confirmez - une facture sera créée automatiquement</li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">1</span> Vá a <strong>Consultas</strong></li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">2</span> Crie uma nova consulta</li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">3</span> Selecione o cliente, o animal e o serviço</li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span> Confirme - uma fatura será criada automaticamente</li>
               </ol>
             </div>
             <Link href="/dashboard/appointments" className="mt-8 inline-block">
-              <Button className="bg-green-500 hover:bg-green-600 text-white px-6">
-                📅 Aller aux rendez-vous →
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Ir para consultas
               </Button>
             </Link>
           </div>
@@ -406,16 +418,16 @@ export default function ReportsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Facture</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Client</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Produit/Service</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Quantité</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">HT</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">TVA</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">TTC</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Statut</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fatura</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cliente</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Produto/Serviço</th>
+                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Quantidade</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Data</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">S/IVA</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">IVA</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">C/IVA</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Estado</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -439,7 +451,7 @@ export default function ReportsPage() {
                         }
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
+                        {new Date(invoice.createdAt).toLocaleDateString('pt-PT')}
                       </td>
                       <td className="px-6 py-4 text-right text-gray-900">
                         {invoice.subtotal.toFixed(2)}€
@@ -447,7 +459,7 @@ export default function ReportsPage() {
                       <td className="px-6 py-4 text-right text-gray-900">
                         {invoice.taxAmount.toFixed(2)}€
                       </td>
-                      <td className="px-6 py-4 text-right font-semibold text-primary">
+                      <td className="px-6 py-4 text-right font-semibold text-teal-600">
                         {invoice.total.toFixed(2)}€
                       </td>
                       <td className="px-6 py-4">
@@ -462,35 +474,39 @@ export default function ReportsPage() {
                               : 'bg-yellow-100 text-yellow-700'
                           }`}
                         >
-                          <option value="draft">Brouillon</option>
-                          <option value="sent">Envoyée</option>
-                          <option value="paid">Payée</option>
-                          <option value="cancelled">Annulée</option>
+                          <option value="draft">Rascunho</option>
+                          <option value="sent">Enviada</option>
+                          <option value="paid">Paga</option>
+                          <option value="cancelled">Cancelada</option>
                         </select>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => openPDFPreview(invoice.id)}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 transition-colors"
-                            title="Voir la facture"
+                            title="Ver a fatura"
                           >
-                            👁️
-                          </button>
-                          <button
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => downloadPDF(invoice.id, invoice.invoiceNumber)}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded text-sm hover:bg-green-200 transition-colors"
-                            title="Télécharger PDF"
+                            title="Descarregar PDF"
                           >
-                            📄
-                          </button>
-                          <button
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleDelete(invoice.id)}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 transition-colors"
-                            title="Supprimer"
+                            title="Eliminar"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
-                            🗑️
-                          </button>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>

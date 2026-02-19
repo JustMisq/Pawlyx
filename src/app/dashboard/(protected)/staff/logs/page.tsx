@@ -4,6 +4,21 @@ import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import {
+  ClipboardList,
+  Plus,
+  Pencil,
+  Trash2,
+  XCircle,
+  Ban,
+  CreditCard,
+  Download,
+  ArrowLeft,
+  Loader2,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 
 interface AuditLog {
   id: string
@@ -41,14 +56,14 @@ export default function LogsPage() {
       if (endDate) params.append('endDate', endDate)
 
       const res = await fetch(`/api/salon/logs?${params}`)
-      if (!res.ok) throw new Error('Erreur lors de la récupération des logs')
+      if (!res.ok) throw new Error('Erro ao obter os logs')
 
       const data = await res.json()
       setLogs(data.logs || [])
       setTotalPages(data.totalPages || 1)
     } catch (error) {
-      console.error('Erreur:', error)
-      toast.error('Impossible de charger les logs')
+      console.error('Erro:', error)
+      toast.error('Impossível carregar os logs')
     } finally {
       setLoading(false)
     }
@@ -76,24 +91,24 @@ export default function LogsPage() {
   }
 
   const getActionLabel = (action: string) => {
-    const labels: Record<string, string> = {
-      create: '➕ Créée',
-      update: '✏️ Modifiée',
-      delete: '🗑️ Supprimée',
-      cancel: '❌ Annulée',
-      no_show: '⛔ No-show',
-      payment: '💳 Paiement',
+    const labels: Record<string, React.ReactNode> = {
+      create: <span className="inline-flex items-center gap-1"><Plus className="w-4 h-4" /> Criada</span>,
+      update: <span className="inline-flex items-center gap-1"><Pencil className="w-4 h-4" /> Editada</span>,
+      delete: <span className="inline-flex items-center gap-1"><Trash2 className="w-4 h-4" /> Eliminada</span>,
+      cancel: <span className="inline-flex items-center gap-1"><XCircle className="w-4 h-4" /> Cancelada</span>,
+      no_show: <span className="inline-flex items-center gap-1"><Ban className="w-4 h-4" /> No-show</span>,
+      payment: <span className="inline-flex items-center gap-1"><CreditCard className="w-4 h-4" /> Pagamento</span>,
     }
     return labels[action] || action
   }
 
   const getEntityTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      client: 'Client',
+      client: 'Cliente',
       animal: 'Animal',
-      appointment: 'Rendez-vous',
-      invoice: 'Facture',
-      service: 'Service',
+      appointment: 'Marcação',
+      invoice: 'Fatura',
+      service: 'Serviço',
     }
     return labels[type] || type
   }
@@ -109,50 +124,55 @@ export default function LogsPage() {
       if (endDate) params.append('endDate', endDate)
 
       window.location.href = `/api/salon/logs?${params}`
-      toast.success('Export en cours...')
+      toast.success('Exportação em curso...')
     } catch (error) {
-      toast.error('Erreur lors de l\'export')
+      toast.error('Erro ao exportar')
     }
   }
 
   if (loading && logs.length === 0) {
     return (
-      <div className="p-8">
-        <div className="animate-spin text-4xl">⏳</div>
+      <div className="flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-8">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       {/* En-tête */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">📋 Logs d'Activité</h1>
-          <p className="text-gray-600 mt-2">Historique de toutes les actions effectuées sur le salon</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <ClipboardList className="w-8 h-8 text-teal-500" />
+            Logs de Atividade
+          </h1>
+          <p className="text-gray-600 mt-2">Histórico de todas as ações efetuadas no salão</p>
         </div>
         <div className="flex gap-2">
           <Button
             onClick={exportLogs}
-            className="bg-gray-600 hover:bg-gray-700 text-white"
+            variant="outline"
           >
-            📥 Exporter CSV
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
           </Button>
           <Link
             href="/dashboard/staff"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-900"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 text-gray-900"
           >
-            ← Retour
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
           </Link>
         </div>
       </div>
 
       {/* Filtres */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-4 sm:p-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type d'action
+              Tipo de ação
             </label>
             <select
               value={filter}
@@ -160,20 +180,20 @@ export default function LogsPage() {
                 setFilter(e.target.value)
                 setPage(1)
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input-base"
             >
-              <option value="all">Toutes les actions</option>
-              <option value="create">Créations</option>
-              <option value="update">Modifications</option>
-              <option value="delete">Suppressions</option>
-              <option value="cancel">Annulations</option>
-              <option value="payment">Paiements</option>
+              <option value="all">Todas as ações</option>
+              <option value="create">Criações</option>
+              <option value="update">Edições</option>
+              <option value="delete">Eliminações</option>
+              <option value="cancel">Cancelamentos</option>
+              <option value="payment">Pagamentos</option>
             </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date début
+              Data início
             </label>
             <input
               type="date"
@@ -182,13 +202,13 @@ export default function LogsPage() {
                 setStartDate(e.target.value)
                 setPage(1)
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input-base"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date fin
+              Data fim
             </label>
             <input
               type="date"
@@ -197,7 +217,7 @@ export default function LogsPage() {
                 setEndDate(e.target.value)
                 setPage(1)
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="input-base"
             />
           </div>
 
@@ -209,19 +229,21 @@ export default function LogsPage() {
                 setEndDate('')
                 setPage(1)
               }}
-              className="w-full bg-gray-500 hover:bg-gray-600 text-white"
+              variant="outline"
+              className="w-full"
             >
-              Réinitialiser
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Repor
             </Button>
           </div>
         </div>
       </div>
 
       {/* Tableau des logs */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
         {logs.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-gray-600">Aucun log disponible</p>
+            <p className="text-gray-600">Nenhum log disponível</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -229,19 +251,19 @@ export default function LogsPage() {
               <thead className="bg-gray-50">
                 <tr className="border-b border-gray-200">
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Date/Heure
+                    Data/Hora
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Utilisateur
+                    Utilizador
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Action
+                    Ação
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Type
+                    Tipo
                   </th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Détails
+                    Detalhes
                   </th>
                 </tr>
               </thead>
@@ -249,7 +271,7 @@ export default function LogsPage() {
                 {logs.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString('fr-FR')}
+                      {new Date(log.createdAt).toLocaleString('pt-PT')}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="font-medium text-gray-900">{log.user.name}</div>
@@ -266,12 +288,12 @@ export default function LogsPage() {
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {log.newValue && (
                         <details className="cursor-pointer">
-                          <summary className="text-primary hover:underline">
-                            Voir changements
+                          <summary className="text-teal-600 hover:text-teal-700">
+                            Ver alterações
                           </summary>
                           {log.oldValue && (
                             <div className="mt-2 text-xs bg-red-50 p-2 rounded border border-red-200">
-                              <strong>Avant:</strong>
+                              <strong>Antes:</strong>
                               <pre className="mt-1 overflow-x-auto">
                                 {JSON.stringify(JSON.parse(log.oldValue), null, 2)}
                               </pre>
@@ -279,7 +301,7 @@ export default function LogsPage() {
                           )}
                           {log.newValue && (
                             <div className="mt-2 text-xs bg-green-50 p-2 rounded border border-green-200">
-                              <strong>Après:</strong>
+                              <strong>Depois:</strong>
                               <pre className="mt-1 overflow-x-auto">
                                 {JSON.stringify(JSON.parse(log.newValue), null, 2)}
                               </pre>
@@ -302,21 +324,23 @@ export default function LogsPage() {
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-xl hover:bg-teal-50 hover:border-teal-300 disabled:opacity-50 transition"
           >
-            ← Précédent
+            <ChevronLeft className="w-4 h-4" />
+            Anterior
           </button>
 
           <span className="text-sm text-gray-600">
-            Page {page} sur {totalPages}
+            Página {page} de {totalPages}
           </span>
 
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-xl hover:bg-teal-50 hover:border-teal-300 disabled:opacity-50 transition"
           >
-            Suivant →
+            Seguinte
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
