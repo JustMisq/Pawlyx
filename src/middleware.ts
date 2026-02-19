@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip pour les assets et fichiers statiques
-  if (pathname.startsWith('/_next') || pathname.startsWith('/static')) {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/static') || pathname.startsWith('/api/auth')) {
     return NextResponse.next()
   }
 

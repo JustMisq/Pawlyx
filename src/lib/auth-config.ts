@@ -24,11 +24,7 @@ export const authConfig: NextAuthOptions = {
   // ✅ SÉCURITÉ: Secret requis pour JWT
   secret: process.env.NEXTAUTH_SECRET,
   
-  // ✅ CONFIGURATION URLs - Critique pour session persistence
-  // Utiliser NEXTAUTH_URL si disponible, sinon construire depuis VERCEL_URL
-  ...(process.env.NEXTAUTH_URL && { url: process.env.NEXTAUTH_URL }),
-  
-  // ✅ CONFIGURATION Pages de redirection
+  // ✅ CONFIGURATION URLs
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",
