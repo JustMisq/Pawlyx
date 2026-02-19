@@ -64,14 +64,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // ✅ SÉCURITÉ: Vérifier que l'utilisateur n'est pas suspendu (invalidated token)
-  if (token?.invalidated) {
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ message: 'Session expired' }, { status: 401 })
-    }
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
-
   // ✅ SÉCURITÉ: Ajouter les headers de sécurité
   const response = NextResponse.next()
   response.headers.set('X-Content-Type-Options', 'nosniff')

@@ -20,48 +20,16 @@ declare module "next-auth" {
   }
 }
 
-// Déterminer si on est en production (Vercel ou autre)
-const isProduction = process.env.NODE_ENV === 'production'
-
 export const authConfig: NextAuthOptions = {
-  // ✅ SÉCURITÉ: Secret requis pour JWT
   secret: process.env.NEXTAUTH_SECRET,
   
-  // ✅ CONFIGURATION URLs
   pages: {
     signIn: "/auth/login",
     error: "/auth/login",
   },
   
-  // ✅ SÉCURITÉ: JWT strategy pour les APIs
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 jours - session remain valid
-  },
-
-  // ✅ CONFIGURATION COOKIES - Optimisé pour Vercel & production
-  useSecureCookies: isProduction, 
-  cookies: {
-    sessionToken: {
-      name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: 'lax' as const,
-        path: '/',
-        maxAge: 30 * 24 * 60 * 60, // 30 jours
-      },
-    },
-    callbackUrl: {
-      name: `${isProduction ? '__Secure-' : ''}next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: 'lax' as const,
-        path: '/',
-        maxAge: 24 * 60 * 60,
-      },
-    },
   },
 
   providers: [
@@ -119,31 +87,9 @@ export const authConfig: NextAuthOptions = {
         token.id = user.id
         token.isAdmin = user.isAdmin || false
       }
-      // ✅ SÉCURITÉ: Re-valider isAdmin et deletedAt depuis la DB périodiquement
-      // Vérifier toutes les 5 minutes pour éviter le stale JWT
-      const now = Math.floor(Date.now() / 1000)
-      if (!token.lastDbCheck || now - (token.lastDbCheck as number) > 300) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { isAdmin: true, deletedAt: true },
-          })
-          if (!dbUser || dbUser.deletedAt) {
-            // Utilisateur supprimé/suspendu: invalider le token
-            return { ...token, id: null, isAdmin: false, invalidated: true }
-          }
-          token.isAdmin = dbUser.isAdmin
-          token.lastDbCheck = now
-        } catch {
-          // Si la DB est inaccessible, garder les valeurs existantes
-        }
-      }
       return token
     },
     session({ session, token }: any) {
-      if (token.invalidated) {
-        return { ...session, user: null }
-      }
       if (session.user) {
         session.user.id = token.id as string
         session.user.isAdmin = token.isAdmin as boolean
@@ -151,7 +97,6 @@ export const authConfig: NextAuthOptions = {
       return session
     },
   },
-  // ✅ DEBUG en development uniquement
   debug: process.env.NODE_ENV === 'development',
 }
 
