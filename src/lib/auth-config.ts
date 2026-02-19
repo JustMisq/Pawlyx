@@ -20,6 +20,9 @@ declare module "next-auth" {
   }
 }
 
+// Déterminer si on est en production (Vercel ou autre)
+const isProduction = process.env.NODE_ENV === 'production'
+
 export const authConfig: NextAuthOptions = {
   // ✅ SÉCURITÉ: Secret requis pour JWT
   secret: process.env.NEXTAUTH_SECRET,
@@ -36,25 +39,25 @@ export const authConfig: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 jours - session remain valid
   },
 
-  // ✅ CONFIGURATION COOKIES - Critical pour la persistance
-  useSecureCookies: true, // Force les secure cookies même en dev si HTTPS
+  // ✅ CONFIGURATION COOKIES - Optimisé pour Vercel & production
+  useSecureCookies: isProduction, 
   cookies: {
     sessionToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https'),
-        sameSite: 'lax',
+        secure: isProduction,
+        sameSite: 'lax' as const,
         path: '/',
         maxAge: 30 * 24 * 60 * 60, // 30 jours
       },
     },
     callbackUrl: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.callback-url`,
+      name: `${isProduction ? '__Secure-' : ''}next-auth.callback-url`,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https'),
-        sameSite: 'lax',
+        secure: isProduction,
+        sameSite: 'lax' as const,
         path: '/',
         maxAge: 24 * 60 * 60,
       },
