@@ -26,7 +26,7 @@ const features = [
     color: "bg-teal-100 text-teal-600",
   },
   {
-    title: "Consultas simplificadas",
+    title: "Marcações simplificadas",
     description: "Calendário intuitivo com lembretes automáticos para os seus clientes.",
     icon: CalendarDays,
     color: "bg-cyan-100 text-cyan-600",
@@ -51,7 +51,7 @@ const features = [
   },
   {
     title: "Acesso móvel",
-    description: "Gira o seu salão a partir do telemóvel, onde quer que esteja.",
+    description: "Gere o seu salão a partir do telemóvel, onde quer que esteja.",
     icon: Smartphone,
     color: "bg-violet-100 text-violet-600",
   },
@@ -65,7 +65,7 @@ const benefits = [
 
 const planFeatures = [
   "Gestão ilimitada de clientes",
-  "Consultas e calendário",
+  "Marcações e calendário",
   "Gestão de stocks",
   "Pagamentos Stripe",
   "Relatórios e estatísticas",
@@ -118,13 +118,13 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
-              Gira o seu salão de
+              Gere o seu salão de
               <span className="text-gradient"> tosquia</span>
               {" "}simplesmente
             </h1>
 
             <p className="text-lg sm:text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-              A Pawlyx ajuda-o a gerir os seus clientes, animais, consultas e pagamentos num só lugar.
+              A Pawlyx ajuda-o a gerir os seus clientes, animais, marcações e pagamentos num só lugar.
               Comece gratuitamente, sem cartão bancário.
             </p>
 

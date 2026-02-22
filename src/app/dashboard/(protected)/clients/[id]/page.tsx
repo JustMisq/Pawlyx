@@ -122,10 +122,18 @@ export default function ClientDetailsPage() {
     e.preventDefault()
     
     try {
+      // Converter data YYYY-MM-DD para ISO datetime se fornecida
+      const animalData = {
+        ...formData,
+        dateOfBirth: formData.dateOfBirth 
+          ? new Date(formData.dateOfBirth + 'T00:00:00Z').toISOString()
+          : null
+      }
+
       const res = await fetch('/api/animals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId, ...formData }),
+        body: JSON.stringify({ clientId, ...animalData }),
       })
 
       if (!res.ok) {
@@ -340,7 +348,7 @@ export default function ClientDetailsPage() {
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
         <div className="flex items-center gap-2 mb-4">
           <CalendarDays className="w-5 h-5 text-teal-600" />
-          <h2 className="font-bold text-gray-900">Consultas ({appointments.length})</h2>
+          <h2 className="font-bold text-gray-900">Marcações ({appointments.length})</h2>
         </div>
         
         {appointments.length === 0 ? (

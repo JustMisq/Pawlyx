@@ -63,7 +63,7 @@ export default function DashboardPage() {
       
       if (res.ok) {
         const data = await res.json()
-        toast.success(`Dados de demonstração gerados: ${data.clients} clientes, ${data.appointments} consultas`)
+        toast.success(`Dados de demonstração gerados: ${data.clients} clientes, ${data.appointments} marcações`)
         setShowDemoModal(false)
         window.location.reload()
       } else {
@@ -133,7 +133,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Consultas de hoje */}
+      {/* Marcações de hoje */}
       {!loading && todayAppointments.length > 0 && (
         <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-6 mb-8 border border-teal-100">
           <div className="flex items-center justify-between mb-5">
@@ -146,7 +146,7 @@ export default function DashboardPage() {
                   Hoje
                 </h2>
                 <p className="text-sm text-gray-500">
-                  {todayAppointments.length} consultas
+                  {todayAppointments.length} marcações
                 </p>
               </div>
             </div>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
           <div className="flex gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <p className="text-sm text-amber-800">
-              Esta ação vai criar clientes, animais, consultas e faturas fictícios.
+              Esta ação vai criar clientes, animais, marcações e faturas fictícios.
               Os seus dados existentes serão mantidos.
             </p>
           </div>

@@ -70,10 +70,18 @@ export default function AnimalsPage() {
     if (!formData.clientId) { toast.error('Por favor selecione um cliente'); return }
 
     try {
+      // Converter data YYYY-MM-DD para ISO datetime se fornecida
+      const dataToSend = {
+        ...formData,
+        dateOfBirth: formData.dateOfBirth 
+          ? new Date(formData.dateOfBirth + 'T00:00:00Z').toISOString()
+          : null
+      }
+
       const res = await fetch('/api/animals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       })
 
       if (res.ok) {

@@ -61,10 +61,10 @@ export default function LoginPage() {
             <span className="text-3xl font-bold text-white tracking-tight">Pawlyx</span>
           </Link>
           <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
-            Gira o seu salão<br />com toda a simplicidade
+            Gere o seu salão<br />com toda a simplicidade
           </h2>
           <p className="text-teal-100 text-lg max-w-md">
-            Clientes, animais, consultas, pagamentos — tudo reunido numa plataforma pensada para tosquiadores.
+            Clientes, animais, marcações, pagamentos — tudo reunido numa plataforma pensada para tosquiadores.
           </p>
         </div>
       </div>

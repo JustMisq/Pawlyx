@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 
 const planFeatures = [
   "Gestão ilimitada de clientes",
-  "Consultas e calendário",
+  "Marcações e calendário",
   "Gestão de stocks",
   "Pagamentos Stripe",
   "Relatórios & estatísticas",

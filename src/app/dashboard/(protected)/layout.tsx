@@ -31,7 +31,7 @@ const mainNavItems = [
   { href: '/dashboard/salon', label: 'O meu salão', icon: Store },
   { href: '/dashboard/clients', label: 'Clientes', icon: Users },
   { href: '/dashboard/animals', label: 'Animais', icon: PawPrint },
-  { href: '/dashboard/appointments', label: 'Consultas', icon: CalendarDays },
+  { href: '/dashboard/appointments', label: 'Marcações', icon: CalendarDays },
   { href: '/dashboard/services', label: 'Serviços', icon: Scissors },
   { href: '/dashboard/inventory', label: 'Inventário', icon: Package },
   { href: '/dashboard/reports', label: 'Relatórios', icon: BarChart3 },

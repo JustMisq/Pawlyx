@@ -92,7 +92,7 @@ export default function AdminUsagePage() {
 
   const getFeatureLabel = (feature: string) => {
     const labels: Record<string, string> = {
-      appointments: 'Consultas',
+      appointments: 'Marcações',
       invoicing: 'Faturação',
       staff_management: 'Gestão de Equipa',
       clients: 'Clientes',

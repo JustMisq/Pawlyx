@@ -400,7 +400,7 @@ export default function ReportsPage() {
             <div className="space-y-3">
               <p className="text-sm text-gray-600 font-medium">Como fazer:</p>
               <ol className="text-left inline-block space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">1</span> Vá a <strong>Consultas</strong></li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">1</span> Vá a <strong>Marcações</strong></li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">2</span> Crie uma nova consulta</li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">3</span> Selecione o cliente, o animal e o serviço</li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span> Confirme - uma fatura será criada automaticamente</li>
@@ -409,7 +409,7 @@ export default function ReportsPage() {
             <Link href="/dashboard/appointments" className="mt-8 inline-block">
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
-                Ir para consultas
+                Ir para marcações
               </Button>
             </Link>
           </div>

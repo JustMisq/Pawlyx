@@ -20,7 +20,12 @@ export const animalSchema = z.object({
   breed: z.string().max(100).optional().nullable(),
   color: z.string().max(50).optional().nullable(),
   weight: z.number().positive().max(200).optional().nullable(),
-  dateOfBirth: z.string().datetime().optional().nullable(),
+  dateOfBirth: z.union([
+    z.string().datetime(),  // ISO 8601 datetime
+    z.string().length(0),   // Empty string
+    z.null(),
+    z.undefined(),
+  ]).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   photo: z.string().url().optional().nullable(),
   // Fiche santé/comportement

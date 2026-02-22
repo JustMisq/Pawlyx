@@ -122,6 +122,7 @@ export default function AppointmentsPage() {
     clientId: '',
     animalId: '',
     serviceId: '',
+    appointmentDate: '',
     startTime: '',
     notes: '',
   })
@@ -191,10 +192,14 @@ export default function AppointmentsPage() {
 
   const handleSelectSlot = (slotInfo: any) => {
     setSelectedDate(slotInfo.start)
+    const year = slotInfo.start.getFullYear()
+    const month = String(slotInfo.start.getMonth() + 1).padStart(2, '0')
+    const day = String(slotInfo.start.getDate()).padStart(2, '0')
     const hours = String(slotInfo.start.getHours()).padStart(2, '0')
     const minutes = String(slotInfo.start.getMinutes()).padStart(2, '0')
     setFormData((prev) => ({
       ...prev,
+      appointmentDate: `${year}-${month}-${day}`,
       startTime: `${hours}:${minutes}`,
     }))
     setShowForm(true)
@@ -203,7 +208,7 @@ export default function AppointmentsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.clientId || !formData.animalId || !formData.serviceId || !formData.startTime) {
+    if (!formData.clientId || !formData.animalId || !formData.serviceId || !formData.appointmentDate || !formData.startTime) {
       toast.error('Todos os campos são obrigatórios')
       return
     }
@@ -213,7 +218,8 @@ export default function AppointmentsPage() {
 
     try {
       const [hours, minutes] = formData.startTime.split(':')
-      const startDateTime = new Date(selectedDate!)
+      const [year, month, day] = formData.appointmentDate.split('-')
+      const startDateTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
       startDateTime.setHours(parseInt(hours), parseInt(minutes), 0)
 
       const res = await fetch('/api/appointments', {
@@ -248,6 +254,7 @@ export default function AppointmentsPage() {
         clientId: '',
         animalId: '',
         serviceId: '',
+        appointmentDate: '',
         startTime: '',
         notes: '',
       })
@@ -395,7 +402,7 @@ export default function AppointmentsPage() {
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-teal-500 mx-auto mb-4" />
-          <p className="text-gray-500">A carregar consultas...</p>
+          <p className="text-gray-500">A carregar marcações...</p>
         </div>
       </div>
     )
@@ -406,11 +413,21 @@ export default function AppointmentsPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
           <CalendarDays className="w-8 h-8 text-teal-500" />
-          Consultas
+          Marcações
         </h1>
         <Button
           onClick={() => {
-            setSelectedDate(new Date())
+            const today = new Date()
+            const year = today.getFullYear()
+            const month = String(today.getMonth() + 1).padStart(2, '0')
+            const day = String(today.getDate()).padStart(2, '0')
+            setSelectedDate(today)
+            if (!showForm) {
+              setFormData((prev) => ({
+                ...prev,
+                appointmentDate: `${year}-${month}-${day}`,
+              }))
+            }
             setShowForm(!showForm)
           }}
           variant={showForm ? 'outline' : 'default'}
@@ -497,6 +514,23 @@ export default function AppointmentsPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data *
+                </label>
+                <input
+                  type="date"
+                  value={formData.appointmentDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, appointmentDate: e.target.value })
+                  }
+                  min={new Date().toISOString().split('T')[0]}
+                  className="input-base"
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -511,6 +545,22 @@ export default function AppointmentsPage() {
                   className="input-base"
                 />
               </div>
+
+              {formData.appointmentDate && formData.startTime && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resumo
+                  </label>
+                  <div className="input-base bg-teal-50 border-teal-200 inline-flex items-center justify-center w-full">
+                    <span className="text-sm text-teal-700 font-medium">
+                      {new Date(`${formData.appointmentDate}T${formData.startTime}`).toLocaleString('pt-PT', {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -735,16 +785,16 @@ export default function AppointmentsPage() {
         />
       </div>
 
-      {/* Mostrar as consultas do dia */}
+      {/* Mostrar as marcações do dia */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Clock className="w-5 h-5 text-teal-500" />
-          Próximas consultas
+          Próximas marcações
         </h2>
         {appointments.length === 0 ? (
           <div className="bg-gray-50 rounded-2xl p-8 text-center">
             <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">Nenhuma consulta de momento</p>
+            <p className="text-gray-500">Nenhuma marcação de momento</p>
           </div>
         ) : (
           <div className="grid gap-4">

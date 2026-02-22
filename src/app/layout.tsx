@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Pawlyx - Gestão de Salão de Tosquia",
-  description: "A plataforma tudo-em-um para gerir o seu salão de tosquia: clientes, animais, consultas e pagamentos.",
+  description: "A plataforma tudo-em-um para gerir o seu salão de tosquia: clientes, animais, marcações e pagamentos.",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",

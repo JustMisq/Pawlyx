@@ -356,7 +356,7 @@ export default function MembersPage() {
             <h4 className="font-medium text-green-800 flex items-center gap-2">
               <User className="w-4 h-4" /> Funcionário
             </h4>
-            <p className="text-sm text-green-600 mt-1">Gestão de clientes, animais e consultas</p>
+            <p className="text-sm text-green-600 mt-1">Gestão de clientes, animais e marcações</p>
           </div>
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-medium text-gray-800 flex items-center gap-2">

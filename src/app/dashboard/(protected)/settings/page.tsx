@@ -422,7 +422,7 @@ export default function SettingsPage() {
               Eliminar todos os dados comerciais
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Irá eliminar todos os clientes, animais, consultas, faturas, serviços e stocks.<br/>
+              Irá eliminar todos os clientes, animais, marcações, faturas, serviços e stocks.<br/>
               <span className="font-medium text-teal-600">O seu salão e a sua conta permanecem ativos.</span>
             </p>
             <Button
@@ -473,7 +473,7 @@ export default function SettingsPage() {
       <DeleteModal
         isOpen={showDeleteDataModal}
         title="Eliminar todos os dados comerciais"
-        message={"Isto irá eliminar:\n• Todos os clientes\n• Todos os animais\n• Todas as consultas\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n\n✓ O seu salão e a sua conta permanecem ativos\n✓ Poderá continuar a utilizar o Pawlyx"}
+        message={"Isto irá eliminar:\n• Todos os clientes\n• Todos os animais\n• Todas as marcações\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n\n✓ O seu salão e a sua conta permanecem ativos\n✓ Poderá continuar a utilizar o Pawlyx"}
         confirmText="Confirmar"
         warningText="Esta ação é IRREVERSÍVEL"
         requirePassword={true}
@@ -486,7 +486,7 @@ export default function SettingsPage() {
       <DeleteModal
         isOpen={showDeleteAccountModal}
         title="Eliminar a conta definitivamente"
-        message="Isto irá eliminar:\n• A sua conta de utilizador\n• O seu salão\n• Todos os clientes\n• Todas as consultas\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n• A sua subscrição\n\nEsta ação é definitiva e irreversível."
+        message="Isto irá eliminar:\n• A sua conta de utilizador\n• O seu salão\n• Todos os clientes\n• Todas as marcações\n• Todas as faturas\n• Todos os serviços\n• Todo o inventário\n• A sua subscrição\n\nEsta ação é definitiva e irrevogável."
         confirmText="ELIMINAR DEFINITIVAMENTE"
         warningText="Isto irá ELIMINAR COMPLETAMENTE a sua conta"
         requirePassword={true}
