@@ -5,7 +5,19 @@ export const clientSchema = z.object({
   firstName: z.string().min(1, 'Prénom requis').max(100),
   lastName: z.string().min(1, 'Nom requis').max(100),
   email: z.string().email('Email invalide').optional().nullable(),
-  phone: z.string().max(20).optional().nullable(),
+  phone: z.string()
+    .refine(
+      (phone) => {
+        if (!phone) return true // Optional field
+        // Aceite formatos: 912345678, +351912345678, 00351912345678, etc
+        const cleaned = phone.replace(/[\s\-()]/g, '')
+        return /^(?:\+?351|00351)?\d{9}$/.test(cleaned) || /^\+\d{1,15}$/.test(cleaned)
+      },
+      'Formato de telefone inválido. Use: 912345678, +351912345678 ou 00351912345678'
+    )
+    .max(20)
+    .optional()
+    .nullable(),
   address: z.string().max(500).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   privateNotes: z.string().max(2000).optional().nullable(),

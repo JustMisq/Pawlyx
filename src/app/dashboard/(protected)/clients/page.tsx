@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Users, Mail, Phone, MapPin, StickyNote, Eye, Loader2, Search } from 'lucide-react'
+import { Plus, X, Users, Mail, Phone, MapPin, StickyNote, Eye, Loader2, Search, AlertCircle, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Client {
@@ -14,11 +14,31 @@ interface Client {
   phone?: string
 }
 
+// Validar formato de telefone português
+const validatePhoneNumber = (phone: string): { valid: boolean; message?: string } => {
+  if (!phone) return { valid: true } // Campo opcional
+  
+  const cleaned = phone.replace(/[\s\-()]/g, '')
+  
+  // Aceita formatos: 912345678, +351912345678, 00351912345678, etc
+  const isValid = /^(?:\+?351|00351)?\d{9}$/.test(cleaned) || /^\+\d{1,15}$/.test(cleaned)
+  
+  if (!isValid) {
+    return {
+      valid: false,
+      message: 'Formato inválido. Use: 912345678, +351912345678 ou 00351912345678'
+    }
+  }
+  
+  return { valid: true }
+}
+
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [search, setSearch] = useState('')
+  const [phoneError, setPhoneError] = useState<string>()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -49,11 +69,27 @@ export default function ClientsPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
+    
+    // Validar telefone em tempo real
+    if (name === 'phone') {
+      const validation = validatePhoneNumber(value)
+      setPhoneError(validation.valid ? undefined : validation.message)
+    }
+    
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validar telefone antes de enviar
+    const phoneValidation = validatePhoneNumber(formData.phone)
+    if (!phoneValidation.valid) {
+      setPhoneError(phoneValidation.message)
+      toast.error('Verifica o formato do telefone')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -77,6 +113,7 @@ export default function ClientsPage() {
 
       toast.success('Cliente criado com sucesso!')
       setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', notes: '' })
+      setPhoneError(undefined)
       setShowForm(false)
       fetchClients()
     } catch (error) {
@@ -122,10 +159,30 @@ export default function ClientsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                 <input type="email" name="email" value={formData.email} onChange={handleChange} className="input-base" placeholder="joao@email.com" />
+                <p className="text-xs text-gray-500 mt-1">Opcional - para lembretes por email</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="input-base" placeholder="912 345 678" />
+                <input 
+                  type="tel" 
+                  name="phone" 
+                  value={formData.phone} 
+                  onChange={handleChange} 
+                  className={`input-base ${phoneError ? 'border-red-300 focus:border-red-500' : ''}`}
+                  placeholder="912 345 678" 
+                />
+                {formData.phone && (
+                  <div className={`flex items-center gap-1.5 mt-1.5 text-xs ${phoneError ? 'text-red-600' : 'text-green-600'}`}>
+                    {phoneError ? (
+                      <><AlertCircle className="w-3.5 h-3.5" /> {phoneError}</>
+                    ) : (
+                      <><CheckCircle2 className="w-3.5 h-3.5" /> Formato correto para SMS</>
+                    )}
+                  </div>
+                )}
+                {!formData.phone && (
+                  <p className="text-xs text-gray-500 mt-1">Opcional - para lembretes por SMS (ex: 912345678, +351912345678 ou 00351912345678)</p>
+                )}
               </div>
             </div>
             <div>
@@ -136,7 +193,7 @@ export default function ClientsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
               <textarea name="notes" value={formData.notes} onChange={handleChange} rows={3} className="input-base resize-none" placeholder="Notas adicionais..." />
             </div>
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+            <Button type="submit" disabled={loading || phoneError !== undefined} className="w-full sm:w-auto">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Criar o cliente'}
             </Button>
           </form>

@@ -218,7 +218,8 @@ model StockSale {
 
 model Subscription {
   id                   String   @id @default(cuid())
-  plan                 String   @default("monthly")
+  plan                 String   @default("starter")    // "starter", "pro", "business"
+  billingInterval      String   @default("monthly")    // "monthly", "yearly"
   price                Float
   currency             String   @default("EUR")
   status               String   @default("active")
@@ -229,6 +230,10 @@ model Subscription {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   userId               String   @unique
+  monthlySMSLimit      Int      @default(0)
+  monthlySMSUsed       Int      @default(0)
+  smsOverageCost       Float    @default(0.008)
+  smsLastResetDate     DateTime @default(now())
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -461,6 +466,45 @@ model FeatureUsageLog {
   @@index([salonId])
   @@index([featureName])
   @@index([createdAt])
+}
+
+model SMSLog {
+  id            String   @id @default(cuid())
+  toPhone       String
+  message       String
+  status        String   @default("pending")
+  messageId     String?
+  cost          Float    @default(0.004)
+  type          String
+  appointmentId String?
+  clientId      String
+  salonId       String
+  userId        String
+  isOverage     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  sentAt        DateTime?
+  error         String?
+
+  @@index([salonId])
+  @@index([userId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([isOverage])
+}
+
+model SMSReminder {
+  id           String   @id @default(cuid())
+  salonId      String
+  enabled      Boolean  @default(true)
+  type         String
+  triggerHours Int      @default(24)
+  message      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastTriggered DateTime?
+
+  @@unique([salonId, type])
 }
 
 model PerformanceMetric {

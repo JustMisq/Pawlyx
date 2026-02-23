@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { sendTwilioSMS, formatPhoneNumberE164, generateReminderSMSMessage } from '@/lib/twilio'
+import { logger } from '@/lib/logger'
 
 /**
  * API pour envoyer les rappels (à appeler via CRON)
@@ -60,44 +62,102 @@ export async function GET(request: NextRequest) {
             continue
           }
 
-          // Vérifier que le client a un email
-          if (!appointment.client.email) {
+          // Traiter selon le canal
+          if (reminder.channel === 'sms') {
+            // ===== ENVOI SMS =====
+            if (!appointment.client.phone) {
+              await prisma.reminder.update({
+                where: { id: reminder.id },
+                data: { 
+                  status: 'failed',
+                  error: 'Client has no phone number',
+                },
+              })
+              results.failed++
+              logger.warn('REMINDERS', `Client ${appointment.client.id} a pas de numéro de téléphone`)
+              continue
+            }
+
+            // Formater le numéro au format E.164
+            const phoneE164 = formatPhoneNumberE164(appointment.client.phone)
+            
+            // Générer le message SMS
+            const smsMessage = generateReminderSMSMessage({
+              client: appointment.client,
+              animal: appointment.animal,
+              service: appointment.service,
+              startTime: appointment.startTime.toISOString(),
+            })
+
+            // Envoyer via Twilio
+            const smsResult = await sendTwilioSMS({
+              to: phoneE164,
+              body: smsMessage,
+            })
+
+            if (!smsResult.success) {
+              await prisma.reminder.update({
+                where: { id: reminder.id },
+                data: {
+                  status: 'failed',
+                  error: smsResult.error || 'Unknown SMS error',
+                },
+              })
+              results.failed++
+              logger.error('REMINDERS', `SMS Error: ${smsResult.error}`)
+              continue
+            }
+
+            // Marquer comme envoyé
             await prisma.reminder.update({
               where: { id: reminder.id },
-              data: { 
-                status: 'failed',
-                error: 'Client has no email address',
+              data: {
+                status: 'sent',
+                sentAt: new Date(),
               },
             })
-            results.failed++
-            continue
+            results.sent++
+            logger.info('REMINDERS', `SMS envoyé à ${phoneE164}`, { messageId: smsResult.messageId })
+
+          } else {
+            // ===== ENVOI EMAIL (défaut) =====
+            if (!appointment.client.email) {
+              await prisma.reminder.update({
+                where: { id: reminder.id },
+                data: { 
+                  status: 'failed',
+                  error: 'Client has no email address',
+                },
+              })
+              results.failed++
+              continue
+            }
+
+            // Générer le contenu de l'email
+            const emailContent = generateReminderEmail(appointment)
+            
+            console.log('📧 Email reminder:', {
+              to: appointment.client.email,
+              subject: emailContent.subject,
+            })
+
+            // TODO: Intégrer un service d'email (Resend, SendGrid, etc.)
+            // await sendEmail({
+            //   to: appointment.client.email,
+            //   subject: emailContent.subject,
+            //   html: emailContent.html,
+            // })
+
+            // Marquer comme envoyé
+            await prisma.reminder.update({
+              where: { id: reminder.id },
+              data: {
+                status: 'sent',
+                sentAt: new Date(),
+              },
+            })
+            results.sent++
           }
-
-          // Ici on enverrait l'email
-          // Pour l'instant, on simule l'envoi
-          const emailContent = generateReminderEmail(appointment)
-          
-          console.log('📧 Email reminder:', {
-            to: appointment.client.email,
-            subject: emailContent.subject,
-          })
-
-          // TODO: Intégrer un service d'email (Resend, SendGrid, etc.)
-          // await sendEmail({
-          //   to: appointment.client.email,
-          //   subject: emailContent.subject,
-          //   html: emailContent.html,
-          // })
-
-          // Marquer comme envoyé
-          await prisma.reminder.update({
-            where: { id: reminder.id },
-            data: {
-              status: 'sent',
-              sentAt: new Date(),
-            },
-          })
-          results.sent++
         }
       } catch (error) {
         results.failed++

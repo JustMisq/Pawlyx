@@ -18,11 +18,22 @@ export async function GET() {
 
     const subscription = await prisma.subscription.findUnique({
       where: { userId: session.user.id },
+      select: {
+        id: true,
+        plan: true,
+        billingInterval: true,
+        price: true,
+        status: true,
+        currentPeriodStart: true,
+        currentPeriodEnd: true,
+        monthlySMSLimit: true,
+        monthlySMSUsed: true,
+      },
     })
 
     const hasActiveSubscription = 
       subscription !== null && 
-      subscription.status === 'active' &&
+      (subscription.status === 'active' || subscription.status === 'cancel_at_period_end') &&
       subscription.currentPeriodEnd > new Date()
 
     return NextResponse.json({ 

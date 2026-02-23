@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
+import { resolvePlanFromPriceId } from '@/lib/plans'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -106,13 +107,16 @@ export async function POST(request: NextRequest) {
           throw err
         }
 
-        // 2.3: Déterminer le plan (monthly vs yearly)
+        // 2.3: Déterminer le plan (starter/pro/business + monthly/yearly)
         const priceId = stripeSubscription.items.data[0]?.price.id
-        const plan =
-          priceId === process.env.STRIPE_PRICE_ID_MONTHLY ? 'monthly' : 'yearly'
-        const price = plan === 'monthly' ? 15 : 150
+        const resolved = priceId ? resolvePlanFromPriceId(priceId) : null
+        
+        const plan = resolved?.plan || 'starter'
+        const billingInterval = resolved?.billingInterval || 'monthly'
+        const price = resolved?.price || 19
+        const smsLimit = resolved?.smsLimit || 0
 
-        console.log(`   Plan détecté: ${plan} (${price}€)`)
+        console.log(`   Plan détecté: ${plan} (${billingInterval}) - ${price}€ - SMS: ${smsLimit}/mois`)
 
         // 2.4: Créer/Mettre à jour la subscription en BDD
         try {
@@ -123,9 +127,12 @@ export async function POST(request: NextRequest) {
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
-              plan: plan as 'monthly' | 'yearly',
+              plan,
+              billingInterval,
               price,
               currency: 'EUR',
+              monthlySMSLimit: smsLimit,
+              monthlySMSUsed: 0,
               currentPeriodStart: new Date(
                 stripeSubscription.current_period_start * 1000
               ),
@@ -137,8 +144,10 @@ export async function POST(request: NextRequest) {
               stripeCustomerId: session.customer as string,
               stripeSubscriptionId: session.subscription as string,
               status: 'active',
-              plan: plan as 'monthly' | 'yearly',
+              plan,
+              billingInterval,
               price,
+              monthlySMSLimit: smsLimit,
               currentPeriodStart: new Date(
                 stripeSubscription.current_period_start * 1000
               ),
@@ -157,7 +166,7 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // USER ANNULE SON ABONNEMENT
+      // USER ANNULE SON ABONNEMENT (fin de période atteinte → Stripe supprime)
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription
         
@@ -171,6 +180,34 @@ export async function POST(request: NextRequest) {
           })
 
           console.log(`✅ [WEBHOOK] ${updated.count} subscription(s) annulée(s)`)
+        } catch (err) {
+          console.error('❌ [WEBHOOK] Erreur Prisma - update subscription:', err)
+          throw err
+        }
+
+        break
+      }
+
+      // MISE À JOUR D'ABONNEMENT (cancel_at_period_end, plan change, etc.)
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        
+        console.log(`🔄 [WEBHOOK] customer.subscription.updated`)
+        console.log(`   Cancel at period end: ${subscription.cancel_at_period_end}`)
+
+        try {
+          const newStatus = subscription.cancel_at_period_end
+            ? 'cancel_at_period_end'
+            : subscription.status === 'active'
+              ? 'active'
+              : subscription.status
+
+          await prisma.subscription.updateMany({
+            where: { stripeSubscriptionId: subscription.id },
+            data: { status: newStatus },
+          })
+
+          console.log(`✅ [WEBHOOK] Subscription mise à jour → ${newStatus}`)
         } catch (err) {
           console.error('❌ [WEBHOOK] Erreur Prisma - update subscription:', err)
           throw err

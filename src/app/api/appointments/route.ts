@@ -205,6 +205,7 @@ export async function POST(request: NextRequest) {
       reminderDate.setHours(reminderDate.getHours() - 24)
       
       if (reminderDate > new Date()) {
+        // Créer rappel EMAIL (toujours)
         await tx.reminder.create({
           data: {
             type: 'appointment_24h',
@@ -214,6 +215,19 @@ export async function POST(request: NextRequest) {
             status: 'pending',
           },
         })
+
+        // Créer rappel SMS si le client a un numéro de téléphone
+        if (client.phone) {
+          await tx.reminder.create({
+            data: {
+              type: 'appointment_24h',
+              channel: 'sms',
+              scheduledFor: reminderDate,
+              appointmentId: newAppointment.id,
+              status: 'pending',
+            },
+          })
+        }
       }
 
       return newAppointment

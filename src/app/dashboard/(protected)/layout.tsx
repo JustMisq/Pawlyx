@@ -23,23 +23,29 @@ import {
   Shield,
   UserCog,
   ChevronLeft,
+  Lock,
+  Crown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { PlanProvider, usePlan } from '@/lib/use-plan'
+import UpgradePrompt from '@/components/upgrade-prompt'
+import { canAccessRoute, type PlanId } from '@/lib/plans'
 
 const mainNavItems = [
-  { href: '/dashboard', label: 'Painel', icon: LayoutDashboard },
-  { href: '/dashboard/salon', label: 'O meu salão', icon: Store },
-  { href: '/dashboard/clients', label: 'Clientes', icon: Users },
-  { href: '/dashboard/animals', label: 'Animais', icon: PawPrint },
-  { href: '/dashboard/appointments', label: 'Marcações', icon: CalendarDays },
-  { href: '/dashboard/services', label: 'Serviços', icon: Scissors },
-  { href: '/dashboard/inventory', label: 'Inventário', icon: Package },
-  { href: '/dashboard/reports', label: 'Relatórios', icon: BarChart3 },
+  { href: '/dashboard', label: 'Painel', icon: LayoutDashboard, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/salon', label: 'O meu salão', icon: Store, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/clients', label: 'Clientes', icon: Users, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/animals', label: 'Animais', icon: PawPrint, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/appointments', label: 'Marcações', icon: CalendarDays, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/services', label: 'Serviços', icon: Scissors, minPlan: 'starter' as PlanId },
+  { href: '/dashboard/inventory', label: 'Inventário', icon: Package, minPlan: 'pro' as PlanId },
+  { href: '/dashboard/messages', label: 'SMS & Mensagens', icon: MessageCircle, minPlan: 'pro' as PlanId },
+  { href: '/dashboard/reports', label: 'Relatórios', icon: BarChart3, minPlan: 'pro' as PlanId },
 ]
 
 const managementNavItems = [
-  { href: '/dashboard/staff', label: 'Equipa & Logs', icon: UserCog },
-  { href: '/dashboard/settings', label: 'Definições', icon: Settings },
+  { href: '/dashboard/staff', label: 'Equipa & Logs', icon: UserCog, minPlan: 'business' as PlanId },
+  { href: '/dashboard/settings', label: 'Definições', icon: Settings, minPlan: 'starter' as PlanId },
 ]
 
 export default function ProtectedDashboardLayout({
@@ -109,6 +115,58 @@ export default function ProtectedDashboardLayout({
     return null
   }
 
+  return (
+    <PlanProvider>
+      <DashboardShell session={session} pathname={pathname} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} collapsed={collapsed} setCollapsed={setCollapsed}>
+        {children}
+      </DashboardShell>
+    </PlanProvider>
+  )
+}
+
+function DashboardShell({
+  children,
+  session,
+  pathname,
+  sidebarOpen,
+  setSidebarOpen,
+  collapsed,
+  setCollapsed,
+}: {
+  children: React.ReactNode
+  session: any
+  pathname: string
+  sidebarOpen: boolean
+  setSidebarOpen: (v: boolean) => void
+  collapsed: boolean
+  setCollapsed: (v: boolean) => void
+}) {
+  const { planId, canAccess, planConfig } = usePlan()
+
+  // Determine the required plan for the upgrade prompt
+  const getRequiredPlan = (path: string): 'pro' | 'business' => {
+    const businessRoutes = ['/dashboard/staff', '/dashboard/members']
+    if (businessRoutes.some((r) => path.startsWith(r))) return 'business'
+    return 'pro'
+  }
+
+  // Feature name for the upgrade prompt
+  const getFeatureName = (path: string): string => {
+    const map: Record<string, string> = {
+      '/dashboard/inventory': 'Inventário',
+      '/dashboard/messages': 'SMS & Mensagens',
+      '/dashboard/reports': 'Relatórios',
+      '/dashboard/staff': 'Equipa & Logs',
+      '/dashboard/members': 'Membros',
+    }
+    for (const [route, name] of Object.entries(map)) {
+      if (path.startsWith(route)) return name
+    }
+    return 'Esta funcionalidade'
+  }
+
+  const routeAllowed = canAccess(pathname)
+
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
@@ -120,6 +178,9 @@ export default function ProtectedDashboardLayout({
     .join('')
     .toUpperCase()
     .slice(0, 2) || '??'
+
+  // Check if a nav item is accessible based on plan
+  const isNavAccessible = (href: string) => canAccess(href)
 
   return (
     <div className="flex h-screen bg-gray-50/50">
@@ -186,24 +247,9 @@ export default function ProtectedDashboardLayout({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {mainNavItems.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              active={isActive(item.href)}
-              collapsed={collapsed}
-            />
-          ))}
-
-          <div className="pt-4 mt-4 border-t border-gray-100">
-            {!collapsed && (
-              <p className="px-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Gestão
-              </p>
-            )}
-            {managementNavItems.map((item) => (
+          {mainNavItems.map((item) => {
+            const accessible = isNavAccessible(item.href)
+            return (
               <NavLink
                 key={item.href}
                 href={item.href}
@@ -211,8 +257,31 @@ export default function ProtectedDashboardLayout({
                 icon={item.icon}
                 active={isActive(item.href)}
                 collapsed={collapsed}
+                locked={!accessible}
               />
-            ))}
+            )
+          })}
+
+          <div className="pt-4 mt-4 border-t border-gray-100">
+            {!collapsed && (
+              <p className="px-3 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Gestão
+              </p>
+            )}
+            {managementNavItems.map((item) => {
+              const accessible = isNavAccessible(item.href)
+              return (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={isActive(item.href)}
+                  collapsed={collapsed}
+                  locked={!accessible}
+                />
+              )
+            })}
             {session?.user?.isAdmin && (
               <NavLink
                 href="/admin"
@@ -250,18 +319,29 @@ export default function ProtectedDashboardLayout({
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {session?.user?.name}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {session?.user?.email}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 uppercase">
+                      {planConfig.name}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => signOut({ redirect: true, callbackUrl: '/' })}
-                className="w-full mt-2 flex items-center gap-2 px-3 py-2 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Terminar sessão
-              </button>
+              <div className="flex gap-1 mt-2">
+                <Link
+                  href="/dashboard/subscription"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors font-medium"
+                >
+                  <Crown className="w-3.5 h-3.5" />
+                  Plano
+                </Link>
+                <button
+                  onClick={() => signOut({ redirect: true, callbackUrl: '/' })}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sair
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -300,7 +380,14 @@ export default function ProtectedDashboardLayout({
         </header>
 
         <main className="flex-1 overflow-auto">
-          {children}
+          {routeAllowed ? (
+            children
+          ) : (
+            <UpgradePrompt
+              feature={getFeatureName(pathname)}
+              requiredPlan={getRequiredPlan(pathname)}
+            />
+          )}
         </main>
       </div>
     </div>
@@ -313,12 +400,14 @@ function NavLink({
   icon: Icon,
   active,
   collapsed,
+  locked = false,
 }: {
   href: string
   label: string
   icon: React.ComponentType<{ className?: string }>
   active: boolean
   collapsed: boolean
+  locked?: boolean
 }) {
   return (
     <Link
@@ -326,19 +415,30 @@ function NavLink({
       className={cn(
         'flex items-center gap-3 rounded-xl transition-all duration-200',
         collapsed ? 'justify-center p-2.5' : 'px-3 py-2.5',
-        active
-          ? 'bg-teal-50 text-teal-700 font-medium shadow-sm'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        locked
+          ? 'text-gray-400 hover:bg-gray-50'
+          : active
+            ? 'bg-teal-50 text-teal-700 font-medium shadow-sm'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
       )}
       title={collapsed ? label : undefined}
     >
       <Icon
         className={cn(
           'w-5 h-5 shrink-0',
-          active ? 'text-teal-600' : 'text-gray-400'
+          locked
+            ? 'text-gray-300'
+            : active
+              ? 'text-teal-600'
+              : 'text-gray-400'
         )}
       />
-      {!collapsed && <span className="text-sm">{label}</span>}
+      {!collapsed && (
+        <span className="text-sm flex-1">{label}</span>
+      )}
+      {!collapsed && locked && (
+        <Lock className="w-3.5 h-3.5 text-gray-300" />
+      )}
     </Link>
   )
 }

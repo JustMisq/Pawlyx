@@ -11,7 +11,6 @@ import {
   Check,
   PawPrint,
   ArrowRight,
-  Star,
   Sparkles,
   Shield,
   Clock,
@@ -63,13 +62,52 @@ const benefits = [
   { icon: Shield, text: "Dados 100% seguros" },
 ]
 
-const planFeatures = [
-  "Gestão ilimitada de clientes",
-  "Marcações e calendário",
-  "Gestão de stocks",
-  "Pagamentos Stripe",
-  "Relatórios e estatísticas",
-  "Suporte por email",
+const plans = [
+  {
+    name: 'Starter',
+    description: 'O essencial para começar',
+    monthlyPrice: 19,
+    yearlyPrice: 190,
+    popular: false,
+    features: [
+      'Gestão de clientes',
+      'Gestão de animais',
+      'Marcações e calendário',
+      'Gestão de serviços',
+      'O meu salão',
+      'Suporte por email',
+    ],
+  },
+  {
+    name: 'Pro',
+    description: 'Para profissionais que querem crescer',
+    monthlyPrice: 39,
+    yearlyPrice: 390,
+    popular: true,
+    features: [
+      'Tudo do Starter',
+      'Estatísticas avançadas',
+      'Inventário & Stocks',
+      'SMS & Mensagens (150/mês)',
+      'Relatórios completos',
+      'Suporte prioritário',
+    ],
+  },
+  {
+    name: 'Business',
+    description: 'Acesso completo para equipas',
+    monthlyPrice: 59,
+    yearlyPrice: 590,
+    popular: false,
+    features: [
+      'Tudo do Pro',
+      'SMS & Mensagens (500/mês)',
+      'Equipa & Logs',
+      'Gestão de membros',
+      'Acesso completo',
+      'Suporte dedicado',
+    ],
+  },
 ]
 
 export default function Home() {
@@ -235,77 +273,57 @@ export default function Home() {
               Preços
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Simples e transparente
+              Um plano para cada etapa
             </h2>
             <p className="text-lg text-gray-500">
-              Um só plano, todas as funcionalidades. Escolha o seu ritmo.
+              Escolha o plano ideal para o seu salão. 2 meses grátis na faturação anual.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Monthly Plan */}
-            <div className="relative bg-white p-8 rounded-2xl border-2 border-gray-100 hover:border-gray-200 transition-all hover:shadow-soft-lg">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Mensal</h3>
-              <p className="text-sm text-gray-500 mb-6">Perfeito para começar</p>
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-gray-900">18,45€</span>
-                <span className="text-gray-400 ml-1">/mês com IVA</span>
-                <p className="text-xs text-gray-400 mt-1">15€ sem IVA + 23% IVA</p>
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative bg-white p-8 rounded-2xl transition-all hover:shadow-soft-lg ${
+                  plan.popular
+                    ? 'border-2 border-teal-400 shadow-teal-lg ring-1 ring-teal-100'
+                    : 'border-2 border-gray-100 hover:border-gray-200'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-teal-500 to-teal-600 text-white px-4 py-1 rounded-full text-xs font-semibold shadow-sm">
+                    Mais popular
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+                <p className="text-sm text-gray-500 mb-6">{plan.description}</p>
+                <div className="mb-2">
+                  <span className="text-4xl sm:text-5xl font-bold text-gray-900">{plan.monthlyPrice}€</span>
+                  <span className="text-gray-400 ml-1">/mês</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-8">
+                  ou {plan.yearlyPrice}€/ano (2 meses grátis)
+                </p>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
+                      <Check className="w-4 h-4 text-teal-500 shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link href={`/auth/register?plan=${plan.name.toLowerCase()}`} className="block">
+                  <Button
+                    variant={plan.popular ? 'default' : 'outline'}
+                    className={`w-full ${plan.popular ? 'shadow-teal' : ''}`}
+                    size="lg"
+                  >
+                    Começar
+                    {plan.popular && <ArrowRight className="w-4 h-4" />}
+                  </Button>
+                </Link>
               </div>
-              <ul className="space-y-3 mb-8">
-                {planFeatures.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-gray-600">
-                    <Check className="w-4 h-4 text-teal-500 shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/auth/register?plan=monthly" className="block">
-                <Button variant="outline" className="w-full" size="lg">
-                  Começar
-                </Button>
-              </Link>
-            </div>
-
-            {/* Yearly Plan */}
-            <div className="relative bg-gradient-to-br from-teal-500 to-teal-600 p-8 rounded-2xl shadow-teal-lg overflow-hidden">
-              {/* Badge */}
-              <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
-                -17% de desconto
-              </div>
-              {/* Decorative circles */}
-              <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-xl" />
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-
-              <h3 className="text-xl font-bold text-white mb-1">Anual</h3>
-              <p className="text-sm text-teal-100 mb-6">Melhor oferta</p>
-              <div className="mb-8">
-                <span className="text-5xl font-bold text-white">184,50€</span>
-                <span className="text-teal-100 ml-1">/ano com IVA</span>
-                <p className="text-xs text-teal-200 mt-1">150€ sem IVA + 23% IVA</p>
-              </div>
-              <ul className="space-y-3 mb-8">
-                {planFeatures.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-white/90">
-                    <Check className="w-4 h-4 text-teal-200 shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-                <li className="flex items-center gap-3 text-sm text-white font-medium">
-                  <Star className="w-4 h-4 text-yellow-300 shrink-0" />
-                  Suporte prioritário
-                </li>
-              </ul>
-              <Link href="/auth/register?plan=yearly" className="block">
-                <Button
-                  className="w-full bg-white text-teal-700 hover:bg-teal-50 font-semibold shadow-lg"
-                  size="lg"
-                >
-                  Começar
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
+            ))}
           </div>
         </div>
       </section>
