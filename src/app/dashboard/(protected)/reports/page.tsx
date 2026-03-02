@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { BarChart3, Plus, Download, FileText, Eye, Trash2, Loader2, ChevronDown, Receipt } from 'lucide-react'
+import { BarChart3, Plus, Download, FileText, Eye, Trash2, Loader2 } from 'lucide-react'
 
 interface Invoice {
   id: string
@@ -191,9 +191,9 @@ export default function ReportsPage() {
     a.click()
   }
 
-  const exportAccounting = async (format: 'csv' | 'fec') => {
+  const exportAccounting = async () => {
     try {
-      const params = new URLSearchParams({ format })
+      const params = new URLSearchParams({ format: 'csv' })
       if (dateRange.start) params.append('startDate', dateRange.start)
       if (dateRange.end) params.append('endDate', dateRange.end)
       
@@ -207,9 +207,9 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `export-contabilidade-${format}-${new Date().toISOString().split('T')[0]}.${format === 'fec' ? 'txt' : 'csv'}`
+      a.download = `export-contabilidade-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
-      toast.success(`Exportação ${format.toUpperCase()} descarregada`)
+      toast.success('Ficheiro de gestão descarregado com sucesso')
     } catch (error) {
       toast.error('Erro ao exportar')
     }
@@ -255,13 +255,13 @@ export default function ReportsPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
           <BarChart3 className="w-8 h-8 text-teal-500" />
-          Relatórios & Faturas
+          Relatórios & Notas de Débito
         </h1>
         <div className="flex gap-3 flex-wrap">
           <Link href="/dashboard/appointments">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Criar uma fatura
+              Criar uma Nota de Débito
             </Button>
           </Link>
           <Button
@@ -272,32 +272,14 @@ export default function ReportsPage() {
             <Download className="w-4 h-4 mr-2" />
             Exportar CSV
           </Button>
-          <div className="relative group">
-            <Button
-              variant="outline"
-              disabled={filteredInvoices.length === 0}
-            >
-              <Receipt className="w-4 h-4 mr-2" />
-              Exportação contabilística
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-lg border-2 border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-              <button
-                onClick={() => exportAccounting('csv')}
-                className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 rounded-t-2xl flex items-center gap-2"
-              >
-                <FileText className="w-4 h-4 text-gray-500" />
-                Formato CSV (Excel)
-              </button>
-              <button
-                onClick={() => exportAccounting('fec')}
-                className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 rounded-b-2xl flex items-center gap-2"
-              >
-                <Receipt className="w-4 h-4 text-gray-500" />
-                Formato FEC (Contabilidade)
-              </button>
-            </div>
-          </div>
+          <Button
+            variant="outline"
+            onClick={() => exportAccounting()}
+            disabled={filteredInvoices.length === 0}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Exportar para Contabilista
+          </Button>
         </div>
       </div>
 
@@ -320,6 +302,26 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Aviso sobre Contabilidade Oficial */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0">
+            <svg className="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0zM10 9a1 1 0 100-2 1 1 0 000 2zm3 1a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-blue-900 mb-1">Apresentação de Contas Oficial</h3>
+            <p className="text-sm text-blue-800">
+              O ficheiro de gestão interna (CSV) é para seu acompanhamento e compartilhamento com o seu contabilista. 
+              <strong> Para a apresentação de contas oficial à Autoridade Tributária Portuguesa, 
+              utilize um software de contabilidade certificado pelo AT.</strong> 
+              Nosso sistema não substitui a responsabilidade de conformidade fiscal do seu negócio.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Détails TVA */}
       <div className="bg-teal-50/50 border border-teal-100 rounded-2xl p-6 mb-8">
         <h3 className="font-semibold text-gray-900 mb-4">Detalhes Fiscais</h3>
@@ -329,7 +331,7 @@ export default function ReportsPage() {
             <p className="text-2xl font-bold text-gray-900">{stats.totalHT.toFixed(2)}€</p>
           </div>
           <div>
-            <p className="text-sm text-teal-600">IVA (20%)</p>
+            <p className="text-sm text-teal-600">IVA (23%)</p>
             <p className="text-2xl font-bold text-gray-900">{stats.totalTax.toFixed(2)}€</p>
           </div>
           <div>
@@ -338,7 +340,7 @@ export default function ReportsPage() {
           </div>
           <div>
             <p className="text-sm text-teal-600">Taxa média</p>
-            <p className="text-2xl font-bold text-gray-900">20%</p>
+            <p className="text-2xl font-bold text-gray-900">23%</p>
           </div>
         </div>
       </div>
@@ -393,9 +395,9 @@ export default function ReportsPage() {
         {filteredInvoices.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma fatura de momento</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma Nota de Débito de momento</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              As faturas são criadas automaticamente quando agenda uma consulta com um cliente.
+              As Notas de Débito são criadas automaticamente quando agenda uma consulta com um cliente.
             </p>
             <div className="space-y-3">
               <p className="text-sm text-gray-600 font-medium">Como fazer:</p>
@@ -403,7 +405,7 @@ export default function ReportsPage() {
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">1</span> Vá a <strong>Marcações</strong></li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">2</span> Crie uma nova consulta</li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">3</span> Selecione o cliente, o animal e o serviço</li>
-                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span> Confirme - uma fatura será criada automaticamente</li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span> Confirme - uma Nota de Débito será criada automaticamente</li>
               </ol>
             </div>
             <Link href="/dashboard/appointments" className="mt-8 inline-block">
@@ -418,7 +420,7 @@ export default function ReportsPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Fatura</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nota de Débito</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cliente</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Produto/Serviço</th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-gray-900">Quantidade</th>

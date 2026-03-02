@@ -659,11 +659,11 @@ export default function ClientDetailsPage() {
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-5">
         <div className="flex items-center gap-2 mb-4">
           <FileText className="w-5 h-5 text-teal-600" />
-          <h2 className="font-bold text-gray-900">Faturas ({invoices.length})</h2>
+          <h2 className="font-bold text-gray-900">Notas de Débito ({invoices.length})</h2>
         </div>
         
         {invoices.length === 0 ? (
-          <p className="text-gray-400 text-sm">Nenhuma fatura</p>
+          <p className="text-gray-400 text-sm">Nenhuma Nota de Débito</p>
         ) : (
           <div className="space-y-2">
             {invoices.map(invoice => (

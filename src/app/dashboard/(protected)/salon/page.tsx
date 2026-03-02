@@ -18,7 +18,7 @@ export default function SalonPage() {
     city: '',
     postalCode: '',
     email: '',
-    siret: '',
+    nif: '',
     tvaNumber: '',
     legalName: '',
     legalForm: '',
@@ -38,7 +38,7 @@ export default function SalonPage() {
         setSalon({
           name: data.name || '', description: data.description || '', phone: data.phone || '',
           address: data.address || '', city: data.city || '', postalCode: data.postalCode || '',
-          email: data.email || '', siret: data.siret || '', tvaNumber: data.tvaNumber || '',
+          email: data.email || '', nif: data.nif || '', tvaNumber: data.tvaNumber || '',
           legalName: data.legalName || '', legalForm: data.legalForm || '',
           invoiceTerms: data.invoiceTerms || '', invoiceNotes: data.invoiceNotes || '',
         })
@@ -148,9 +148,9 @@ export default function SalonPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">NIF / NIPC</label>
-                  <input type="text" name="siret" value={salon.siret} onChange={handleChange} className="input-base" placeholder="123 456 789" maxLength={17} />
-                  <p className="text-xs text-gray-400 mt-1">Número de identificação fiscal</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">NIF (Número de Identificação Fiscal)</label>
+                  <input type="text" name="nif" value={salon.nif} onChange={handleChange} className="input-base" placeholder="123456789" maxLength={9} pattern="[0-9]{9}" />
+                  <p className="text-xs text-gray-400 mt-1">Ex: 123456789 (9 dígitos)</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">N.º IVA intracomunitário</label>
@@ -166,7 +166,7 @@ export default function SalonPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas de rodapé da fatura</label>
                 <textarea name="invoiceNotes" value={salon.invoiceNotes} onChange={handleChange} rows={2} className="input-base resize-none" placeholder="Ex: Obrigado pela sua confiança!" />
               </div>
-              {(salon.siret || salon.legalName) && (
+              {(salon.nif || salon.legalName) && (
                 <div className="border-t border-gray-100 pt-5 mt-2">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Pré-visualização da fatura</h3>
                   <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600 space-y-1">
@@ -174,8 +174,8 @@ export default function SalonPage() {
                     {salon.legalForm && <p>{legalFormOptions.find(o => o.value === salon.legalForm)?.label}</p>}
                     {salon.address && <p>{salon.address}</p>}
                     {(salon.postalCode || salon.city) && <p>{salon.postalCode} {salon.city}</p>}
-                    {salon.siret && <p>NIF : {salon.siret}</p>}
-                    {salon.tvaNumber && <p>IVA : {salon.tvaNumber}</p>}
+                    {salon.nif && <p>NIF: {salon.nif}</p>}
+                    {salon.tvaNumber && <p>IVA: {salon.tvaNumber}</p>}
                     {!salon.tvaNumber && <p className="italic text-gray-400">IVA não aplicável</p>}
                   </div>
                 </div>

@@ -43,6 +43,7 @@ model Salon {
   legalName      String?
   siret          String?
   tvaNumber      String?
+  nif            String?
   appointments   Appointment[]
   auditLogs      AuditLog[]
   clients        Client[]
@@ -64,6 +65,7 @@ model Client {
   phone        String?
   address      String?
   notes        String?
+  nif          String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   salonId      String

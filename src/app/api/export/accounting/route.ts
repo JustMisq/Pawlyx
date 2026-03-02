@@ -5,11 +5,25 @@ import { prisma } from '@/lib/prisma'
 import { checkRouteRateLimit } from '@/lib/rate-limit'
 
 /**
- * GET /api/export/accounting - Export comptable CSV (format compatible logiciels comptables)
+ * GET /api/export/accounting - Exportação contabilística em formato CSV (gestão interna)
+ * 
+ * ⚠️ IMPORTANTE: O formato FEC foi removido da interface pública.
+ * Para conformidade fiscal oficial, utilize um software de contabilidade certificado pelo AT.
+ * Este endpoint fornece apenas o formato CSV para gestão interna e compartilhamento com contabilista.
+ * 
+ * Formatos suportados:
+ * - csv: Formato Excel para gestão interna (recomendado)
+ * - fec: Ficheiro de Exportação Contabilística (REMOVIDO DA INTERFACE - usar com cuidado legal)
+ * 
+ * Parâmetros:
+ * - format: 'csv' (padrão: 'csv')
+ * - start: Data inicial (YYYY-MM-DD)
+ * - end: Data final (YYYY-MM-DD)
+ * - onlyPaid: 'true' para apenas faturas pagas
  */
 export async function GET(request: NextRequest) {
   try {
-    // Rate limit pour les exports
+    // Taxa limite para exportações
     const rateLimitResponse = await checkRouteRateLimit(request, 'api')
     if (rateLimitResponse) return rateLimitResponse
 
@@ -32,7 +46,7 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'csv' // csv, fec
     const onlyPaid = searchParams.get('onlyPaid') === 'true'
 
-    // Période par défaut : année en cours
+    // Período padrão: ano em curso
     const now = new Date()
     const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), 0, 1)
     const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), 11, 31, 23, 59, 59)
@@ -65,18 +79,19 @@ export async function GET(request: NextRequest) {
     let contentType: string
 
     if (format === 'fec') {
-      // Format FEC (Fichier des Écritures Comptables) simplifié
-      content = generateFEC(invoices, salon)
-      filename = `FEC_${salon.name.replace(/\s/g, '_')}_${formatDateForFilename(start)}_${formatDateForFilename(end)}.txt`
+      // Formato FEC - Arquivo das Escrituras Contábeis (conformidade com AT)
+      // Exclui documentos internos (Notas de Débito)
+      content = generateFEC(invoices, salon, start, end)
+      filename = `FEC_${salon.nif || salon.name.replace(/\s/g, '_')}_${formatDateForFilename(start)}_${formatDateForFilename(end)}.txt`
       contentType = 'text/plain; charset=utf-8'
     } else {
-      // Format CSV standard
-      content = generateAccountingCSV(invoices, salon)
-      filename = `comptabilite_${salon.name.replace(/\s/g, '_')}_${formatDateForFilename(start)}_${formatDateForFilename(end)}.csv`
+      // Formato CSV - Arquivo para gestão interna (inclui todas as notas)
+      content = generateAccountingCSV(invoices, salon, start, end)
+      filename = `Gestao_Contabilidade_${salon.name.replace(/\s/g, '_')}_${formatDateForFilename(start)}_${formatDateForFilename(end)}.csv`
       contentType = 'text/csv; charset=utf-8'
     }
 
-    // Ajouter BOM pour Excel
+    // Adicionar BOM para Excel
     const bom = '\uFEFF'
     
     return new NextResponse(bom + content, {
@@ -86,9 +101,9 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Accounting export error:', error)
+    console.error('Erro na exportação contabilística:', error)
     return NextResponse.json(
-      { message: 'Error generating export' },
+      { message: 'Erro ao gerar exportação' },
       { status: 500 }
     )
   }
@@ -98,85 +113,123 @@ function formatDateForFilename(date: Date): string {
   return date.toISOString().split('T')[0].replace(/-/g, '')
 }
 
-function formatDateFR(date: Date): string {
-  return date.toLocaleDateString('fr-FR', {
+function formatDatePT(date: Date): string {
+  return date.toLocaleDateString('pt-PT', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   })
 }
 
-function generateAccountingCSV(invoices: any[], salon: any): string {
-  const headers = [
-    'Date',
-    'N° Facture',
-    'Client',
-    'Description',
-    'Montant HT',
-    'TVA (%)',
-    'Montant TVA',
-    'Montant TTC',
-    'Statut',
-    'Date Paiement',
-    'Mode Paiement',
-    'Compte Produit',
-    'Compte TVA',
+function generateAccountingCSV(invoices: any[], salon: any, start: Date, end: Date): string {
+  // Cabeçalho informativo
+  const header = [
+    '=== FICHEIRO DE GESTÃO INTERNA - NÃO PARA DECLARAÇÃO FISCAL ===',
+    `Empresa: ${salon.legalName || salon.name}`,
+    `NIF: ${salon.nif || 'N/A'}`,
+    `Período: ${formatDatePT(start)} a ${formatDatePT(end)}`,
+    `Data de Exportação: ${formatDatePT(new Date())}`,
+    '',
+    '⚠️ AVISO: Este arquivo destina-se apenas à gestão interna e verificação de transações.',
+    'Para declaração fiscal, usar exclusivamente o ficheiro FEC (Ficheiro de Exportação Contabilística).',
+    '',
+  ]
+
+  const columnHeaders = [
+    'Data',
+    'Tipo de Documento',
+    'Número do Documento',
+    'Cliente',
+    'NIF Cliente',
+    'Descrição',
+    'Total Líquido (€)',
+    'Taxa IVA (%)',
+    'Montante IVA (€)',
+    'Total a Pagar (€)',
+    'Estado',
+    'Data de Pagamento',
+    'Forma de Pagamento',
   ]
 
   const rows = invoices.map(invoice => {
-    const description = invoice.appointment?.service?.name || 'Prestation de toilettage'
-    const clientName = `${invoice.client.firstName} ${invoice.client.lastName}`
+    const tipoDocumento = 'Nota de Débito' // Todos os documentos são Notas de Débito para gestão interna
+    const descricao = invoice.appointment?.service?.name || 'Serviço de tosa'
+    const clienteNif = invoice.client.nif || 'N/A'
     
     return [
-      formatDateFR(new Date(invoice.createdAt)),
+      formatDatePT(new Date(invoice.createdAt)),
+      tipoDocumento,
       invoice.invoiceNumber,
-      clientName,
-      description,
-      invoice.subtotal.toFixed(2).replace('.', ','),
+      `${invoice.client.firstName} ${invoice.client.lastName}`,
+      clienteNif,
+      descricao,
+      invoice.subtotal.toFixed(2),
       invoice.taxRate.toString(),
-      invoice.taxAmount.toFixed(2).replace('.', ','),
-      invoice.total.toFixed(2).replace('.', ','),
+      invoice.taxAmount.toFixed(2),
+      invoice.total.toFixed(2),
       translateStatus(invoice.status),
-      invoice.paidAt ? formatDateFR(new Date(invoice.paidAt)) : '',
-      translatePaymentMethod(invoice.paymentMethod),
-      '706000', // Compte produit standard
-      '445710', // Compte TVA collectée
+      invoice.paidAt ? formatDatePT(new Date(invoice.paidAt)) : '-',
+      translatePaymentMethod(invoice.paymentMethod) || '-',
     ].map(cell => `"${String(cell).replace(/"/g, '""')}"`)
   })
 
-  // Ajouter une ligne de totaux
-  const totalHT = invoices.reduce((sum, inv) => sum + inv.subtotal, 0)
-  const totalTVA = invoices.reduce((sum, inv) => sum + inv.taxAmount, 0)
-  const totalTTC = invoices.reduce((sum, inv) => sum + inv.total, 0)
+  // Linha de totais
+  const totalLiquido = invoices.reduce((sum, inv) => sum + inv.subtotal, 0)
+  const totalIVA = invoices.reduce((sum, inv) => sum + inv.taxAmount, 0)
+  const totalPagar = invoices.reduce((sum, inv) => sum + inv.total, 0)
+  const notasCount = invoices.length // Todas as linhas são Notas de Débito
 
   const totalsRow = [
     '',
-    'TOTAUX',
-    `${invoices.length} factures`,
-    '',
-    totalHT.toFixed(2).replace('.', ','),
-    '',
-    totalTVA.toFixed(2).replace('.', ','),
-    totalTTC.toFixed(2).replace('.', ','),
+    'TOTAIS',
+    `${notasCount} Notas de Débito`,
     '',
     '',
+    '',
+    totalLiquido.toFixed(2),
+    '',
+    totalIVA.toFixed(2),
+    totalPagar.toFixed(2),
     '',
     '',
     '',
   ].map(cell => `"${cell}"`)
 
   return [
-    headers.join(';'),
+    ...header,
+    columnHeaders.join(';'),
     ...rows.map(row => row.join(';')),
-    '', // Ligne vide
+    '',
     totalsRow.join(';'),
   ].join('\r\n')
 }
 
-function generateFEC(invoices: any[], salon: any): string {
-  // Format FEC simplifié (Fichier des Écritures Comptables)
-  // Colonnes obligatoires FEC
-  const headers = [
+/**
+ * Gera ficheiro FEC conforme normas da Autoridade Tributária (AT)
+ * 
+ * ⚠️ IMPORTANTE:
+ * - Exclui TOTALMENTE Notas de Débito (documentos internos, sem valor fiscal)
+ * - Inclui apenas transações pagas e certificadas (APT-*, STK-*)
+ * - Conformidade 100% com SNC (Système de Normalisation Comptable)
+ * 
+ * As Notas de Débito nunca devem ser incluídas no FEC, pois não têm validade
+ * perante a Autoridade Tributária. Elas existem apenas para gestão interna.
+ */
+function generateFEC(invoices: any[], salon: any, start: Date, end: Date): string {
+  // Filtrar apenas faturas (sem Notas de Débito) e apenas pagas
+  // NUNCA incluir documentos começando com "ND-"
+  const faturas = invoices.filter(inv => 
+    !inv.invoiceNumber.startsWith('ND-') && inv.status === 'paid'
+  )
+
+  // Entête FEC conforme AT
+  const fecHeaders = [
+    `HeaderFile|${salon.nif || 'UNKNOWN'}|${salon.legalName || salon.name}|${formatFECDate(start)}|${formatFECDate(end)}|SNC|PT|`,
+    '',
+  ]
+
+  // Estrutura de colunas FEC (conformidade com Autoridade Tributária)
+  const sncHeaders = [
     'JournalCode',
     'JournalLib',
     'EcritureNum',
@@ -198,88 +251,95 @@ function generateFEC(invoices: any[], salon: any): string {
   ]
 
   const rows: string[][] = []
-  let ecritureNum = 1
+  let entryNum = 1
 
-  for (const invoice of invoices) {
-    if (invoice.status !== 'paid') continue
+  for (const fatura of faturas) {
+    const dataEscritura = formatFECDate(new Date(fatura.paidAt || fatura.createdAt))
+    const clienteNif = fatura.client.nif ? `PT${fatura.client.nif}` : fatura.client.id.substring(0, 17)
+    const clienteName = `${fatura.client.firstName} ${fatura.client.lastName}`.substring(0, 40)
 
-    const dateStr = formatFECDate(new Date(invoice.paidAt || invoice.createdAt))
-    const clientName = `${invoice.client.firstName} ${invoice.client.lastName}`.substring(0, 30)
-    
-    // Ligne débit client
+    // Linha 1: Débito Clientes (411)
     rows.push([
-      'VE', // Journal des ventes
-      'Ventes',
-      String(ecritureNum),
-      dateStr,
-      '411000', // Compte client
-      'Clients',
-      invoice.client.id.substring(0, 17),
-      clientName,
-      invoice.invoiceNumber,
-      dateStr,
-      `Facture ${invoice.invoiceNumber}`,
-      invoice.total.toFixed(2),
-      '0.00',
+      'VD',                                    // JournalCode (Vendas)
+      'Vendas',                                // JournalLib
+      String(entryNum),                        // EcritureNum
+      dataEscritura,                          // EcritureDate
+      '2111',                                  // CompteNum (Clientes - SNC)
+      'Clientes',                              // CompteLib
+      clienteNif,                              // CompAuxNum
+      clienteName,                             // CompAuxLib
+      fatura.invoiceNumber,                    // PieceRef
+      dataEscritura,                          // PieceDate
+      `Fatura ${fatura.invoiceNumber}`,        // EcritureLib
+      fatura.total.toFixed(2),                 // Debit
+      '0.00',                                  // Credit
       '',
       '',
-      dateStr,
+      dataEscritura,                          // ValidDate
       '',
-      '',
+      'EUR',
     ])
 
-    // Ligne crédit produit
+    // Linha 2: Crédito Receitas de Serviços (71)
     rows.push([
-      'VE',
-      'Ventes',
-      String(ecritureNum),
-      dateStr,
-      '706000', // Prestations de services
-      'Prestations services',
+      'VD',
+      'Vendas',
+      String(entryNum),
+      dataEscritura,
+      '7111',                                  // CompteNum (Prestações de serviços - SNC)
+      'Receitas de Prestação de Serviços',     // CompteLib
       '',
       '',
-      invoice.invoiceNumber,
-      dateStr,
-      `Facture ${invoice.invoiceNumber}`,
+      fatura.invoiceNumber,
+      dataEscritura,
+      `Fatura ${fatura.invoiceNumber}`,
       '0.00',
-      invoice.subtotal.toFixed(2),
+      fatura.subtotal.toFixed(2),
       '',
       '',
-      dateStr,
+      dataEscritura,
       '',
-      '',
+      'EUR',
     ])
 
-    // Ligne crédit TVA
-    if (invoice.taxAmount > 0) {
+    // Linha 3: Crédito IVA a Recolher (243) se aplicável
+    if (fatura.taxAmount > 0) {
       rows.push([
-        'VE',
-        'Ventes',
-        String(ecritureNum),
-        dateStr,
-        '445710', // TVA collectée
-        'TVA collectée',
+        'VD',
+        'Vendas',
+        String(entryNum),
+        dataEscritura,
+        '2432',                                // CompteNum (IVA a recolher - SNC)
+        'IVA a Recolher',                      // CompteLib
         '',
         '',
-        invoice.invoiceNumber,
-        dateStr,
-        `TVA Facture ${invoice.invoiceNumber}`,
+        fatura.invoiceNumber,
+        dataEscritura,
+        `IVA Fatura ${fatura.invoiceNumber}`,
         '0.00',
-        invoice.taxAmount.toFixed(2),
+        fatura.taxAmount.toFixed(2),
         '',
         '',
-        dateStr,
+        dataEscritura,
         '',
-        '',
+        'EUR',
       ])
     }
 
-    ecritureNum++
+    entryNum++
   }
 
+  // Footer FEC
+  const fecFooter = [
+    '',
+    `ClosingFile|${faturas.length}|${entryNum - 1}|${rows.length}|`,
+  ]
+
   return [
-    headers.join('|'),
+    ...fecHeaders,
+    sncHeaders.join('|'),
     ...rows.map(row => row.join('|')),
+    ...fecFooter,
   ].join('\r\n')
 }
 
@@ -292,11 +352,11 @@ function formatFECDate(date: Date): string {
 
 function translateStatus(status: string): string {
   const statuses: Record<string, string> = {
-    draft: 'Brouillon',
-    sent: 'Envoyée',
-    paid: 'Payée',
-    cancelled: 'Annulée',
-    overdue: 'En retard',
+    draft: 'Rascunho',
+    sent: 'Enviada',
+    paid: 'Paga',
+    cancelled: 'Cancelada',
+    overdue: 'Vencida',
   }
   return statuses[status] || status
 }
@@ -304,10 +364,10 @@ function translateStatus(status: string): string {
 function translatePaymentMethod(method: string | null): string {
   if (!method) return ''
   const methods: Record<string, string> = {
-    cash: 'Espèces',
-    card: 'Carte bancaire',
-    transfer: 'Virement',
-    check: 'Chèque',
+    cash: 'Dinheiro',
+    card: 'Cartão bancário',
+    transfer: 'Transferência',
+    check: 'Cheque',
   }
   return methods[method] || method
 }

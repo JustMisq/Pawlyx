@@ -99,7 +99,7 @@ export const invoiceSchema = z.object({
   clientId: z.string().cuid(),
   appointmentId: z.string().cuid().optional().nullable(),
   subtotal: z.number().positive(),
-  taxRate: z.number().min(0).max(100).default(20),
+  taxRate: z.number().min(0).max(100).default(23),
 })
 
 export const invoiceUpdateSchema = z.object({
@@ -136,6 +136,7 @@ export const salonSchema = z.object({
   email: z.string().email().optional().nullable(),
   logo: z.string().url().optional().nullable(),
   // Infos légales
+  nif: z.string().regex(/^\d{9}$/, 'NIF doit contenir 9 chiffres').optional().nullable(),
   siret: z.string().length(14, 'SIRET doit contenir 14 chiffres').optional().nullable(),
   tvaNumber: z.string().max(20).optional().nullable(),
   legalName: z.string().max(200).optional().nullable(),

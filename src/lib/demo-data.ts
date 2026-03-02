@@ -134,7 +134,7 @@ export async function generateDemoData(salonId: string): Promise<{
     // Créer une facture pour les RDV completed
     if (status === 'completed') {
       const invNum: string = `INV-${date.getFullYear()}-${String(invoices.length + 1).padStart(3, '0')}`
-      const taxAmount = service.price * 0.2
+      const taxAmount = service.price * 0.23
       const isPaid = Math.random() > 0.2 // 80% payées
 
       const inv = await prisma.invoice.create({
@@ -144,7 +144,7 @@ export async function generateDemoData(salonId: string): Promise<{
           appointmentId: appointment.id,
           invoiceNumber: invNum,
           subtotal: service.price,
-          taxRate: 20,
+          taxRate: 23,
           taxAmount,
           total: service.price + taxAmount,
           status: isPaid ? 'paid' : 'sent',

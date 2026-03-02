@@ -4,7 +4,7 @@ import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 
 /**
- * GET /api/invoices/[id]/pdf - Génère un PDF de facture
+ * GET /api/invoices/[id]/pdf - Gera um PDF de nota de débito
  */
 export async function GET(
   request: NextRequest,
@@ -48,10 +48,10 @@ export async function GET(
       return NextResponse.json({ message: 'Invoice not found' }, { status: 404 })
     }
 
-    // Générer le HTML de la facture
+    // Gerar o HTML da nota de débito
     const html = generateInvoiceHTML(invoice)
 
-    // Retourner le HTML (le frontend peut utiliser window.print() ou une lib comme html2pdf)
+    // Retornar o HTML (o frontend pode usar window.print() ou uma lib como html2pdf)
     return new NextResponse(html, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
@@ -60,15 +60,15 @@ export async function GET(
       },
     })
   } catch (error) {
-    console.error('Generate invoice PDF error:', error)
+    console.error('Erro ao gerar PDF da nota:', error)
     return NextResponse.json(
-      { message: 'Error generating invoice' },
+      { message: 'Erro ao gerar nota de débito' },
       { status: 500 }
     )
   }
 }
 
-// ✅ SÉCURITÉ: Fonction d'échappement HTML pour prévenir les XSS
+// ✅ SEGURANÇA: Função de escape HTML para prevenir XSS
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return ''
   return str
@@ -86,33 +86,35 @@ function generateInvoiceHTML(invoice: any) {
   const createdAt = new Date(invoice.createdAt)
   const dueDate = invoice.dueDate ? new Date(invoice.dueDate) : null
 
-  const formatDate = (date: Date) => date.toLocaleDateString('fr-FR', {
+  const formatDate = (date: Date) => date.toLocaleDateString('pt-PT', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
   })
 
   const statusLabel: Record<string, string> = {
-    draft: 'Brouillon',
-    sent: 'Envoyée',
-    paid: 'Payée',
-    cancelled: 'Annulée',
-    overdue: 'En retard',
+    draft: 'Rascunho',
+    sent: 'Enviada',
+    paid: 'Paga',
+    cancelled: 'Cancelada',
+    overdue: 'Vencida',
   }
 
   const paymentMethodLabel: Record<string, string> = {
-    cash: 'Espèces',
-    card: 'Carte bancaire',
-    transfer: 'Virement',
-    check: 'Chèque',
+    cash: 'Dinheiro',
+    card: 'Cartão bancário',
+    transfer: 'Transferência',
+    check: 'Cheque',
   }
 
   return `
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
-  <title>Facture ${invoice.invoiceNumber}</title>
+  <meta name="description" content="Nota de débito ${invoice.invoiceNumber} - ${escapeHtml(salon.name)}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nota de Débito ${invoice.invoiceNumber} | ${escapeHtml(salon.name)}</title>
   <style>
     @page { size: A4; margin: 20mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -178,10 +180,10 @@ function generateInvoiceHTML(invoice: any) {
         </div>
       </div>
       <div class="invoice-info">
-        <div class="invoice-number">FACTURE ${escapeHtml(invoice.invoiceNumber)}</div>
+        <div class="invoice-number">NOTA DE DÉBITO ${escapeHtml(invoice.invoiceNumber)}</div>
         <div class="invoice-date">
-          Date : ${formatDate(createdAt)}<br>
-          ${dueDate ? `Échéance : ${formatDate(dueDate)}` : ''}
+          Data : ${formatDate(createdAt)}<br>
+          ${dueDate ? `Vencimento : ${formatDate(dueDate)}` : ''}
         </div>
         <div style="margin-top: 10px;">
           <span class="status status-${escapeHtml(invoice.status)}">${escapeHtml(statusLabel[invoice.status] || invoice.status)}</span>
@@ -189,38 +191,38 @@ function generateInvoiceHTML(invoice: any) {
       </div>
     </div>
 
-    <!-- Parties -->
+    <!-- Partes -->
     <div class="parties">
       <div class="party">
-        <div class="party-title">Émetteur</div>
+        <div class="party-title">Emissor</div>
         <div class="party-name">${escapeHtml(salon.legalName || salon.name)}</div>
         <div class="party-details">
           ${escapeHtml(salon.legalForm)}<br>
           ${escapeHtml(salon.address)}<br>
           ${escapeHtml(salon.postalCode)} ${escapeHtml(salon.city)}<br>
-          ${salon.siret ? `SIRET : ${escapeHtml(salon.siret)}` : ''}<br>
-          ${salon.tvaNumber ? `TVA : ${escapeHtml(salon.tvaNumber)}` : 'TVA non applicable, art. 293 B du CGI'}
+          ${salon.nif ? `NIF: ${escapeHtml(salon.nif)}<br>` : ''}
         </div>
       </div>
       <div class="party">
-        <div class="party-title">Client</div>
+        <div class="party-title">Cliente</div>
         <div class="party-name">${escapeHtml(client.firstName)} ${escapeHtml(client.lastName)}</div>
         <div class="party-details">
           ${escapeHtml(client.address)}<br>
           ${escapeHtml(client.email)}<br>
-          ${escapeHtml(client.phone)}
+          ${escapeHtml(client.phone)}<br>
+          ${client.nif ? `NIF : ${escapeHtml(client.nif)}<br>` : ''}
         </div>
       </div>
     </div>
 
-    <!-- Détails -->
+    <!-- Detalhes -->
     <table>
       <thead>
         <tr>
-          <th>Description</th>
-          <th>Quantité</th>
-          <th class="text-right">Prix unitaire HT</th>
-          <th class="text-right">Total HT</th>
+          <th>Descrição</th>
+          <th>Quantidade</th>
+          <th class="text-right">Preço unitário</th>
+          <th class="text-right">Total</th>
         </tr>
       </thead>
       <tbody>
@@ -240,8 +242,8 @@ function generateInvoiceHTML(invoice: any) {
                     <strong>${escapeHtml(itemName)}</strong><br>
                     <span style="color: #6b7280; font-size: 11px;">
                       ${item.description ? escapeHtml(item.description) : ''}
-                      ${appointment?.animal && invoice.type === 'appointment' ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
-                      ${appointment && invoice.type === 'appointment' ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                      ${appointment?.animal && invoice.type === 'appointment' ? `Animal: ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                      ${appointment && invoice.type === 'appointment' ? `Data do Agendamento: ${formatDate(new Date(appointment.startTime))}` : ''}
                     </span>
                   </td>
                   <td>${quantity}${item.unit ? ' ' + escapeHtml(item.unit) : ''}</td>
@@ -256,10 +258,10 @@ function generateInvoiceHTML(invoice: any) {
             return `
             <tr>
               <td>
-                <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
+                <strong>${escapeHtml(appointment?.service?.name) || 'Serviço de tosa'}</strong><br>
                 <span style="color: #6b7280; font-size: 11px;">
-                  ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
-                  ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                  ${appointment?.animal ? `Animal: ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                  ${appointment ? `Data do Agendamento: ${formatDate(new Date(appointment.startTime))}` : ''}
                 </span>
               </td>
               <td>1</td>
@@ -268,14 +270,14 @@ function generateInvoiceHTML(invoice: any) {
             </tr>
             `
           } catch (e) {
-            // Si erreur de parse JSON
+            // Se erro ao fazer parse do JSON
             return `
             <tr>
               <td>
-                <strong>${escapeHtml(appointment?.service?.name) || 'Prestation de toilettage'}</strong><br>
+                <strong>${escapeHtml(appointment?.service?.name) || 'Serviço de tosa'}</strong><br>
                 <span style="color: #6b7280; font-size: 11px;">
-                  ${appointment?.animal ? `Animal : ${escapeHtml(appointment.animal.name)}<br>` : ''}
-                  ${appointment ? `Date du RDV : ${formatDate(new Date(appointment.startTime))}` : ''}
+                  ${appointment?.animal ? `Animal: ${escapeHtml(appointment.animal.name)}<br>` : ''}
+                  ${appointment ? `Data do Agendamento: ${formatDate(new Date(appointment.startTime))}` : ''}
                 </span>
               </td>
               <td>1</td>
@@ -286,17 +288,13 @@ function generateInvoiceHTML(invoice: any) {
           }
         })()}
         
-        <!-- Sous-total -->
+        <!-- Subtotal -->
         <tr>
-          <td colspan="3" class="text-right">Sous-total HT</td>
+          <td colspan="3" class="text-right">Subtotal</td>
           <td class="text-right">${invoice.subtotal.toFixed(2)} €</td>
         </tr>
-        <tr>
-          <td colspan="3" class="text-right">TVA (${invoice.taxRate}%)</td>
-          <td class="text-right">${invoice.taxAmount.toFixed(2)} €</td>
-        </tr>
         <tr class="total-row">
-          <td colspan="3" class="text-right">Total TTC</td>
+          <td colspan="3" class="text-right">Total a Pagar</td>
           <td class="text-right grand-total">${invoice.total.toFixed(2)} €</td>
         </tr>
       </tbody>
@@ -304,41 +302,43 @@ function generateInvoiceHTML(invoice: any) {
 
     ${invoice.status === 'paid' ? `
     <div class="payment-info">
-      <div class="payment-title">✅ Facture acquittée</div>
+      <div class="payment-title">✅ Nota de Débito Paga</div>
       <div>
-        Payée le : ${invoice.paidAt ? formatDate(new Date(invoice.paidAt)) : '-'}<br>
-        Mode de paiement : ${invoice.paymentMethod ? escapeHtml(paymentMethodLabel[invoice.paymentMethod] || invoice.paymentMethod) : '-'}
+        Paga em: ${invoice.paidAt ? formatDate(new Date(invoice.paidAt)) : '-'}<br>
+        Forma de pagamento: ${invoice.paymentMethod ? escapeHtml(paymentMethodLabel[invoice.paymentMethod] || invoice.paymentMethod) : '-'}
       </div>
     </div>
     ` : ''}
 
-    <!-- Conditions -->
+    <!-- Condições -->
     ${salon.invoiceTerms || salon.invoiceNotes ? `
     <div class="terms">
-      <strong>Conditions de paiement :</strong><br>
-      ${escapeHtml(salon.invoiceTerms) || 'Paiement à réception de la facture'}<br><br>
+      <strong>Condições de Pagamento:</strong><br>
+      ${escapeHtml(salon.invoiceTerms) || 'Pagamento na recepção da nota de débito'}<br><br>
       ${escapeHtml(salon.invoiceNotes)}
     </div>
     ` : `
     <div class="terms">
-      <strong>Conditions de paiement :</strong><br>
-      Paiement à réception de la facture.<br>
-      Moyens de paiement acceptés : Espèces, Carte bancaire, Chèque.
+      <strong>Condições de Pagamento:</strong><br>
+      Pagamento na recepção da nota de débito.<br>
+      Formas de pagamento aceitas: Dinheiro, Cartão bancário, Cheque.
     </div>
     `}
 
-    <!-- Footer -->
+    <!-- Rodapé -->
     <div class="footer">
       <div class="legal">
         ${escapeHtml(salon.legalName || salon.name)} ${salon.legalForm ? `- ${escapeHtml(salon.legalForm)}` : ''}<br>
-        ${salon.siret ? `SIRET : ${escapeHtml(salon.siret)}` : ''} ${salon.tvaNumber ? `- TVA : ${escapeHtml(salon.tvaNumber)}` : ''}<br>
-        Document généré automatiquement par Pawlyx
+        ${salon.nif ? `NIF: ${escapeHtml(salon.nif)}` : ''}<br>
+        Documento gerado automaticamente por Pawlyx<br>
+        <br>
+        <em>Este documento não tem efeitos contabilísticos.</em>
       </div>
     </div>
   </div>
 
   <script>
-    // Auto-print si demandé
+    // Impressão automática se solicitado
     if (window.location.search.includes('print=true')) {
       window.onload = function() { window.print(); }
     }

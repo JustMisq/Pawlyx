@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
       postalCode: body.postalCode,
       email: body.email,
       logo: body.logo,
-      siret: body.siret,
+      nif: body.nif,
+      siret: body.siret, // Mantido para compatibilidade históricamente
       tvaNumber: body.tvaNumber,
       legalName: body.legalName,
       legalForm: body.legalForm,
