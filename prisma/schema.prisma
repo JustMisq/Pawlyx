@@ -149,6 +149,7 @@ model Appointment {
   salon              Salon     @relation(fields: [salonId], references: [id], onDelete: Cascade)
   service            Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   invoices           Invoice[]
+  reminders          Reminder[]
 
   @@index([salonId])
   @@index([clientId])
@@ -260,6 +261,7 @@ model Invoice {
   client        Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   salon         Salon        @relation(fields: [salonId], references: [id], onDelete: Cascade)
   stockSales    StockSale[]  @relation("InvoiceStockSales")
+  reminders     Reminder[]
 
   @@index([salonId])
   @@index([clientId])
@@ -290,18 +292,22 @@ model AuditLog {
 }
 
 model Reminder {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   type          String
-  channel       String    @default("email")
+  channel       String       @default("email")
   scheduledFor  DateTime
   sentAt        DateTime?
-  status        String    @default("pending")
+  status        String       @default("pending")
   error         String?
   appointmentId String?
   invoiceId     String?
-  createdAt     DateTime  @default(now())
+  createdAt     DateTime     @default(now())
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  invoice       Invoice?     @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
 
   @@index([scheduledFor, status])
+  @@index([appointmentId])
+  @@index([invoiceId])
 }
 
 model SalonMember {

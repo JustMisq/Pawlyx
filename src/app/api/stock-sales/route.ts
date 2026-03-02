@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
       const year = new Date().getFullYear()
       const latestInvoice = await tx.invoice.findFirst({
         where: {
-          salonId: salon.id,
           invoiceNumber: { startsWith: `STK-${year}-` },
         },
         orderBy: { invoiceNumber: 'desc' },

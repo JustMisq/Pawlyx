@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
       
       const latestInvoice = await tx.invoice.findFirst({
         where: {
-          salonId: salon.id,
           invoiceNumber: {
             startsWith: `${prefix}-${year}-`,
           },

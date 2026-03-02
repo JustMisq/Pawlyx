@@ -58,8 +58,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(appointments)
   } catch (error) {
     console.error('Get appointments error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorName = error instanceof Error ? error.name : 'Error'
     return NextResponse.json(
-      { message: 'Error fetching appointments' },
+      { message: 'Error fetching appointments', error: errorName, details: errorMessage },
       { status: 500 }
     )
   }
@@ -155,7 +157,6 @@ export async function POST(request: NextRequest) {
       const year = new Date().getFullYear()
       const latestInvoice = await tx.invoice.findFirst({
         where: {
-          salonId: salon.id,
           invoiceNumber: { startsWith: `APT-${year}-` },
         },
         orderBy: { invoiceNumber: 'desc' },

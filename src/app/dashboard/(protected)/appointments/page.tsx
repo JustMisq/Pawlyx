@@ -148,14 +148,22 @@ export default function AppointmentsPage() {
               }))
             )
           }
+        } else {
+          const errData = await apptRes.json().catch(() => ({}))
+          console.error('Appointments API error:', apptRes.status, errData)
+          toast.error(errData?.details || 'Erro ao carregar marcações')
         }
 
         if (clientRes.ok) {
           setClients(await clientRes.json())
+        } else {
+          console.error('Clients API error:', clientRes.status)
         }
 
         if (serviceRes.ok) {
           setServices(await serviceRes.json())
+        } else {
+          console.error('Services API error:', serviceRes.status)
         }
       } catch (error) {
         console.error('Error fetching data:', error)
