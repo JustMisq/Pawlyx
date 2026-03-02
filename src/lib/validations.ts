@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const clientSchema = z.object({
   firstName: z.string().min(1, 'Prénom requis').max(100),
   lastName: z.string().min(1, 'Nom requis').max(100),
-  email: z.string().email('Email invalide').optional().nullable(),
+  email: z.string().email('Email invalide').or(z.literal('')).optional().nullable(),
   phone: z.string()
     .refine(
       (phone) => {

@@ -124,6 +124,28 @@ export default function ClientsPage() {
     }
   }
 
+  const handleDeleteClient = async (clientId: string, clientName: string) => {
+    if (!confirm(`Tem a certeza que deseja eliminar ${clientName}? Isto não pode ser desfeito.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/clients?id=${clientId}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        toast.success('Cliente eliminado!')
+        fetchClients()
+      } else {
+        toast.error('Erro ao eliminar o cliente')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
   const filteredClients = clients.filter(c => {
     const q = search.toLowerCase()
     return `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
@@ -252,12 +274,20 @@ export default function ClientsPage() {
                       </td>
                       <td className="px-6 py-4 text-gray-500 text-sm">{client.email || '—'}</td>
                       <td className="px-6 py-4 text-gray-500 text-sm">{client.phone || '—'}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right flex gap-2 justify-end">
                         <Link href={`/dashboard/clients/${client.id}`}>
                           <Button variant="ghost" size="sm">
                             <Eye className="w-4 h-4" /> Detalhes
                           </Button>
                         </Link>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteClient(client.id, `${client.firstName} ${client.lastName}`)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4" /> Eliminar
+                        </Button>
                       </td>
                     </tr>
                   ))}

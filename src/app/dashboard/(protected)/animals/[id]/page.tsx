@@ -49,9 +49,13 @@ export default function AnimalDetailPage() {
   const [client, setClient] = useState<Client | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingBasicInfo, setEditingBasicInfo] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
   const [editingHealth, setEditingHealth] = useState(false)
   const [animalNotes, setAnimalNotes] = useState('')
+  const [basicInfoData, setBasicInfoData] = useState({
+    name: '', species: '', breed: '', color: '', dateOfBirth: '',
+  })
   const [healthData, setHealthData] = useState({
     temperament: '', allergies: '', healthNotes: '', groomingNotes: '', weight: '',
   })
@@ -63,6 +67,13 @@ export default function AnimalDetailPage() {
         const animalData = await animalRes.json()
         setAnimal(animalData)
         setAnimalNotes(animalData.notes || '')
+        setBasicInfoData({
+          name: animalData.name,
+          species: animalData.species,
+          breed: animalData.breed || '',
+          color: animalData.color || '',
+          dateOfBirth: animalData.dateOfBirth ? animalData.dateOfBirth.split('T')[0] : '',
+        })
         setHealthData({
           temperament: animalData.temperament || '', allergies: animalData.allergies || '',
           healthNotes: animalData.healthNotes || '', groomingNotes: animalData.groomingNotes || '',
@@ -94,6 +105,32 @@ export default function AnimalDetailPage() {
     try {
       const res = await fetch('/api/animals', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: animalId, notes: animalNotes }) })
       if (res.ok) { toast.success('Notas guardadas!'); setEditingNotes(false); if (animal) setAnimal({ ...animal, notes: animalNotes }) }
+      else toast.error('Erro ao guardar')
+    } catch { toast.error('Ocorreu um erro') }
+  }
+
+  const handleSaveBasicInfo = async () => {
+    try {
+      const res = await fetch('/api/animals', { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          id: animalId, 
+          name: basicInfoData.name,
+          species: basicInfoData.species,
+          breed: basicInfoData.breed || null,
+          color: basicInfoData.color || null,
+          dateOfBirth: basicInfoData.dateOfBirth 
+            ? new Date(basicInfoData.dateOfBirth + 'T00:00:00Z').toISOString()
+            : null,
+        }) 
+      })
+      if (res.ok) { 
+        const updatedAnimal = await res.json()
+        setAnimal(updatedAnimal); 
+        toast.success('Informações guardadas!'); 
+        setEditingBasicInfo(false)
+      }
       else toast.error('Erro ao guardar')
     } catch { toast.error('Ocorreu um erro') }
   }
@@ -152,15 +189,57 @@ export default function AnimalDetailPage() {
 
       {/* Infos de base */}
       <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2"><PawPrint className="w-5 h-5 text-teal-500" /> Informações</h2>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Espécie</span><span className="text-gray-900">{animal.species}</span></div>
-          {animal.breed && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Raça</span><span className="text-gray-900">{animal.breed}</span></div>}
-          {animal.color && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Cor</span><span className="text-gray-900">{animal.color}</span></div>}
-          {animal.dateOfBirth && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Data de nascimento</span><span className="text-gray-900">{new Date(animal.dateOfBirth).toLocaleDateString('pt-PT')}</span></div>}
-          {animal.weight && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Peso</span><span className="text-gray-900">{animal.weight} kg</span></div>}
-          <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Registado</span><span className="text-gray-900">{new Date(animal.createdAt).toLocaleDateString('pt-PT')}</span></div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2"><PawPrint className="w-5 h-5 text-teal-500" /> Informações</h2>
+          <Button onClick={() => setEditingBasicInfo(!editingBasicInfo)} variant={editingBasicInfo ? 'outline' : 'ghost'} size="sm">
+            {editingBasicInfo ? <><X className="w-4 h-4" /> Cancelar</> : <><Pencil className="w-4 h-4" /> Editar</>}
+          </Button>
         </div>
+
+        {editingBasicInfo ? (
+          <div className="space-y-4 bg-gray-50 p-4 rounded-xl">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome *</label>
+              <input type="text" value={basicInfoData.name} onChange={(e) => setBasicInfoData({ ...basicInfoData, name: e.target.value })} required className="input-base" />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Espécie *</label>
+                <select value={basicInfoData.species} onChange={(e) => setBasicInfoData({ ...basicInfoData, species: e.target.value })} className="input-base">
+                  <option value="dog">Cão</option>
+                  <option value="cat">Gato</option>
+                  <option value="rabbit">Coelho</option>
+                  <option value="bird">Pássaro</option>
+                  <option value="other">Outro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Raça</label>
+                <input type="text" value={basicInfoData.breed} onChange={(e) => setBasicInfoData({ ...basicInfoData, breed: e.target.value })} className="input-base" />
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Cor</label>
+                <input type="text" value={basicInfoData.color} onChange={(e) => setBasicInfoData({ ...basicInfoData, color: e.target.value })} className="input-base" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Data de nascimento</label>
+                <input type="date" value={basicInfoData.dateOfBirth} onChange={(e) => setBasicInfoData({ ...basicInfoData, dateOfBirth: e.target.value })} className="input-base" />
+              </div>
+            </div>
+            <Button onClick={handleSaveBasicInfo} className="w-full"><Save className="w-4 h-4" /> Guardar</Button>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Espécie</span><span className="text-gray-900">{animal.species}</span></div>
+            {animal.breed && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Raça</span><span className="text-gray-900">{animal.breed}</span></div>}
+            {animal.color && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Cor</span><span className="text-gray-900">{animal.color}</span></div>}
+            {animal.dateOfBirth && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Data de nascimento</span><span className="text-gray-900">{new Date(animal.dateOfBirth).toLocaleDateString('pt-PT')}</span></div>}
+            {animal.weight && <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Peso</span><span className="text-gray-900">{animal.weight} kg</span></div>}
+            <div className="flex items-center gap-2 text-sm"><span className="font-medium text-gray-500 w-32">Registado</span><span className="text-gray-900">{new Date(animal.createdAt).toLocaleDateString('pt-PT')}</span></div>
+          </div>
+        )}
       </div>
 
       {/* Santé & Comportement */}

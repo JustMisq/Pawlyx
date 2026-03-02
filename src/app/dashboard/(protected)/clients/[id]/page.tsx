@@ -58,6 +58,17 @@ export default function ClientDetailsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingClient, setEditingClient] = useState(false)
+  const [clientFormData, setClientFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '' })
+  const [editingAnimalId, setEditingAnimalId] = useState<string | null>(null)
+  const [animalFormData, setAnimalFormData] = useState({
+    name: '',
+    species: 'dog',
+    breed: '',
+    color: '',
+    dateOfBirth: '',
+    notes: '',
+  })
   const [editingNotes, setEditingNotes] = useState(false)
   const [clientNotes, setClientNotes] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -173,6 +184,128 @@ export default function ClientDetailsPage() {
     }
   }
 
+  const handleEditClient = () => {
+    if (client) {
+      setClientFormData({
+        firstName: client.firstName,
+        lastName: client.lastName,
+        email: client.email || '',
+        phone: client.phone || '',
+        address: client.address || '',
+      })
+      setEditingClient(true)
+    }
+  }
+
+  const handleSaveClientInfo = async () => {
+    try {
+      const res = await fetch('/api/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: clientId, ...clientFormData }),
+      })
+
+      if (res.ok) {
+        const updatedClient = await res.json()
+        setClient(updatedClient)
+        setEditingClient(false)
+        toast.success('Cliente atualizado!')
+      } else {
+        toast.error('Erro ao atualizar')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
+  const handleDeleteClient = async () => {
+    if (!confirm('Tem a certeza que deseja eliminar este cliente? Isto não pode ser desfeito.')) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/clients?id=${clientId}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        toast.success('Cliente eliminado!')
+        router.push('/dashboard/clients')
+      } else {
+        toast.error('Erro ao eliminar')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
+  const handleEditAnimal = (animal: Animal) => {
+    setEditingAnimalId(animal.id)
+    setAnimalFormData({
+      name: animal.name,
+      species: animal.species,
+      breed: animal.breed || '',
+      color: animal.color || '',
+      dateOfBirth: animal.dateOfBirth ? animal.dateOfBirth.split('T')[0] : '',
+      notes: animal.notes || '',
+    })
+  }
+
+  const handleSaveAnimal = async () => {
+    try {
+      const animalData = {
+        ...animalFormData,
+        dateOfBirth: animalFormData.dateOfBirth 
+          ? new Date(animalFormData.dateOfBirth + 'T00:00:00Z').toISOString()
+          : null
+      }
+
+      const res = await fetch('/api/animals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingAnimalId, ...animalData }),
+      })
+
+      if (res.ok) {
+        const updatedAnimal = await res.json()
+        setAnimals(animals.map(a => a.id === editingAnimalId ? updatedAnimal : a))
+        setEditingAnimalId(null)
+        toast.success('Animal atualizado!')
+      } else {
+        toast.error('Erro ao atualizar')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
+  const handleDeleteAnimal = async (animalId: string, animalName: string) => {
+    if (!confirm(`Tem a certeza que deseja eliminar ${animalName}? Isto não pode ser desfeito.`)) {
+      return
+    }
+
+    try {
+      const res = await fetch('/api/animals', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: animalId }),
+      })
+
+      if (res.ok) {
+        setAnimals(animals.filter(a => a.id !== animalId))
+        toast.success('Animal eliminado!')
+      } else {
+        toast.error('Erro ao eliminar')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[400px]">
@@ -201,31 +334,111 @@ export default function ClientDetailsPage() {
         )}
       </div>
 
-      {/* Contact info */}
+      {/* Contact info / Edit client */}
       {client && (
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Informações</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {client.email && (
-              <div className="flex items-center gap-2.5 text-gray-700">
-                <Mail className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-sm">{client.email}</span>
+        <>
+          {editingClient ? (
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Editar informações do cliente</h2>
+              <form className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome próprio *</label>
+                    <input 
+                      type="text" 
+                      value={clientFormData.firstName} 
+                      onChange={(e) => setClientFormData({ ...clientFormData, firstName: e.target.value })}
+                      className="input-base"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Apelido *</label>
+                    <input 
+                      type="text" 
+                      value={clientFormData.lastName} 
+                      onChange={(e) => setClientFormData({ ...clientFormData, lastName: e.target.value })}
+                      className="input-base"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <input 
+                      type="email" 
+                      value={clientFormData.email} 
+                      onChange={(e) => setClientFormData({ ...clientFormData, email: e.target.value })}
+                      className="input-base"
+                      placeholder="joao@email.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
+                    <input 
+                      type="tel" 
+                      value={clientFormData.phone} 
+                      onChange={(e) => setClientFormData({ ...clientFormData, phone: e.target.value })}
+                      className="input-base"
+                      placeholder="912 345 678"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Morada</label>
+                  <input 
+                    type="text" 
+                    value={clientFormData.address} 
+                    onChange={(e) => setClientFormData({ ...clientFormData, address: e.target.value })}
+                    className="input-base"
+                    placeholder="Rua da Paz 123, Lisboa"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleSaveClientInfo} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors">
+                    <Save className="w-4 h-4 inline mr-2" /> Guardar
+                  </button>
+                  <button type="button" onClick={() => setEditingClient(false)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                    <X className="w-4 h-4 inline mr-2" /> Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border-2 border-gray-100 p-5 mb-5">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Informações</h2>
+                <div className="flex gap-2">
+                  <Button onClick={handleEditClient} variant="ghost" size="sm">
+                    <Pencil className="w-4 h-4" /> Editar
+                  </Button>
+                  <Button onClick={handleDeleteClient} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                    <X className="w-4 h-4" /> Eliminar
+                  </Button>
+                </div>
               </div>
-            )}
-            {client.phone && (
-              <div className="flex items-center gap-2.5 text-gray-700">
-                <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-sm">{client.phone}</span>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {client.email && (
+                  <div className="flex items-center gap-2.5 text-gray-700">
+                    <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="text-sm">{client.email}</span>
+                  </div>
+                )}
+                {client.phone && (
+                  <div className="flex items-center gap-2.5 text-gray-700">
+                    <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="text-sm">{client.phone}</span>
+                  </div>
+                )}
+                {client.address && (
+                  <div className="flex items-center gap-2.5 text-gray-700 sm:col-span-2">
+                    <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="text-sm">{client.address}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {client.address && (
-              <div className="flex items-center gap-2.5 text-gray-700 sm:col-span-2">
-                <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-                <span className="text-sm">{client.address}</span>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Notes */}
@@ -320,25 +533,85 @@ export default function ClientDetailsPage() {
         ) : (
           <div className="grid gap-3">
             {animals.map((animal) => (
-              <div key={animal.id} className="bg-white rounded-2xl p-5 border-2 border-gray-100 hover:border-teal-200 transition-colors">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900">{animal.name}</h3>
-                    <div className="mt-1.5 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs font-medium bg-teal-50 text-teal-700 px-2 py-1 rounded-lg">
-                        <PawPrint className="w-3 h-3" /> {speciesLabels[animal.species] || animal.species}
-                      </span>
-                      {animal.breed && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.breed}</span>}
-                      {animal.color && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.color}</span>}
-                      {animal.dateOfBirth && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">Nascido em {new Date(animal.dateOfBirth).toLocaleDateString('pt-PT')}</span>}
+              editingAnimalId === animal.id ? (
+                <div key={animal.id} className="bg-white rounded-2xl p-5 border-2 border-teal-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Editar {animal.name}</h3>
+                  <form className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome *</label>
+                      <input type="text" value={animalFormData.name} onChange={(e) => setAnimalFormData({ ...animalFormData, name: e.target.value })} required className="input-base" />
                     </div>
-                    {animal.notes && <p className="text-sm text-teal-700 mt-2">{animal.notes}</p>}
-                  </div>
-                  <Link href={`/dashboard/animals/${animal.id}`}>
-                    <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /> Detalhes</Button>
-                  </Link>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Espécie *</label>
+                        <select value={animalFormData.species} onChange={(e) => setAnimalFormData({ ...animalFormData, species: e.target.value })} className="input-base">
+                          <option value="dog">Cão</option>
+                          <option value="cat">Gato</option>
+                          <option value="rabbit">Coelho</option>
+                          <option value="bird">Pássaro</option>
+                          <option value="other">Outro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Raça</label>
+                        <input type="text" value={animalFormData.breed} onChange={(e) => setAnimalFormData({ ...animalFormData, breed: e.target.value })} className="input-base" />
+                      </div>
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Cor</label>
+                        <input type="text" value={animalFormData.color} onChange={(e) => setAnimalFormData({ ...animalFormData, color: e.target.value })} className="input-base" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Data de nascimento</label>
+                        <input type="date" value={animalFormData.dateOfBirth} onChange={(e) => setAnimalFormData({ ...animalFormData, dateOfBirth: e.target.value })} className="input-base" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+                      <textarea value={animalFormData.notes} onChange={(e) => setAnimalFormData({ ...animalFormData, notes: e.target.value })} className="input-base resize-none" rows={3} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={handleSaveAnimal} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-colors">
+                        <Save className="w-4 h-4 inline mr-2" /> Guardar
+                      </button>
+                      <button type="button" onClick={() => setEditingAnimalId(null)} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">
+                        <X className="w-4 h-4 inline mr-2" /> Cancelar
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </div>
+              ) : (
+                <div key={animal.id} className="bg-white rounded-2xl p-5 border-2 border-gray-100 hover:border-teal-200 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900">{animal.name}</h3>
+                      <div className="mt-1.5 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-teal-50 text-teal-700 px-2 py-1 rounded-lg">
+                          <PawPrint className="w-3 h-3" /> {speciesLabels[animal.species] || animal.species}
+                        </span>
+                        {animal.breed && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.breed}</span>}
+                        {animal.color && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{animal.color}</span>}
+                        {animal.dateOfBirth && <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">Nascido em {new Date(animal.dateOfBirth).toLocaleDateString('pt-PT')}</span>}
+                      </div>
+                      {animal.notes && <p className="text-sm text-teal-700 mt-2">{animal.notes}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={() => handleEditAnimal(animal)} variant="ghost" size="sm">
+                        <Pencil className="w-4 h-4" /> Editar
+                      </Button>
+                      <Button 
+                        onClick={() => handleDeleteAnimal(animal.id, animal.name)} 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4" /> Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
             ))}
           </div>
         )}

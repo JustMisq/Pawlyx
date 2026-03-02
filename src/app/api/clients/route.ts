@@ -193,3 +193,76 @@ export async function PUT(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/clients?id=xxx - Soft delete a client
+export async function DELETE(request: NextRequest) {
+  const startTime = Date.now()
+  try {
+    const session = await getServerSession(authConfig)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { userId: session.user.id },
+    })
+
+    if (!salon) {
+      return NextResponse.json(
+        { message: 'Salon not found' },
+        { status: 404 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const clientId = searchParams.get('id')
+
+    if (!clientId) {
+      return NextResponse.json(
+        { message: 'id is required' },
+        { status: 400 }
+      )
+    }
+
+    // ✅ SÉCURITÉ: S'assurer que le client appartient au salon de l'utilisateur
+    const client = await prisma.client.findFirst({
+      where: {
+        id: clientId,
+        salonId: salon.id,
+      },
+    })
+
+    if (!client) {
+      logger.warn('API/CLIENTS', `Unauthorized delete attempt for client ${clientId}`, { userId: session.user.id })
+      return NextResponse.json(
+        { message: 'Client not found' },
+        { status: 404 }
+      )
+    }
+
+    // Soft delete (soft delete pattern with deletedAt)
+    const deletedClient = await prisma.client.update({
+      where: { id: clientId },
+      data: { deletedAt: new Date() },
+    })
+
+    const duration = Date.now() - startTime
+    logApiCall('DELETE', '/api/clients', 200, duration, session.user.id)
+    logger.audit('API/CLIENTS', 'CLIENT_DELETED', session.user.id, { clientId })
+
+    return NextResponse.json({ message: 'Client deleted', client: deletedClient })
+  } catch (error) {
+    const duration = Date.now() - startTime
+    logApiCall('DELETE', '/api/clients', 500, duration)
+
+    const { message, errorId } = getErrorMessage(error)
+    logger.error('API/CLIENTS', `DELETE failed: ${errorId}`, error)
+
+    return NextResponse.json(
+      { message, errorId },
+      { status: 500 }
+    )
+  }
+}
+
