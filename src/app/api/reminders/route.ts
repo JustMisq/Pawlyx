@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
-import { sendTwilioSMS, formatPhoneNumberE164, generateReminderSMSMessage } from '@/lib/twilio'
+import { sendSMS, formatPhoneNumberE164, generateReminderSMSMessage } from '@/lib/twilio'
 import { logger } from '@/lib/logger'
 
 /**
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
             })
 
             // Envoyer via Twilio
-            const smsResult = await sendTwilioSMS({
+            const smsResult = await sendSMS({
               to: phoneE164,
               body: smsMessage,
             })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
-import { validateTwilioConfig, sendTwilioSMS, formatPhoneNumberE164 } from '@/lib/twilio'
+import { validateTwilioConfig, sendSMS, formatPhoneNumberE164 } from '@/lib/twilio'
 
 /**
  * POST /api/reminders/test-sms
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const testMessage = message || `🧪 Teste: SMS de Twilio funcionando! ${new Date().toLocaleTimeString()}`
 
     // Enviar SMS
-    const result = await sendTwilioSMS({
+    const result = await sendSMS({
       to: phoneE164,
       body: testMessage,
     })
