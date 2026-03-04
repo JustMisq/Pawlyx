@@ -8,7 +8,8 @@ import { prisma } from '@/lib/prisma'
 export interface TwilioConfig {
   accountSid: string
   authToken: string
-  fromNumber: string
+  fromNumber?: string
+  messagingServiceSid?: string
 }
 
 export interface TwilioSMSOptions {
@@ -30,14 +31,21 @@ interface SendSMSParams extends TwilioSMSOptions {
 export function validateTwilioConfig(): TwilioConfig | null {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID
   const fromNumber = process.env.TWILIO_PHONE_NUMBER
 
-  if (!accountSid || !authToken || !fromNumber) {
-    console.warn('⚠️  Twilio não está configurado. SMS reminders desativados.')
-    return null
+  // Com Messaging Service (recomendado)
+  if (accountSid && authToken && messagingServiceSid) {
+    return { accountSid, authToken, messagingServiceSid }
   }
 
-  return { accountSid, authToken, fromNumber }
+  // Fallback para número direto (simples)
+  if (accountSid && authToken && fromNumber) {
+    return { accountSid, authToken, fromNumber }
+  }
+
+  console.warn('⚠️  Twilio não está configurado. SMS reminders desativados.')
+  return null
 }
 
 /**
@@ -88,12 +96,20 @@ export async function sendSMS(params: SendSMSParams): Promise<{
     const isOverage = subscription.monthlySMSUsed >= subscription.monthlySMSLimit
     const cost = isOverage ? subscription.smsOverageCost : 0
 
-    // Enviar SMS via Twilio
-    const message = await client.messages.create({
-      from: config.fromNumber,
-      to: phoneE164,
-      body: params.body,
-    })
+    // Enviar SMS via Twilio (preferir Messaging Service)
+    const message = await client.messages.create(
+      config.messagingServiceSid
+        ? {
+            messagingServiceSid: config.messagingServiceSid,
+            to: phoneE164,
+            body: params.body,
+          }
+        : {
+            from: config.fromNumber || '',
+            to: phoneE164,
+            body: params.body,
+          }
+    )
 
     // Log no DB
     const smsLog = await prisma.sMSLog.create({
@@ -235,62 +251,6 @@ export function generateReminderSMSMessage(appointment: {
   const minutes = String(date.getMinutes()).padStart(2, '0')
 
   return `Olá ${appointment.client.firstName}! 🐾 Lembrete: tem tosquia para ${appointment.animal.name} amanhã às ${hours}:${minutes}. Serviço: ${appointment.service.name}. Até breve!`
-}
-
-/**
- * Enviar SMS simples via Twilio (sem logging para DB)
- * Usado para testes e reminders automáticos simples
- */
-export async function sendTwilioSMS(
-  options: TwilioSMSOptions
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    const client = twilio(
-      process.env.TWILIO_ACCOUNT_SID || '',
-      process.env.TWILIO_AUTH_TOKEN || ''
-    )
-
-    // Validar configuração
-    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-      return {
-        success: false,
-        error: 'Twilio not configured',
-      }
-    }
-
-    // Formatar número
-    const phoneE164 = formatPhoneNumberE164(options.to)
-
-    if (!isValidPhoneNumber(phoneE164)) {
-      return {
-        success: false,
-        error: `Invalid phone number: ${options.to}`,
-      }
-    }
-
-    const message = await client.messages.create({
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phoneE164,
-      body: options.body,
-    })
-
-    console.log('✅ SMS enviado (simple):', {
-      messageId: message.sid,
-      to: phoneE164,
-      status: message.status,
-    })
-
-    return {
-      success: true,
-      messageId: message.sid,
-    }
-  } catch (error) {
-    console.error('❌ Error sending SMS:', error)
-    return {
-      success: false,
-      error: String(error),
-    }
-  }
 }
 
 

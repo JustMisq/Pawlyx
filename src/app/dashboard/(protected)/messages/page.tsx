@@ -24,6 +24,29 @@ interface Client {
   phone: string | null
 }
 
+interface SMSLog {
+  id: string
+  messageId: string | null
+  toPhone: string
+  message: string
+  status: string
+  error: string | null
+  type: string
+  createdAt: string
+  sentAt: string | null
+}
+
+interface SMSLogsResponse {
+  logs: SMSLog[]
+  stats: {
+    total: number
+    pending: number
+    sent: number
+    delivered: number
+    failed: number
+  }
+}
+
 export default function SMSPage() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -32,6 +55,8 @@ export default function SMSPage() {
   const [stats, setStats] = useState<SMSStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [smsLogs, setSmsLogs] = useState<SMSLog[]>([])
+  const [logsStats, setLogsStats] = useState<SMSLogsResponse['stats'] | null>(null)
 
   const [formData, setFormData] = useState({
     clientId: '',
@@ -47,9 +72,10 @@ export default function SMSPage() {
 
   async function fetchData() {
     try {
-      const [statsRes, clientsRes] = await Promise.all([
+      const [statsRes, clientsRes, logsRes] = await Promise.all([
         fetch('/api/sms/stats'),
         fetch('/api/clients'),
+        fetch('/api/sms/logs'),
       ])
 
       if (statsRes.ok) {
@@ -59,7 +85,13 @@ export default function SMSPage() {
 
       if (clientsRes.ok) {
         const clientsData = await clientsRes.json()
-        setClients(clientsData.clients || [])
+        setClients(Array.isArray(clientsData) ? clientsData : clientsData.clients || [])
+      }
+
+      if (logsRes.ok) {
+        const logsData: SMSLogsResponse = await logsRes.json()
+        setSmsLogs(logsData.logs)
+        setLogsStats(logsData.stats)
       }
     } catch (error) {
       console.error('Erro ao buscar dados:', error)
@@ -104,7 +136,7 @@ export default function SMSPage() {
       if (data.success) {
         toast.success(data.message)
         setFormData({ clientId: '', phoneNumber: '', message: '', type: 'custom' })
-        await fetchData() // Refresh stats
+        await fetchData() // Refresh
       } else {
         toast.error(data.error || 'Erro ao enviar SMS')
       }
@@ -116,9 +148,35 @@ export default function SMSPage() {
     }
   }
 
-  const usagePercent = stats
-    ? Math.min(100, (stats.monthlySMSUsed / stats.monthlySMSLimit) * 100)
-    : 0
+  function getStatusIcon(status: string): string {
+    switch (status) {
+      case 'pending':
+        return '⏳'
+      case 'sent':
+        return '✓'
+      case 'delivered':
+        return '✅'
+      case 'failed':
+        return '❌'
+      default:
+        return '•'
+    }
+  }
+
+  function getStatusColor(status: string): string {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-50 text-yellow-800'
+      case 'sent':
+        return 'bg-blue-50 text-blue-800'
+      case 'delivered':
+        return 'bg-green-50 text-green-800'
+      case 'failed':
+        return 'bg-red-50 text-red-800'
+      default:
+        return 'bg-gray-50 text-gray-800'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -213,7 +271,7 @@ export default function SMSPage() {
         )}
 
         {/* Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-bold mb-6 text-gray-900">Enviar Mensagem</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -306,7 +364,7 @@ export default function SMSPage() {
         </div>
 
         {/* Templates */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold mb-4 text-gray-900">Modelos Rápidos</h2>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -339,6 +397,84 @@ export default function SMSPage() {
             ))}
           </div>
         </div>
+
+        {/* HISTORIQUE DES SMS */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-bold mb-4 text-gray-900">Histórico de SMS</h2>
+
+          {logsStats && (
+            <div className="grid grid-cols-4 gap-3 mb-6">
+              <div className="bg-gray-50 p-3 rounded-lg text-center">
+                <p className="text-gray-600 text-xs">Total</p>
+                <p className="text-xl font-bold text-gray-900">{logsStats.total}</p>
+              </div>
+              <div className="bg-yellow-50 p-3 rounded-lg text-center">
+                <p className="text-yellow-700 text-xs">Pendentes</p>
+                <p className="text-xl font-bold text-yellow-900">{logsStats.pending}</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg text-center">
+                <p className="text-blue-700 text-xs">Enviados</p>
+                <p className="text-xl font-bold text-blue-900">{logsStats.sent}</p>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg text-center">
+                <p className="text-green-700 text-xs">Entregues</p>
+                <p className="text-xl font-bold text-green-900">{logsStats.delivered}</p>
+              </div>
+            </div>
+          )}
+
+          {smsLogs.length === 0 ? (
+            <div className="text-center py-8">
+              <Mail className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+              <p className="text-gray-500">Nenhum SMS enviado ainda</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-gray-200 bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Para</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Mensagem</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Tipo</th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-700">Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {smsLogs.map((log) => (
+                    <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(log.status)}`}>
+                          <span>{getStatusIcon(log.status)}</span>
+                          <span className="capitalize">{log.status}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 font-mono">{log.toPhone}</td>
+                      <td className="px-4 py-3 text-gray-600 max-w-xs truncate">{log.message}</td>
+                      <td className="px-4 py-3 text-gray-600 capitalize">{log.type}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {new Date(log.createdAt).toLocaleDateString('pt-PT', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        } as any)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {smsLogs.length > 0 && (
+            <button
+              onClick={() => fetchData()}
+              className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors text-sm"
+            >
+              🔄 Atualizar
+            </button>
+          )}        </div>
       </div>
     </div>
   )
