@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { validateTwilioConfig, sendSMS, formatPhoneNumberE164 } from '@/lib/twilio'
+import { prisma } from '@/lib/prisma'
 
 /**
  * POST /api/reminders/test-sms
@@ -43,10 +44,26 @@ export async function POST(request: NextRequest) {
     // Mensagem padrão se não fornecida
     const testMessage = message || `🧪 Teste: SMS de Twilio funcionando! ${new Date().toLocaleTimeString()}`
 
+    // Récupérer le salon de l'utilisateur
+    const salon = await prisma.salon.findUnique({
+      where: { userId: session.user.id },
+    })
+
+    if (!salon) {
+      return NextResponse.json(
+        { message: 'Salon not found for user' },
+        { status: 404 }
+      )
+    }
+
     // Enviar SMS
     const result = await sendSMS({
       to: phoneE164,
       body: testMessage,
+      salonId: salon.id,
+      userId: session.user.id,
+      clientId: 'test-client',
+      type: 'test',
     })
 
     if (!result.success) {

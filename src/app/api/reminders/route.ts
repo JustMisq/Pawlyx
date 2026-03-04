@@ -93,6 +93,11 @@ export async function GET(request: NextRequest) {
             const smsResult = await sendSMS({
               to: phoneE164,
               body: smsMessage,
+              salonId: appointment.salonId,
+              userId: appointment.salon.userId,
+              clientId: appointment.client.id,
+              appointmentId: appointment.id,
+              type: 'appointment_reminder',
             })
 
             if (!smsResult.success) {
