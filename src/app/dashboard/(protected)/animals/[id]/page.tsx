@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, PawPrint, Heart, StickyNote, CalendarDays, Pencil, X, Save, Loader2, AlertTriangle, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { ArrowLeft, PawPrint, Heart, StickyNote, CalendarDays, Pencil, X, Save, Loader2, AlertTriangle, CheckCircle2, XCircle, Clock, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Animal {
@@ -38,6 +38,10 @@ interface Appointment {
   totalPrice: number
   animalId: string
   service?: { name: string }
+  services?: Array<{ service: { name: string; price: number; duration: number; isFlexible?: boolean } }>
+  observations?: string
+  finalPrice?: number
+  finalDuration?: number
   animal?: { id: string; name: string }
 }
 
@@ -53,6 +57,7 @@ export default function AnimalDetailPage() {
   const [editingNotes, setEditingNotes] = useState(false)
   const [editingHealth, setEditingHealth] = useState(false)
   const [animalNotes, setAnimalNotes] = useState('')
+  const [expandedAppointments, setExpandedAppointments] = useState<Set<string>>(new Set())
   const [basicInfoData, setBasicInfoData] = useState({
     name: '', species: '', breed: '', color: '', dateOfBirth: '',
   })
@@ -310,25 +315,77 @@ export default function AnimalDetailPage() {
         {appointments.length === 0 ? (
           <p className="text-gray-400 text-sm italic">Nenhuma consulta para este animal</p>
         ) : (
-          <div className="space-y-2">
-            {appointments.map((apt) => (
-              <div key={apt.id} className="p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{apt.service?.name || 'Service'}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{new Date(apt.startTime).toLocaleDateString('pt-PT')} às {new Date(apt.startTime).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</p>
-                    {apt.endTime && <p className="text-xs text-gray-400">Duração : {Math.round((new Date(apt.endTime).getTime() - new Date(apt.startTime).getTime()) / 60000)} min</p>}
+          <div className="space-y-3">
+            {appointments.map((apt) => {
+              const isExpanded = expandedAppointments.has(apt.id)
+              const hasObservations = apt.observations && apt.observations.trim().length > 0
+              const serviceNames = apt.services ? apt.services.map(s => s.service.name).join(', ') : apt.service?.name || 'Serviço'
+              
+              return (
+                <div key={apt.id} className="border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-all">
+                  <div className="p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{serviceNames}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{new Date(apt.startTime).toLocaleDateString('pt-PT')} às {new Date(apt.startTime).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p className="text-xs text-gray-400 mt-1">Duração : {apt.finalDuration ? `${apt.finalDuration} min` : apt.endTime ? `${Math.round((new Date(apt.endTime).getTime() - new Date(apt.startTime).getTime()) / 60000)} min` : 'N/A'}</p>
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium ${apt.status === 'completed' ? 'bg-green-100 text-green-700' : apt.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                          {apt.status === 'completed' ? <CheckCircle2 className="w-3 h-3" /> : apt.status === 'cancelled' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                          {apt.status === 'completed' ? 'Concluído' : apt.status === 'cancelled' ? 'Cancelado' : 'Agendado'}
+                        </span>
+                        <p className="text-sm font-semibold text-teal-600">{apt.finalPrice ? `${apt.finalPrice}€` : `${apt.totalPrice}€`}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-1">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium ${apt.status === 'completed' ? 'bg-green-100 text-green-700' : apt.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {apt.status === 'completed' ? <CheckCircle2 className="w-3 h-3" /> : apt.status === 'cancelled' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                      {apt.status === 'completed' ? 'Concluído' : apt.status === 'cancelled' ? 'Cancelado' : 'Agendado'}
-                    </span>
-                    <p className="text-sm font-semibold text-teal-600">{apt.totalPrice}€</p>
-                  </div>
+                  
+                  {/* Observations section */}
+                  {(hasObservations || apt.finalPrice) && (
+                    <>
+                      <button
+                        onClick={() => {
+                          const newExpanded = new Set(expandedAppointments)
+                          if (newExpanded.has(apt.id)) {
+                            newExpanded.delete(apt.id)
+                          } else {
+                            newExpanded.add(apt.id)
+                          }
+                          setExpandedAppointments(newExpanded)
+                        }}
+                        className="w-full px-3 py-2 border-t border-gray-100 hover:bg-gray-50 flex items-center justify-between text-xs font-medium text-gray-600 transition-colors"
+                      >
+                        <div className="flex items-center gap-1">
+                          {hasObservations && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 text-xs">📝 Observações</span>}
+                          {apt.finalPrice && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-xs">Preço cobrado</span>}
+                        </div>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      
+                      {isExpanded && (
+                        <div className="px-3 py-2 bg-gray-50 border-t border-gray-100 space-y-2">
+                          {apt.finalPrice && (
+                            <div className="text-xs">
+                              <span className="text-gray-500">Preço final:</span>
+                              <span className="ml-2 font-medium text-gray-900">{apt.finalPrice}€</span>
+                              {apt.finalPrice !== apt.totalPrice && (
+                                <span className="ml-2 text-gray-400">(original: {apt.totalPrice}€)</span>
+                              )}
+                            </div>
+                          )}
+                          {hasObservations && (
+                            <div className="text-xs">
+                              <p className="text-gray-500 mb-1">Observações:</p>
+                              <p className="text-gray-700 italic border-l-2 border-teal-200 pl-2 py-1">{apt.observations}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

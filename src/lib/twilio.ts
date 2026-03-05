@@ -243,14 +243,23 @@ export function formatPhoneNumberE164(phoneNumber: string, countryCode = '351'):
 export function generateReminderSMSMessage(appointment: {
   client: { firstName: string }
   animal: { name: string }
-  service: { name: string }
+  service?: { name: string }
+  services?: Array<{ service: { name: string } }>
   startTime: string
 }): string {
   const date = new Date(appointment.startTime)
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
 
-  return `Olá ${appointment.client.firstName}! 🐾 Lembrete: tem tosquia para ${appointment.animal.name} amanhã às ${hours}:${minutes}. Serviço: ${appointment.service.name}. Até breve!`
+  // Determine service name(s)
+  let serviceName = 'Serviço'
+  if (appointment.services && appointment.services.length > 0) {
+    serviceName = appointment.services.map(s => s.service.name).join(', ')
+  } else if (appointment.service?.name) {
+    serviceName = appointment.service.name
+  }
+
+  return `Olá ${appointment.client.firstName}! 🐾 Lembrete: tem tosquia para ${appointment.animal.name} amanhã às ${hours}:${minutes}. Serviço: ${serviceName}. Até breve!`
 }
 
 

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         client: true,
         appointment: {
           include: {
-            service: true,
+            services: { include: { service: true } },
           },
         },
       },

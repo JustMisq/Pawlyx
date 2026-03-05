@@ -2,6 +2,7 @@
 
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -68,6 +69,7 @@ interface Client {
 export default function AdminSalonDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const { data: session } = useSession()
   const salonId = params.id as string
 
   const [salon, setSalon] = useState<Salon | null>(null)

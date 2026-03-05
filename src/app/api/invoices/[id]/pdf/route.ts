@@ -37,7 +37,7 @@ export async function GET(
         appointment: {
           include: {
             animal: true,
-            service: true,
+            services: { include: { service: true } },
           },
         },
         salon: true,

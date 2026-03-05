@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       include: {
         client: true,
         animal: true,
-        service: true,
+        services: { include: { service: true } },
         salon: true,
       },
     })
@@ -107,7 +107,12 @@ export async function GET(request: Request) {
         const clientName = `${appointment.client.firstName || ''} ${appointment.client.lastName || ''}`.trim()
         message = message.replace('{client_name}', clientName)
         message = message.replace('{animal_name}', appointment.animal?.name || 'Animal')
-        message = message.replace('{service_name}', appointment.service?.name || 'Serviço')
+        // Handle multi-service format
+        let serviceName = 'Serviço'
+        if (appointment.services && appointment.services.length > 0) {
+          serviceName = appointment.services.map(s => s.service.name).join(', ')
+        }
+        message = message.replace('{service_name}', serviceName)
         message = message.replace('{time}', time)
         message = message.replace('{date}', date)
 

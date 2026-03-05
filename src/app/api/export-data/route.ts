@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
               include: {
                 client: true,
                 animal: true,
-                service: true,
+                services: { include: { service: true } },
               },
             },
             invoices: {

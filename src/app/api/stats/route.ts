@@ -170,11 +170,18 @@ export async function GET(request: NextRequest) {
       : currentAppointments.length > 0 ? 100 : 0
 
     // Top services
-    const servicesWithDetails = await prisma.service.findMany({
-      where: { id: { in: serviceStats.map(s => s.serviceId) } },
-    })
+    const validServiceIds = serviceStats
+      .filter(s => s.serviceId !== null)
+      .map(s => s.serviceId as string)
+    
+    const servicesWithDetails = validServiceIds.length > 0
+      ? await prisma.service.findMany({
+          where: { id: { in: validServiceIds } },
+        })
+      : []
 
     const topServices = serviceStats
+      .filter(s => s.serviceId !== null)
       .map(stat => {
         const service = servicesWithDetails.find(s => s.id === stat.serviceId)
         return {

@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       include: {
         client: true,
         animal: true,
-        service: true,
+        services: { include: { service: true } },
       },
     })
 
@@ -94,10 +94,16 @@ export async function POST(request: NextRequest) {
         const hours = String(appointmentTime.getHours()).padStart(2, '0')
         const minutes = String(appointmentTime.getMinutes()).padStart(2, '0')
 
+        // Get service name(s)
+        let serviceName = 'Serviço'
+        if (appointment.services && appointment.services.length > 0) {
+          serviceName = appointment.services.map(s => s.service.name).join(', ')
+        }
+
         const message = reminderConfig.message
           .replace('{client_name}', appointment.client.firstName)
           .replace('{animal_name}', appointment.animal.name)
-          .replace('{service_name}', appointment.service.name)
+          .replace('{service_name}', serviceName)
           .replace('{time}', `${hours}:${minutes}`)
           .replace('{date}', appointmentTime.toLocaleDateString('pt-PT'))
 

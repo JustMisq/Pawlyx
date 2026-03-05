@@ -111,19 +111,19 @@ export async function POST(request: NextRequest) {
             salonId: salon.id,
           },
           include: {
-            service: true,
+            services: { include: { service: true } },
           },
         })
         
-        if (appointment?.service) {
-          invoiceItems = JSON.stringify([
-            {
-              service: appointment.service.name,
-              description: appointment.service.description || 'Prestation de toilettage',
+        if (appointment?.services && appointment.services.length > 0) {
+          invoiceItems = JSON.stringify(
+            appointment.services.map(as => ({
+              service: as.service.name,
+              description: as.service.description || 'Prestation de toilettage',
               quantity: 1,
-              pricePerUnit: subtotal,
-            },
-          ])
+              pricePerUnit: as.service.price,
+            }))
+          )
         }
       }
 

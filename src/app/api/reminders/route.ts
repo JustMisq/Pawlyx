@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
             include: {
               client: true,
               animal: true,
-              service: true,
+              services: { include: { service: true } },
               salon: true,
             },
           })
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
             const smsMessage = generateReminderSMSMessage({
               client: appointment.client,
               animal: appointment.animal,
-              service: appointment.service,
+              services: appointment.services,
               startTime: appointment.startTime.toISOString(),
             })
 

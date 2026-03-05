@@ -2,6 +2,7 @@
 
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -54,6 +55,7 @@ interface Ticket {
 
 export default function TicketDetailPage() {
   const params = useParams()
+  const { data: session } = useSession()
   const ticketId = params.id as string
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
