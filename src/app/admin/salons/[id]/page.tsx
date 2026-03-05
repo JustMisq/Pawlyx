@@ -1,6 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -67,7 +66,6 @@ interface Client {
 }
 
 export default function AdminSalonDetailPage() {
-  const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
   const salonId = params.id as string
@@ -87,12 +85,8 @@ export default function AdminSalonDetailPage() {
   })
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchSalon()
-    }
-  }, [session, router]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchSalon()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchSalon = async () => {
     try {

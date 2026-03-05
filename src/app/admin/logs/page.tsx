@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -39,8 +37,6 @@ interface GlobalLog {
 }
 
 export default function AdminLogsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [logs, setLogs] = useState<GlobalLog[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -49,12 +45,8 @@ export default function AdminLogsPage() {
   const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchLogs()
-    }
-  }, [session, router, page, filter, severity]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchLogs()
+  }, [page, filter, severity]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchLogs = async () => {
     try {
@@ -105,17 +97,6 @@ export default function AdminLogsPage() {
       default:
         return <CircleDot className="w-3.5 h-3.5" />
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
-          <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-600 font-medium">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading && logs.length === 0) {

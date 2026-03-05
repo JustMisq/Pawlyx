@@ -64,16 +64,20 @@ interface Appointment {
   end?: Date
   clientId: string
   animalId: string
-  serviceId: string
+  serviceId?: string // Gardé pour compatibilité rétro
   client: { firstName: string; lastName: string }
   animal: { name: string }
-  service: { name: string; price: number; duration: number }
+  service?: { name: string; price: number; duration: number } // Ancien format
+  services?: Array<{ service: { name: string; price: number; duration: number; isFlexible?: boolean } }> // Nouveau format
   notes?: string
   internalNotes?: string
+  observations?: string // Observations de visite
   status: 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
   isLateCancel?: boolean
   cancellationReason?: string
   totalPrice?: number
+  finalPrice?: number // Prix final pour services flexibles
+  finalDuration?: number // Durée réelle pour services flexibles
 }
 
 interface Client {
@@ -114,6 +118,8 @@ export default function AppointmentsPage() {
   const [showForm, setShowForm] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [showFlexPricingModal, setShowFlexPricingModal] = useState(false)
+  const [flexFormData, setFlexFormData] = useState({ finalPrice: 0, finalDuration: 0, observations: '' })
   const [currentView, setCurrentView] = useState<'month' | 'week' | 'day' | 'agenda'>('month')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -121,7 +127,7 @@ export default function AppointmentsPage() {
   const [formData, setFormData] = useState({
     clientId: '',
     animalId: '',
-    serviceId: '',
+    serviceIds: [] as string[], // Multi-services
     appointmentDate: '',
     startTime: '',
     notes: '',
@@ -216,8 +222,8 @@ export default function AppointmentsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.clientId || !formData.animalId || !formData.serviceId || !formData.appointmentDate || !formData.startTime) {
-      toast.error('Todos os campos são obrigatórios')
+    if (!formData.clientId || !formData.animalId || formData.serviceIds.length === 0 || !formData.appointmentDate || !formData.startTime) {
+      toast.error('Todos os campos são obrigatórios (selecione pelo menos um serviço)')
       return
     }
 
@@ -236,7 +242,7 @@ export default function AppointmentsPage() {
         body: JSON.stringify({
           clientId: formData.clientId,
           animalId: formData.animalId,
-          serviceId: formData.serviceId,
+          serviceIds: formData.serviceIds, // Array de services
           startTime: startDateTime.toISOString(),
           notes: formData.notes,
         }),
@@ -261,7 +267,7 @@ export default function AppointmentsPage() {
       setFormData({
         clientId: '',
         animalId: '',
-        serviceId: '',
+        serviceIds: [],
         appointmentDate: '',
         startTime: '',
         notes: '',
@@ -333,6 +339,57 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error('Error updating appointment:', error)
+      toast.error('Ocorreu um erro')
+    }
+  }
+
+  // Vérifier si l'appointment a des services flexibles
+  const hasFlexibleServices = (apt: Appointment) => {
+    return apt.services && apt.services.some(s => s.service.isFlexible)
+  }
+
+  // Finaliser avec prix flexible
+  const handleFinalizeWithFlexPricing = async () => {
+    if (!selectedAppointment) return
+    
+    // Si c'est un service flexible, vérifier que prix et durée sont remplis
+    if (hasFlexibleServices(selectedAppointment)) {
+      if (flexFormData.finalPrice <= 0 || flexFormData.finalDuration <= 0) {
+        toast.error('Preço e duração devem ser preenchidos para serviços flexíveis')
+        return
+      }
+    }
+
+    try {
+      const res = await fetch(`/api/appointments?id=${selectedAppointment.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'completed',
+          ...(hasFlexibleServices(selectedAppointment) && {
+            finalPrice: flexFormData.finalPrice,
+            finalDuration: flexFormData.finalDuration,
+          }),
+          observations: flexFormData.observations,
+        }),
+      })
+
+      if (res.ok) {
+        const updated = await res.json()
+        setAppointments(appointments.map(apt => 
+          apt.id === selectedAppointment.id 
+            ? { ...updated, start: new Date(updated.startTime), end: new Date(updated.endTime) }
+            : apt
+        ))
+        setSelectedAppointment(null)
+        setShowFlexPricingModal(false)
+        setFlexFormData({ finalPrice: 0, finalDuration: 0, observations: '' })
+        toast.success('Consulta finalizada com sucesso!')
+      } else {
+        toast.error('Erro ao finalizar')
+      }
+    } catch (error) {
+      console.error('Error finalizing appointment:', error)
       toast.error('Ocorreu um erro')
     }
   }
@@ -502,26 +559,76 @@ export default function AppointmentsPage() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Serviço *
-                </label>
-                <select
-                  value={formData.serviceId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, serviceId: e.target.value })
-                  }
-                  className="input-base"
-                >
-                  <option value="">Selecionar um serviço</option>
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name} - {service.price}€ ({service.duration}min)
-                    </option>
-                  ))}
-                </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Serviços * (selecione pelo menos um)
+              </label>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {services.length === 0 ? (
+                  <p className="text-sm text-gray-500 col-span-2">Nenhum serviço disponível</p>
+                ) : (
+                  services.map((service) => (
+                    <label key={service.id} className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                      <input
+                        type="checkbox"
+                        checked={formData.serviceIds.includes(service.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({
+                              ...formData,
+                              serviceIds: [...formData.serviceIds, service.id],
+                            })
+                          } else {
+                            setFormData({
+                              ...formData,
+                              serviceIds: formData.serviceIds.filter(id => id !== service.id),
+                            })
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-teal-600"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                        <p className="text-xs text-gray-500">{service.duration}min - {service.price}€</p>
+                      </div>
+                    </label>
+                  ))
+                )}
               </div>
+              
+              {formData.serviceIds.length > 0 && (
+                <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                  <p className="text-sm text-teal-700 font-medium mb-2">Serviços selecionados:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.serviceIds.map((serviceId) => {
+                      const service = services.find(s => s.id === serviceId)
+                      return service ? (
+                        <span key={serviceId} className="inline-flex items-center gap-1.5 bg-teal-100 text-teal-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                          {service.name} ({service.price}€)
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                serviceIds: formData.serviceIds.filter(id => id !== serviceId),
+                              })
+                            }
+                            className="hover:text-teal-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ) : null
+                    })}
+                  </div>
+                  <p className="text-sm text-teal-700 font-semibold mt-2">
+                    Total: {formData.serviceIds.reduce((sum, serviceId) => {
+                      const service = services.find(s => s.id === serviceId)
+                      return sum + (service?.price || 0)
+                    }, 0).toFixed(2)}€
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
@@ -635,9 +742,33 @@ export default function AppointmentsPage() {
               </div>
               <div>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
-                  <Scissors className="w-3.5 h-3.5" /> Service
+                  <Scissors className="w-3.5 h-3.5" /> Services
                 </span>
-                <p className="font-medium">{selectedAppointment.service.name} - <span className="text-teal-600 font-semibold">{selectedAppointment.totalPrice || selectedAppointment.service.price}€</span></p>
+                <div className="mt-1 space-y-1">
+                  {selectedAppointment.services && selectedAppointment.services.length > 0 ? (
+                    <>
+                      {selectedAppointment.services.map((item, idx) => (
+                        <div key={idx} className="text-sm font-medium flex justify-between">
+                          <span>{item.service.name}</span>
+                          <span className="text-teal-600 font-semibold">{item.service.price}€</span>
+                        </div>
+                      ))}
+                    </>
+                  ) : selectedAppointment.service ? (
+                    <div className="text-sm font-medium flex justify-between">
+                      <span>{selectedAppointment.service.name}</span>
+                      <span className="text-teal-600 font-semibold">{selectedAppointment.service.price}€</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Nenhum serviço</p>
+                  )}
+                </div>
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <div className="text-sm font-semibold flex justify-between text-teal-700">
+                    <span>Total:</span>
+                    <span>{selectedAppointment.totalPrice || 0}€</span>
+                  </div>
+                </div>
               </div>
               <div>
                 <span className="text-sm text-gray-500 flex items-center gap-1.5">
@@ -654,6 +785,26 @@ export default function AppointmentsPage() {
                 <div>
                   <span className="text-sm text-gray-500">Notas</span>
                   <p className="font-medium">{selectedAppointment.notes}</p>
+                </div>
+              )}
+              {(selectedAppointment.observations || selectedAppointment.status === 'in_progress') && (
+                <div>
+                  <span className="text-sm text-gray-500 flex items-center gap-1.5">
+                    📋 Observações da visita
+                  </span>
+                  {selectedAppointment.observations ? (
+                    <p className="text-sm text-gray-700 italic border-l-4 border-teal-500 pl-3 mt-1">{selectedAppointment.observations}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Sem observações no momento</p>
+                  )}
+                </div>
+              )}
+              {selectedAppointment.finalPrice && (
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                  <p className="text-sm text-teal-700"><span className="font-semibold">Preço cobrado:</span> {selectedAppointment.finalPrice}€</p>
+                  {selectedAppointment.finalDuration && (
+                    <p className="text-sm text-teal-700"><span className="font-semibold">Duração real:</span> {selectedAppointment.finalDuration} min</p>
+                  )}
                 </div>
               )}
               {selectedAppointment.isLateCancel && (
@@ -712,14 +863,37 @@ export default function AppointmentsPage() {
 
               {selectedAppointment.status === 'in_progress' && (
                 <Button 
-                  onClick={() => handleStatusChange(selectedAppointment.id, 'completed')}
+                  onClick={() => {
+                    setFlexFormData({
+                      finalPrice: selectedAppointment.totalPrice || 0,
+                      finalDuration: selectedAppointment.finalDuration || 0,
+                      observations: selectedAppointment.observations || '',
+                    })
+                    setShowFlexPricingModal(true)
+                  }}
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Concluir e faturar
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar a consulta
                 </Button>
               )}
 
-              {['completed', 'cancelled', 'no_show'].includes(selectedAppointment.status || '') && (
+              {selectedAppointment.status === 'completed' && hasFlexibleServices(selectedAppointment) && (
+                <Button 
+                  onClick={() => {
+                    setFlexFormData({
+                      finalPrice: selectedAppointment.finalPrice || selectedAppointment.totalPrice || 0,
+                      finalDuration: selectedAppointment.finalDuration || 0,
+                      observations: selectedAppointment.observations || '',
+                    })
+                    setShowFlexPricingModal(true)
+                  }}
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  ✏️ Editar observações
+                </Button>
+              )}
+
+              {['completed', 'cancelled', 'no_show'].includes(selectedAppointment.status || '') && !hasFlexibleServices(selectedAppointment) && (
                 <div className="text-center text-sm text-gray-500 py-2">
                   Esta consulta está concluída e já não pode ser alterada.
                 </div>
@@ -743,6 +917,89 @@ export default function AppointmentsPage() {
                   <Trash2 className="w-4 h-4 mr-2" /> Eliminar
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pour prix et durée flexibles */}
+      {showFlexPricingModal && selectedAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              ✏️ Finalizar a consulta
+            </h2>
+            
+            <div className="space-y-4">
+              {hasFlexibleServices(selectedAppointment) && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Preço cobrado (€) *
+                    </label>
+                    <input
+                      type="number"
+                      value={flexFormData.finalPrice}
+                      onChange={(e) => setFlexFormData({ ...flexFormData, finalPrice: parseFloat(e.target.value) || 0 })}
+                      step="0.01"
+                      min="0"
+                      className="input-base"
+                      placeholder="Preço final"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Duração real (min) *
+                    </label>
+                    <input
+                      type="number"
+                      value={flexFormData.finalDuration}
+                      onChange={(e) => setFlexFormData({ ...flexFormData, finalDuration: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="input-base"
+                      placeholder="Duração em minutos"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  📋 Observações da visita
+                </label>
+                <textarea
+                  value={flexFormData.observations}
+                  onChange={(e) => setFlexFormData({ ...flexFormData, observations: e.target.value })}
+                  className="input-base resize-none"
+                  placeholder="Notas: pulgas detectadas, alergias, comportamento, etc."
+                  rows={3}
+                />
+              </div>
+
+              {hasFlexibleServices(selectedAppointment) && flexFormData.finalPrice > 0 && (
+                <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                  <p className="text-sm text-teal-700">
+                    <span className="font-semibold">Resumo:</span> {flexFormData.finalPrice}€ durante {flexFormData.finalDuration} min
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button 
+                onClick={() => setShowFlexPricingModal(false)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleFinalizeWithFlexPricing}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar
+              </Button>
             </div>
           </div>
         </div>
@@ -832,7 +1089,7 @@ export default function AppointmentsPage() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 flex items-center gap-1.5">
-                        <PawPrint className="w-3.5 h-3.5" /> {apt.animal.name} - {apt.service.name}
+                        <PawPrint className="w-3.5 h-3.5" /> {apt.animal.name} - {apt.services && apt.services.length > 0 ? apt.services.map(s => s.service.name).join(', ') : (apt.service?.name || 'N/A')}
                       </p>
                       <p className="text-sm text-gray-500 flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
@@ -844,7 +1101,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-semibold text-teal-600">
-                        {apt.totalPrice || apt.service.price}€
+                        {apt.totalPrice}€
                       </span>
                       {apt.isLateCancel && (
                         <p className="text-xs text-orange-600 mt-1 flex items-center gap-1 justify-end">

@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -51,20 +49,14 @@ const RESOURCE_LABELS: Record<string, string> = {
 }
 
 export default function AdminActivityPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [resource, setResource] = useState('all')
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchActivities()
-    }
-  }, [session, router, filter, resource]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchActivities()
+  }, [filter, resource]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchActivities = async () => {
     try {
@@ -107,16 +99,6 @@ export default function AdminActivityPage() {
       default:
         return <FileText className={iconClass} />
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center">
-          <p className="text-gray-600 text-lg">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -35,18 +33,12 @@ interface UsageSummary {
 }
 
 export default function AdminUsagePage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [summary, setSummary] = useState<UsageSummary>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchUsage()
-    }
-  }, [session, router])
+    fetchUsage()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUsage = async () => {
     try {
@@ -110,19 +102,6 @@ export default function AdminUsagePage() {
     if (pct > 25) return { icon: <TrendingUp className="w-4 h-4 text-emerald-500" />, label: 'Alto' }
     if (pct > 10) return { icon: <Minus className="w-4 h-4 text-amber-500" />, label: 'Médio' }
     return { icon: <TrendingDown className="w-4 h-4 text-red-400" />, label: 'Baixo' }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-8 text-center max-w-md w-full">
-          <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <Hash className="w-6 h-6 text-red-500" />
-          </div>
-          <p className="text-gray-600 font-medium">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

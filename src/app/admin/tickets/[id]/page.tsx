@@ -1,7 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -54,8 +53,6 @@ interface Ticket {
 }
 
 export default function TicketDetailPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const params = useParams()
   const ticketId = params.id as string
 
@@ -65,12 +62,8 @@ export default function TicketDetailPage() {
   const [sendingMessage, setSendingMessage] = useState(false)
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchTicket()
-    }
-  }, [session, router, ticketId]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchTicket()
+  }, [ticketId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTicket = async () => {
     try {

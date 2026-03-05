@@ -16,15 +16,42 @@ import {
   Menu,
   X,
   Loader2,
+  Activity,
+  Zap,
+  AlertTriangle,
+  MessageCircle,
+  PieChart,
+  Bell,
 } from 'lucide-react'
 
-const adminLinks = [
-  { href: '/admin', label: 'Painel', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Utilizadores', icon: Users },
-  { href: '/admin/salons', label: 'Salões', icon: Store },
-  { href: '/admin/tickets', label: 'Suporte', icon: TicketCheck },
-  { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/admin/logs', label: 'Logs', icon: ScrollText },
+const adminNavSections = [
+  {
+    title: 'Principal',
+    links: [
+      { href: '/admin', label: 'Painel', icon: LayoutDashboard },
+      { href: '/admin/users', label: 'Utilizadores', icon: Users },
+      { href: '/admin/salons', label: 'Salões', icon: Store },
+      { href: '/admin/tickets', label: 'Suporte', icon: TicketCheck },
+    ],
+  },
+  {
+    title: 'Analytics',
+    links: [
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+      { href: '/admin/usage', label: 'Utilização', icon: PieChart },
+      { href: '/admin/activity', label: 'Atividade', icon: Activity },
+    ],
+  },
+  {
+    title: 'Monitorização',
+    links: [
+      { href: '/admin/logs', label: 'Logs', icon: ScrollText },
+      { href: '/admin/errors', label: 'Erros', icon: AlertTriangle },
+      { href: '/admin/performance', label: 'Performance', icon: Zap },
+      { href: '/admin/interactions', label: 'Interações', icon: MessageCircle },
+      { href: '/admin/webhooks', label: 'Webhooks', icon: Bell },
+    ],
+  },
 ]
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -82,29 +109,38 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <nav className="p-4 space-y-1">
-          {adminLinks.map((link) => {
-            const Icon = link.icon
-            const isActive =
-              link.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(link.href)
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-teal-500/20 text-teal-400'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{link.label}</span>
-              </Link>
-            )
-          })}
+        <nav className="p-4 space-y-4 overflow-y-auto flex-1">
+          {adminNavSections.map((section) => (
+            <div key={section.title}>
+              <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {section.links.map((link) => {
+                  const Icon = link.icon
+                  const isActive =
+                    link.href === '/admin'
+                      ? pathname === '/admin'
+                      : pathname.startsWith(link.href)
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-teal-500/20 text-teal-400'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{link.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
 
           <div className="pt-4 mt-4 border-t border-gray-800">
             <Link

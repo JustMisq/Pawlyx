@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -30,20 +28,14 @@ interface ErrorLog {
 }
 
 export default function AdminErrorsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [errors, setErrors] = useState<ErrorLog[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [resolved, setResolved] = useState('all')
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchErrors()
-    }
-  }, [session, router, filter, resolved]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchErrors()
+  }, [filter, resolved]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchErrors = async () => {
     try {
@@ -103,17 +95,6 @@ export default function AdminErrorsPage() {
       default:
         return <ShieldAlert className="w-5 h-5 text-gray-500" />
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
-          <ShieldAlert className="w-12 h-12 text-red-400 mx-auto mb-3" />
-          <p className="text-gray-600 font-medium">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

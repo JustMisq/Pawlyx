@@ -1,8 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
@@ -37,21 +35,25 @@ interface User {
 }
 
 export default function AdminUsersPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchEmail, setSearchEmail] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
+  // Debounce search input
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchUsers()
-    }
-  }, [session, router, page, searchEmail]) // eslint-disable-line react-hooks/exhaustive-deps
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchEmail)
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [searchEmail])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [page, debouncedSearch]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUsers = async () => {
     try {
@@ -61,8 +63,8 @@ export default function AdminUsersPage() {
         limit: '50',
       })
 
-      if (searchEmail) {
-        params.append('search', searchEmail)
+      if (debouncedSearch) {
+        params.append('search', debouncedSearch)
       }
 
       const res = await fetch(`/api/admin/users?${params}`)
@@ -70,7 +72,7 @@ export default function AdminUsersPage() {
 
       const data = await res.json()
       setUsers(data.users || [])
-      setTotalPages(data.totalPages || 1)
+      setTotalPages(data.pagination?.totalPages || 1)
     } catch (error) {
       console.error('Erro:', error)
       toast.error('Impossível carregar os utilizadores')
@@ -126,14 +128,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <p className="text-gray-600">Acesso negado</p>
-      </div>
-    )
-  }
-
   if (loading && users.length === 0) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
@@ -176,7 +170,6 @@ export default function AdminUsersPage() {
             value={searchEmail}
             onChange={(e) => {
               setSearchEmail(e.target.value)
-              setPage(1)
             }}
             className="input-base pl-10"
           />

@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -38,8 +36,6 @@ interface Interaction {
 }
 
 export default function AdminInteractionsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [interactions, setInteractions] = useState<Interaction[]>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('all')
@@ -47,12 +43,8 @@ export default function AdminInteractionsPage() {
   const [requiresReply, setRequiresReply] = useState('all')
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchInteractions()
-    }
-  }, [session, router, typeFilter, statusFilter, requiresReply]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchInteractions()
+  }, [typeFilter, statusFilter, requiresReply]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchInteractions = async () => {
     try {
@@ -177,18 +169,6 @@ export default function AdminInteractionsPage() {
           </span>
         )
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[60vh]">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg font-medium">Acesso negado</p>
-          <p className="text-gray-400 text-sm mt-2">Não tem permissões para aceder a esta página.</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

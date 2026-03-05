@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState, ReactNode } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -44,18 +42,12 @@ interface Analytics {
 }
 
 export default function AdminAnalyticsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchAnalytics()
-    }
-  }, [session, router])
+    fetchAnalytics()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchAnalytics = async () => {
     try {
@@ -70,16 +62,6 @@ export default function AdminAnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-6 text-center">
-          <p className="text-gray-600">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -28,20 +26,14 @@ interface Webhook {
 }
 
 export default function AdminWebhooksPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [loading, setLoading] = useState(true)
   const [testMessage, setTestMessage] = useState('')
   const [sendingTest, setSendingTest] = useState(false)
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchWebhooks()
-    }
-  }, [session, router])
+    fetchWebhooks()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchWebhooks = async () => {
     try {
@@ -94,17 +86,6 @@ export default function AdminWebhooksPage() {
       default:
         return <Link2 className="w-6 h-6 text-gray-500" />
     }
-  }
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center">
-          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg font-medium">Acesso negado</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

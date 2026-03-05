@@ -26,6 +26,17 @@ export async function POST(
       data: { deletedAt: new Date() },
     })
 
+    // Audit log
+    await prisma.activityLog.create({
+      data: {
+        action: 'delete',
+        resource: 'User',
+        userId: session.user.id,
+        resourceId: id,
+        newValue: JSON.stringify({ suspended: true }),
+      },
+    }).catch(() => {})
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Erreur POST /api/admin/users/[id]/suspend:', error)

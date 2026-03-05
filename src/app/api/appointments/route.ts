@@ -50,7 +50,11 @@ export async function GET(request: NextRequest) {
       include: {
         client: true,
         animal: true,
-        service: true,
+        services: {
+          include: {
+            service: true,
+          },
+        },
       },
       orderBy: { startTime: 'asc' },
     })
@@ -88,11 +92,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { clientId, animalId, serviceId, startTime, notes, internalNotes } = body
+    const { clientId, animalId, serviceIds, startTime, notes, internalNotes } = body
 
-    if (!clientId || !animalId || !serviceId || !startTime) {
+    // Accepter ancien format avec serviceId pour compatibilité rétro
+    const ids = serviceIds || (body.serviceId ? [body.serviceId] : [])
+
+    if (!clientId || !animalId || ids.length === 0 || !startTime) {
       return NextResponse.json(
-        { message: 'clientId, animalId, serviceId, and startTime are required' },
+        { message: 'clientId, animalId, serviceIds (array), and startTime are required' },
         { status: 400 }
       )
     }
@@ -115,33 +122,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Animal not found' }, { status: 404 })
     }
 
-    // Vérifier que le service appartient au salon
-    const service = await prisma.service.findFirst({
-      where: { id: serviceId, salonId: salon.id },
+    // Vérifier que tous les services appartiennent au salon
+    const services = await prisma.service.findMany({
+      where: { id: { in: ids }, salonId: salon.id },
     })
 
-    if (!service) {
-      return NextResponse.json({ message: 'Service not found' }, { status: 404 })
+    if (services.length !== ids.length) {
+      return NextResponse.json({ message: 'One or more services not found' }, { status: 404 })
     }
 
-    // Calculer l'heure de fin
+    // Calculer l'heure de fin basée sur la durée totale
     const start = new Date(startTime)
-    const end = new Date(start.getTime() + service.duration * 60000)
+    const totalDuration = services.reduce((sum, s) => sum + s.duration, 0)
+    const end = new Date(start.getTime() + totalDuration * 60000)
+    const totalPrice = services.reduce((sum, s) => sum + s.price, 0)
 
     // ✅ FIX: Utiliser une transaction pour créer RDV + facture + rappel atomiquement
     // Évite les race conditions sur le numéro de facture
     const appointment = await prisma.$transaction(async (tx) => {
-      // Créer le rendez-vous
+      // Créer le rendez-vous (sans serviceId pour nouveau format)
       const newAppointment = await tx.appointment.create({
         data: {
           clientId,
           animalId,
-          serviceId,
+          serviceId: ids[0], // Garde pour compatibilité rétro (premier service)
           salonId: salon.id,
           date: start,
           startTime: start,
           endTime: end,
-          totalPrice: service.price,
+          totalPrice: totalPrice,
           notes: notes || null,
           internalNotes: internalNotes || null,
           status: 'scheduled',
@@ -149,9 +158,23 @@ export async function POST(request: NextRequest) {
         include: {
           client: true,
           animal: true,
-          service: true,
+          services: {
+            include: {
+              service: true,
+            },
+          },
         },
       })
+
+      // Créer les liens AppointmentService pour chaque service sélectionné
+      for (const serviceId of ids) {
+        await tx.appointmentService.create({
+          data: {
+            appointmentId: newAppointment.id,
+            serviceId: serviceId,
+          },
+        })
+      }
 
       // Créer automatiquement une facture (dans la transaction)
       const year = new Date().getFullYear()
@@ -170,25 +193,26 @@ export async function POST(request: NextRequest) {
       const invoiceNumber = `APT-${year}-${String(nextNumber).padStart(3, '0')}`
 
       const taxRate = 20
-      const subtotal = service.price
+      const subtotal = totalPrice
       const taxAmount = (subtotal * taxRate) / 100
       const total = subtotal + taxAmount
 
       const dueDate = new Date()
       dueDate.setDate(dueDate.getDate() + 30)
 
+      // Créer les items de facture pour chaque service
+      const invoiceItems = services.map((service) => ({
+        service: service.name,
+        description: service.description || 'Prestation de toilettage',
+        quantity: 1,
+        pricePerUnit: service.price,
+      }))
+
       await tx.invoice.create({
         data: {
           invoiceNumber,
           type: 'appointment',
-          items: JSON.stringify([
-            {
-              service: service.name,
-              description: service.description || 'Prestation de toilettage',
-              quantity: 1,
-              pricePerUnit: service.price,
-            },
-          ]),
+          items: JSON.stringify(invoiceItems),
           clientId,
           appointmentId: newAppointment.id,
           subtotal,
@@ -268,7 +292,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { status, notes, internalNotes, cancellationReason } = body
+    const { status, notes, internalNotes, cancellationReason, finalPrice, finalDuration, observations } = body
 
     // Vérifier que le RDV appartient au salon
     const existingAppointment = await prisma.appointment.findFirst({
@@ -284,6 +308,11 @@ export async function PUT(request: NextRequest) {
     // Gestion des notes
     if (notes !== undefined) updateData.notes = notes
     if (internalNotes !== undefined) updateData.internalNotes = internalNotes
+    if (observations !== undefined) updateData.observations = observations
+
+    // Pour services flexibles - mise à jour du prix et durée finaux
+    if (finalPrice !== undefined) updateData.finalPrice = finalPrice
+    if (finalDuration !== undefined) updateData.finalDuration = finalDuration
 
     // Gestion du changement de statut
     if (status) {
@@ -314,12 +343,30 @@ export async function PUT(request: NextRequest) {
         console.log('📛 No-show enregistré pour client:', existingAppointment.clientId)
       }
 
-      // Terminé -> Marquer la facture comme envoyée
+      // Terminé -> Marquer la facture comme envoyée et mettre à jour le prix si flexible
       if (status === 'completed') {
-        await prisma.invoice.updateMany({
-          where: { appointmentId: id, status: 'draft' },
-          data: { status: 'sent' },
-        })
+        // Si c'est un service flexible, mettre à jour la facture avec le prix final
+        if (finalPrice !== undefined) {
+          const taxRate = 20
+          const subtotal = finalPrice
+          const taxAmount = (subtotal * taxRate) / 100
+          const total = subtotal + taxAmount
+
+          await prisma.invoice.updateMany({
+            where: { appointmentId: id, status: 'draft' },
+            data: { 
+              status: 'sent',
+              subtotal,
+              taxAmount,
+              total,
+            },
+          })
+        } else {
+          await prisma.invoice.updateMany({
+            where: { appointmentId: id, status: 'draft' },
+            data: { status: 'sent' },
+          })
+        }
       }
     }
 
@@ -329,7 +376,11 @@ export async function PUT(request: NextRequest) {
       include: {
         client: true,
         animal: true,
-        service: true,
+        services: {
+          include: {
+            service: true,
+          },
+        },
       },
     })
 

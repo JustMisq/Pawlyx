@@ -11,71 +11,70 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
-    // Comptes
-    const totalUsers = await prisma.user.count()
-    const totalSalons = await prisma.salon.count()
-
-    // Souscriptions
-    const subscriptions = await prisma.subscription.findMany({
-      where: { user: { deletedAt: null } },
-      include: { user: true },
-    })
-
-    const activeSubscriptions = subscriptions.filter(
-      (s) => s.status === 'active'
-    ).length
-
-    // Revenus
-    const totalRevenue = subscriptions.reduce((acc, s) => acc + s.price, 0)
-
-    // MRR (Monthly Recurring Revenue)
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-
-    const monthlySubscriptions = subscriptions.filter(
-      (s) =>
-        new Date(s.currentPeriodStart) <= monthEnd &&
-        new Date(s.currentPeriodEnd) >= monthStart &&
-        s.status === 'active'
-    )
-
-    const monthlyRevenue = monthlySubscriptions.reduce((acc, s) => {
-      // Calculer le revenu proportionnel au mois
-      const monthPlan = s.plan === 'yearly' ? s.price / 12 : s.price
-      return acc + monthPlan
-    }, 0)
-
-    // Churn (% d'annulations ce mois)
-    const lastMonthStart = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      1
-    )
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
 
-    const cancelledThisMonth = subscriptions.filter(
-      (s) =>
-        s.status === 'cancelled' &&
-        s.updatedAt >= monthStart &&
-        s.updatedAt <= monthEnd
-    ).length
+    // Requêtes en parallèle pour la performance
+    const [
+      totalUsers,
+      totalSalons,
+      activeSubscriptions,
+      revenueAgg,
+      monthlyActiveAgg,
+      cancelledThisMonth,
+      activeLastMonth,
+      totalTickets,
+      openTickets,
+    ] = await Promise.all([
+      prisma.user.count({ where: { deletedAt: null } }),
+      prisma.salon.count(),
+      prisma.subscription.count({
+        where: { status: 'active', user: { deletedAt: null } },
+      }),
+      prisma.subscription.aggregate({
+        _sum: { price: true },
+        where: { user: { deletedAt: null } },
+      }),
+      // MRR: active subscriptions dans la période en cours
+      prisma.subscription.findMany({
+        where: {
+          status: 'active',
+          user: { deletedAt: null },
+          currentPeriodStart: { lte: monthEnd },
+          currentPeriodEnd: { gte: monthStart },
+        },
+        select: { price: true, plan: true },
+      }),
+      prisma.subscription.count({
+        where: {
+          status: 'cancelled',
+          updatedAt: { gte: monthStart, lte: monthEnd },
+        },
+      }),
+      prisma.subscription.count({
+        where: {
+          currentPeriodStart: { lte: lastMonthEnd },
+          currentPeriodEnd: { gte: lastMonthStart },
+        },
+      }),
+      prisma.supportTicket.count(),
+      prisma.supportTicket.count({
+        where: { status: { in: ['open', 'in_progress'] } },
+      }),
+    ])
 
-    const activeLastMonth = subscriptions.filter(
-      (s) =>
-        new Date(s.currentPeriodStart) <= lastMonthEnd &&
-        new Date(s.currentPeriodEnd) >= lastMonthStart
-    ).length
+    const totalRevenue = revenueAgg._sum.price ?? 0
 
-    const churnRate = activeLastMonth > 0 
-      ? (cancelledThisMonth / activeLastMonth) * 100 
+    const monthlyRevenue = monthlyActiveAgg.reduce((acc, s) => {
+      return acc + (s.plan === 'yearly' ? s.price / 12 : s.price)
+    }, 0)
+
+    const churnRate = activeLastMonth > 0
+      ? (cancelledThisMonth / activeLastMonth) * 100
       : 0
-
-    // Tickets
-    const totalTickets = await prisma.supportTicket.count()
-    const openTickets = await prisma.supportTicket.count({
-      where: { status: { in: ['open', 'in_progress'] } },
-    })
 
     return NextResponse.json({
       totalUsers,

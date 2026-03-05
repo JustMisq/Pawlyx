@@ -1,7 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -38,20 +36,14 @@ interface Salon {
 }
 
 export default function AdminSalonsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
   const [salons, setSalons] = useState<Salon[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    if (session && !session.user?.isAdmin) {
-      router.push('/dashboard')
-    } else if (session) {
-      fetchSalons()
-    }
-  }, [session, router, filter]) // eslint-disable-line react-hooks/exhaustive-deps
+    fetchSalons()
+  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchSalons = async () => {
     try {
@@ -111,14 +103,6 @@ export default function AdminSalonsPage() {
       s.email?.toLowerCase().includes(q)
     )
   })
-
-  if (!session?.user?.isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-500 text-lg">Acesso negado</p>
-      </div>
-    )
-  }
 
   if (loading) {
     return (
