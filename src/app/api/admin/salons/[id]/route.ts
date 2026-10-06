@@ -108,8 +108,13 @@ export async function PUT(
     if (data.city !== undefined) updatedData.city = data.city
     if (data.phone !== undefined) updatedData.phone = data.phone
     if (data.email !== undefined) updatedData.email = data.email
-    if (data.website !== undefined) updatedData.website = data.website
-    if (data.status !== undefined) updatedData.status = data.status
+    if (data.description !== undefined) updatedData.description = data.description
+    if (data.status !== undefined) {
+      if (!['active', 'inactive', 'suspended'].includes(data.status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      updatedData.status = data.status
+    }
 
     const salon = await prisma.salon.update({
       where: { id },

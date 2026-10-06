@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 import { clientSchema } from '@/lib/validations'
-import { logger, getErrorMessage, logApiCall } from '@/lib/logger'
+import { logger, getErrorMessage, logApiCall, logActivity } from '@/lib/logger'
+import { createAuditLog } from '@/lib/audit'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -83,6 +84,13 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     logApiCall('POST', '/api/clients', 201, duration, session.user.id)
     logger.audit('API/CLIENTS', 'CLIENT_CREATED', session.user.id, { clientId: client.id })
+    await logActivity({
+      action: 'create',
+      resource: 'client',
+      userId: session.user.id,
+      resourceId: client.id,
+      salonId: salon.id,
+    })
 
     return NextResponse.json(client, { status: 201 })
   } catch (error) {
@@ -250,6 +258,21 @@ export async function DELETE(request: NextRequest) {
     const duration = Date.now() - startTime
     logApiCall('DELETE', '/api/clients', 200, duration, session.user.id)
     logger.audit('API/CLIENTS', 'CLIENT_DELETED', session.user.id, { clientId })
+    await logActivity({
+      action: 'delete',
+      resource: 'client',
+      userId: session.user.id,
+      resourceId: clientId,
+      salonId: salon.id,
+    })
+    await createAuditLog({
+      userId: session.user.id,
+      salonId: salon.id,
+      action: 'delete',
+      entityType: 'client',
+      entityId: clientId,
+      oldValue: { firstName: client.firstName, lastName: client.lastName, email: client.email },
+    })
 
     return NextResponse.json({ message: 'Client deleted', client: deletedClient })
   } catch (error) {

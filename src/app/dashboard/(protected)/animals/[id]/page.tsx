@@ -88,13 +88,13 @@ export default function AnimalDetailPage() {
           const clientRes = await fetch(`/api/clients/${animalData.clientId}`)
           if (clientRes.ok) setClient(await clientRes.json())
         }
-        const appointmentsRes = await fetch('/api/appointments')
+        const appointmentsRes = await fetch(`/api/appointments?animalId=${animalId}`)
         if (appointmentsRes.ok) {
-          const allAppointments = await appointmentsRes.json()
+          const animalAppointments: Appointment[] = await appointmentsRes.json()
           setAppointments(
-            allAppointments
-              .filter((apt: Appointment) => apt.animalId === animalId)
-              .sort((a: Appointment, b: Appointment) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+            animalAppointments.sort(
+              (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+            )
           )
         }
       }

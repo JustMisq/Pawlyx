@@ -29,6 +29,7 @@ model User {
 model Salon {
   id             String              @id @default(cuid())
   name           String
+  status         String              @default("active")
   description    String?
   phone          String?
   address        String?
@@ -163,6 +164,7 @@ model Appointment {
   @@index([animalId])
   @@index([status])
   @@index([deletedAt])
+  @@index([salonId, startTime])
 }
 
 model AppointmentService {
@@ -404,6 +406,22 @@ model TicketMessage {
 
   @@index([ticketId])
   @@index([createdAt])
+}
+
+model Webhook {
+  id              String    @id @default(cuid())
+  name            String
+  type            String
+  url             String
+  severityLevel   String    @default("critical")
+  enabled         Boolean   @default(true)
+  retries         Int       @default(3)
+  lastStatus      String?
+  lastTriggeredAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([enabled])
 }
 
 model ErrorLog {

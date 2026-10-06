@@ -291,7 +291,8 @@ export default function DashboardPage() {
                     </p>
                     <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
                       <PawPrint className="w-3 h-3" />
-                      {apt.animal?.name} • {apt.service?.name}
+                      {apt.animal?.name} •{' '}
+                      {apt.services?.map((s: any) => s.service.name).join(', ') || apt.service?.name || '—'}
                     </p>
                   </div>
                 </div>

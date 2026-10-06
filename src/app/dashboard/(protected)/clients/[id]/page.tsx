@@ -36,7 +36,7 @@ interface Appointment {
   status: string
   totalPrice: number
   finalPrice?: number
-  service?: { name: string }
+  services?: Array<{ service: { name: string } }>
 }
 
 interface Invoice {
@@ -88,7 +88,7 @@ export default function ClientDetailsPage() {
         const [clientRes, animalsRes, appointmentsRes, invoicesRes] = await Promise.all([
           fetch(`/api/clients/${clientId}`),
           fetch(`/api/animals?clientId=${clientId}`),
-          fetch(`/api/appointments`),
+          fetch(`/api/appointments?clientId=${clientId}`),
           fetch(`/api/invoices?clientId=${clientId}`),
         ])
         
@@ -104,11 +104,8 @@ export default function ClientDetailsPage() {
         }
         
         if (appointmentsRes.ok) {
-          const allApts = await appointmentsRes.json()
-          const clientApts = allApts.filter((apt: any) => 
-            animals.some(a => a.id === apt.animalId)
-          )
-          setAppointments(clientApts.sort((a: Appointment, b: Appointment) => 
+          const clientApts: Appointment[] = await appointmentsRes.json()
+          setAppointments(clientApts.sort((a, b) =>
             new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
           ))
         }
@@ -633,7 +630,9 @@ export default function ClientDetailsPage() {
               <div key={apt.id} className="p-3.5 border border-gray-100 rounded-xl hover:bg-gray-50/50 transition-colors">
                 <div className="flex justify-between items-start gap-3">
                   <div>
-                    <p className="font-medium text-gray-900 text-sm">{apt.service?.name || 'Service'}</p>
+                    <p className="font-medium text-gray-900 text-sm">
+                      {apt.services?.map(s => s.service.name).join(', ') || 'Serviço'}
+                    </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {new Date(apt.startTime).toLocaleDateString('pt-PT')} às {new Date(apt.startTime).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                     </p>

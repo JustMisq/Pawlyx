@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { logActivity } from '@/lib/logger'
 import { MAX_IMPORT_ROWS } from '@/lib/import/schema'
 import {
   cleanPhone,
@@ -475,6 +476,19 @@ export async function POST(request: NextRequest) {
         : type === 'services'
           ? await importServices(salon.id, mapping, rows)
           : await importInventory(salon.id, mapping, rows)
+
+    await logActivity({
+      action: 'import',
+      resource: type,
+      userId: session.user.id,
+      salonId: salon.id,
+      newValue: {
+        rows: rows.length,
+        created: report.created,
+        matched: report.matched,
+        animalsCreated: report.animalsCreated,
+      },
+    })
 
     return NextResponse.json(report)
   } catch (error) {

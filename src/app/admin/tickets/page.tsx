@@ -111,6 +111,7 @@ export default function AdminTicketsPage() {
     switch (status) {
       case 'open': return <AlertCircle className="w-4 h-4 text-red-500" />
       case 'in_progress': return <Clock className="w-4 h-4 text-yellow-500" />
+      case 'waiting_customer': return <Clock className="w-4 h-4 text-blue-500" />
       case 'resolved': return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'closed': return <XCircle className="w-4 h-4 text-gray-400" />
       default: return <AlertCircle className="w-4 h-4 text-gray-400" />
@@ -121,6 +122,7 @@ export default function AdminTicketsPage() {
     switch (status) {
       case 'open': return 'Aberto'
       case 'in_progress': return 'Em curso'
+      case 'waiting_customer': return 'A aguardar cliente'
       case 'resolved': return 'Resolvido'
       case 'closed': return 'Fechado'
       default: return status
@@ -131,6 +133,7 @@ export default function AdminTicketsPage() {
     switch (status) {
       case 'open': return 'bg-red-100 text-red-700'
       case 'in_progress': return 'bg-yellow-100 text-yellow-700'
+      case 'waiting_customer': return 'bg-blue-100 text-blue-700'
       case 'resolved': return 'bg-green-100 text-green-700'
       case 'closed': return 'bg-gray-100 text-gray-500'
       default: return 'bg-gray-100 text-gray-500'
@@ -184,6 +187,7 @@ export default function AdminTicketsPage() {
               <option value="all">Todos os estados</option>
               <option value="open">Aberto</option>
               <option value="in_progress">Em curso</option>
+              <option value="waiting_customer">A aguardar cliente</option>
               <option value="resolved">Resolvido</option>
               <option value="closed">Fechado</option>
             </select>

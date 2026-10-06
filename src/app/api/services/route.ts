@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
+import { logActivity } from '@/lib/logger'
+import { createAuditLog } from '@/lib/audit'
 
 export async function GET() {
   try {
@@ -84,6 +86,14 @@ export async function POST(request: NextRequest) {
         isFlexible: isFlexible || false,
         salonId: salon.id,
       },
+    })
+
+    await logActivity({
+      action: 'create',
+      resource: 'service',
+      userId: session.user.id,
+      resourceId: service.id,
+      salonId: salon.id,
     })
 
     return NextResponse.json(service, { status: 201 })
@@ -203,6 +213,22 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.service.delete({
       where: { id },
+    })
+
+    await logActivity({
+      action: 'delete',
+      resource: 'service',
+      userId: session.user.id,
+      resourceId: id,
+      salonId: salon.id,
+    })
+    await createAuditLog({
+      userId: session.user.id,
+      salonId: salon.id,
+      action: 'delete',
+      entityType: 'service',
+      entityId: id,
+      oldValue: { name: service.name, price: service.price },
     })
 
     return NextResponse.json({ message: 'Service deleted' })

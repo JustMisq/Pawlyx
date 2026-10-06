@@ -858,41 +858,34 @@ export default function AppointmentsPage() {
 
             {/* Ações conforme o estado */}
             <div className="mt-6 space-y-3">
-              {(selectedAppointment.status === 'scheduled' || !selectedAppointment.status) && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    onClick={() => handleStatusChange(selectedAppointment.id, 'confirmed')}
-                    className="bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    <CheckCircle2 className="w-4 h-4 mr-2" /> Confirmar
-                  </Button>
-                  <Button 
+              {/* 'scheduled' n'existe plus que sur les marcações créées avant l'auto-confirmation */}
+              {['scheduled', 'confirmed'].includes(selectedAppointment.status || 'confirmed') && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      onClick={() => handleStatusChange(selectedAppointment.id, 'in_progress')}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" /> Iniciar
+                    </Button>
+                    <Button
+                      onClick={() => handleStatusChange(selectedAppointment.id, 'no_show')}
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-2" /> Não compareceu
+                    </Button>
+                  </div>
+                  <Button
                     onClick={() => {
                       const reason = prompt('Motivo do cancelamento (opcional):')
                       handleStatusChange(selectedAppointment.id, 'cancelled', reason || undefined)
                     }}
-                    className="bg-red-500 hover:bg-red-600 text-white"
+                    variant="outline"
+                    className="w-full text-red-600 border-red-200 hover:bg-red-50"
                   >
-                    <XCircle className="w-4 h-4 mr-2" /> Cancelar
+                    <XCircle className="w-4 h-4 mr-2" /> Cancelar a marcação
                   </Button>
-                </div>
-              )}
-
-              {selectedAppointment.status === 'confirmed' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    onClick={() => handleStatusChange(selectedAppointment.id, 'in_progress')}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" /> Iniciar
-                  </Button>
-                  <Button 
-                    onClick={() => handleStatusChange(selectedAppointment.id, 'no_show')}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                  >
-                    <AlertTriangle className="w-4 h-4 mr-2" /> Não compareceu
-                  </Button>
-                </div>
+                </>
               )}
 
               {selectedAppointment.status === 'in_progress' && (

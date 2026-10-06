@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { triggerCriticalAlert } from './webhooks'
+import { triggerAlert } from './webhooks'
 
 export interface ErrorLogInput {
   message: string
@@ -33,16 +33,14 @@ export async function logError(error: ErrorLogInput) {
       },
     })
 
-    // Déclencher une alerte pour les erreurs critiques
-    if (error.severity === 'critical') {
-      await triggerCriticalAlert({
-        message: error.message,
-        severity: 'critical',
-        errorId: errorLog.id,
-        stack: error.stack,
-        url: error.url,
-      })
-    }
+    // Les webhooks filtrent eux-mêmes selon leur seuil de sévérité
+    await triggerAlert({
+      message: error.message,
+      severity: error.severity || 'error',
+      errorId: errorLog.id,
+      stack: error.stack,
+      url: error.url,
+    })
 
     return errorLog
   } catch (err) {
@@ -278,6 +276,14 @@ export const simpleLogger = {
       name: error.name,
     } : error
     console.error(formatMessage('ERROR', context, message, errorData))
+
+    // Persiste l'erreur pour /admin/errors. Volontairement non bloquant : une panne
+    // d'écriture de log ne doit jamais faire échouer la requête qui l'a déclenchée.
+    void logError({
+      message: `[${context}] ${message}`,
+      stack: error instanceof Error ? error.stack : undefined,
+      severity: 'error',
+    }).catch(() => undefined)
   },
   debug: (context: string, message: string, data?: any) => {
     if (isDev) {

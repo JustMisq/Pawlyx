@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState, use, useCallback } from 'react'
+import { useEffect, useState, use, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Send, CheckCircle2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useVisibleInterval } from '@/lib/use-visible-interval'
 
 interface Message {
   id: string
@@ -84,27 +85,46 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   const [isInternal, setIsInternal] = useState(false)
   const [sending, setSending] = useState(false)
 
-  const fetchTicket = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/support/tickets/${id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setTicket(data.ticket)
-        setIsAdmin(data.isAdmin)
-      } else {
-        toast.error('Ticket não encontrado')
-        router.push('/dashboard/support')
+  /** silent: utilisé par le rafraîchissement automatique, qui ne doit ni afficher
+   *  d'erreur ni rediriger sur une simple coupure réseau. */
+  const fetchTicket = useCallback(
+    async (silent = false) => {
+      try {
+        const res = await fetch(`/api/support/tickets/${id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setTicket(data.ticket)
+          setIsAdmin(data.isAdmin)
+        } else if (!silent) {
+          toast.error('Ticket não encontrado')
+          router.push('/dashboard/support')
+        }
+      } catch {
+        if (!silent) toast.error('Erro de rede')
+      } finally {
+        if (!silent) setLoading(false)
       }
-    } catch {
-      toast.error('Erro de rede')
-    } finally {
-      setLoading(false)
-    }
-  }, [id, router])
+    },
+    [id, router]
+  )
 
   useEffect(() => {
     fetchTicket()
   }, [fetchTicket])
+
+  useVisibleInterval(() => fetchTicket(true), 5000, ticket?.status !== 'closed')
+
+  // Suivre la conversation sans scroller à l'ouverture de la page
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const previousCountRef = useRef<number | null>(null)
+  const messageCount = ticket?.messages.length ?? 0
+
+  useEffect(() => {
+    if (previousCountRef.current !== null && messageCount > previousCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+    previousCountRef.current = messageCount
+  }, [messageCount])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -122,10 +142,12 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       })
 
       if (res.ok) {
+        // Afficher le message tout de suite, sans attendre un rechargement complet
+        const created: Message = await res.json()
+        setTicket(prev => (prev ? { ...prev, messages: [...prev.messages, created] } : prev))
         setNewMessage('')
         setIsInternal(false)
-        fetchTicket()
-        toast.success('Mensagem enviada')
+        fetchTicket(true)
       } else {
         const data = await res.json()
         toast.error(data.message || 'Erro')
@@ -146,7 +168,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
       })
 
       if (res.ok) {
-        fetchTicket()
+        fetchTicket(true)
         toast.success('Estado atualizado')
       } else {
         toast.error('Erro')
@@ -278,6 +300,7 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
             <div className="text-gray-700 whitespace-pre-wrap">{message.content}</div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Formulaire de réponse */}

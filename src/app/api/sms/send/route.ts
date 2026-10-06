@@ -16,12 +16,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { phoneNumber, message, clientId, appointmentId, type = 'custom' } = body
+    const { message, clientId, appointmentId, type = 'custom' } = body
 
     // Validações
-    if (!phoneNumber || !message) {
+    if (!message) {
       return NextResponse.json(
-        { message: 'phoneNumber e message são obrigatórios' },
+        { message: 'message é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    if (typeof message !== 'string' || message.length > 1600) {
+      return NextResponse.json(
+        { message: 'Mensagem inválida ou demasiado longa' },
         { status: 400 }
       )
     }
@@ -52,8 +59,18 @@ export async function POST(request: NextRequest) {
 
     if (!client || client.salonId !== salon.id) {
       return NextResponse.json(
-        { message: 'Acès négado' },
+        { message: 'Acesso negado' },
         { status: 403 }
+      )
+    }
+
+    // Le numéro vient de la fiche client, jamais du corps de la requête : sinon
+    // n'importe quel compte pourrait envoyer des SMS arbitraires via notre Twilio.
+    const phoneNumber = client.phone
+    if (!phoneNumber) {
+      return NextResponse.json(
+        { message: 'Este cliente não tem número de telefone registado' },
+        { status: 400 }
       )
     }
 

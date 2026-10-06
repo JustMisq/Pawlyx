@@ -59,6 +59,7 @@ export default function ProtectedDashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null)
+  const [salonBlocked, setSalonBlocked] = useState<string | null>(null)
   const hasCheckedRef = useRef(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -87,6 +88,12 @@ export default function ProtectedDashboardLayout({
             return
           }
           const data = await res.json()
+          // Salon désactivé/suspendu depuis l'admin : on bloque avant même la subscription
+          if (data.salonStatus === 'suspended' || data.salonStatus === 'inactive') {
+            setSalonBlocked(data.salonStatus)
+            setHasSubscription(true)
+            return
+          }
           if (data.hasActiveSubscription) {
             setHasSubscription(true)
           } else {
@@ -113,6 +120,10 @@ export default function ProtectedDashboardLayout({
     )
   }
 
+  if (salonBlocked) {
+    return <SalonBlockedScreen status={salonBlocked} />
+  }
+
   if (status === 'unauthenticated' || !hasSubscription) {
     return null
   }
@@ -123,6 +134,39 @@ export default function ProtectedDashboardLayout({
         {children}
       </DashboardShell>
     </PlanProvider>
+  )
+}
+
+function SalonBlockedScreen({ status }: { status: string }) {
+  const suspended = status === 'suspended'
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="bg-white rounded-2xl border-2 border-gray-100 p-8 max-w-md w-full text-center">
+        <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <Lock className="w-7 h-7 text-red-500" />
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">
+          {suspended ? 'Conta suspensa' : 'Conta desativada'}
+        </h1>
+        <p className="text-gray-600 text-sm mb-6">
+          {suspended
+            ? 'O acesso ao painel foi suspenso. Os seus dados continuam guardados — contacte-nos para reativar a conta.'
+            : 'A sua conta está desativada. Os seus dados continuam guardados — contacte-nos para voltar a ativá-la.'}
+        </p>
+        <div className="flex flex-col gap-2">
+          <a
+            href="mailto:suporte@pawlyx.com"
+            className="w-full px-4 py-2.5 bg-teal-500 text-white rounded-xl hover:bg-teal-600 font-medium transition-colors text-sm"
+          >
+            Contactar o suporte
+          </a>
+          <Button variant="outline" onClick={() => signOut({ callbackUrl: '/auth/login' })}>
+            <LogOut className="w-4 h-4" /> Terminar sessão
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
 

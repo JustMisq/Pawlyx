@@ -1,10 +1,11 @@
 'use client'
 
 import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { useVisibleInterval } from '@/lib/use-visible-interval'
 import {
   TicketCheck,
   ArrowLeft,
@@ -25,10 +26,9 @@ interface TicketMessage {
   id: string
   content: string
   createdAt: string
-  user: {
-    name: string
-    email: string
-  }
+  authorName: string
+  isStaffReply: boolean
+  isInternal: boolean
 }
 
 interface Ticket {
@@ -63,32 +63,53 @@ export default function TicketDetailPage() {
   const [messageContent, setMessageContent] = useState('')
   const [sendingMessage, setSendingMessage] = useState(false)
 
+  /** silent: utilisé par le rafraîchissement automatique, qui ne doit ni remettre
+   *  la page en chargement ni afficher d'erreur sur une coupure réseau. */
+  const fetchTicket = useCallback(
+    async (silent = false) => {
+      try {
+        if (!silent) setLoading(true)
+        const res = await fetch(`/api/admin/tickets/${ticketId}`)
+        if (!res.ok) throw new Error('Ticket não encontrado')
+
+        const data = await res.json()
+        setTicket(data.ticket)
+      } catch (error) {
+        if (!silent) {
+          console.error('Erro:', error)
+          toast.error('Impossível carregar o ticket')
+        }
+      } finally {
+        if (!silent) setLoading(false)
+      }
+    },
+    [ticketId]
+  )
+
   useEffect(() => {
     fetchTicket()
-  }, [ticketId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchTicket])
 
-  const fetchTicket = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`/api/admin/tickets/${ticketId}`)
-      if (!res.ok) throw new Error('Ticket não encontrado')
+  useVisibleInterval(() => fetchTicket(true), 5000, ticket?.status !== 'closed')
 
-      const data = await res.json()
-      setTicket(data.ticket)
-    } catch (error) {
-      console.error('Erro:', error)
-      toast.error('Impossível carregar o ticket')
-    } finally {
-      setLoading(false)
+  // Suivre la conversation sans scroller à l'ouverture de la page
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const previousCountRef = useRef<number | null>(null)
+  const messageCount = ticket?.messages.length ?? 0
+
+  useEffect(() => {
+    if (previousCountRef.current !== null && messageCount > previousCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
-  }
+    previousCountRef.current = messageCount
+  }, [messageCount])
 
   const sendMessage = async () => {
     if (!messageContent.trim()) return
 
     try {
       setSendingMessage(true)
-      const res = await fetch(`/api/admin/tickets/${ticketId}/messages`, {
+      const res = await fetch(`/api/support/tickets/${ticketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: messageContent }),
@@ -96,9 +117,11 @@ export default function TicketDetailPage() {
 
       if (!res.ok) throw new Error('Erro')
 
-      toast.success('Mensagem enviada')
+      // Afficher le message tout de suite, sans attendre un rechargement complet
+      const created: TicketMessage = await res.json()
+      setTicket(prev => (prev ? { ...prev, messages: [...prev.messages, created] } : prev))
       setMessageContent('')
-      fetchTicket()
+      fetchTicket(true)
     } catch (error) {
       toast.error('Erro ao enviar a mensagem')
     } finally {
@@ -123,7 +146,7 @@ export default function TicketDetailPage() {
       } else {
         toast.success('Ticket atualizado')
       }
-      fetchTicket()
+      fetchTicket(true)
     } catch (error) {
       toast.error('Erro ao atualizar')
     }
@@ -153,6 +176,7 @@ export default function TicketDetailPage() {
     switch (status) {
       case 'open': return <AlertCircle className="w-4 h-4 text-red-500" />
       case 'in_progress': return <Clock className="w-4 h-4 text-yellow-500" />
+      case 'waiting_customer': return <Clock className="w-4 h-4 text-blue-500" />
       case 'resolved': return <CheckCircle className="w-4 h-4 text-green-500" />
       case 'closed': return <XCircle className="w-4 h-4 text-gray-400" />
       default: return <AlertCircle className="w-4 h-4 text-gray-400" />
@@ -163,6 +187,7 @@ export default function TicketDetailPage() {
     switch (status) {
       case 'open': return 'Aberto'
       case 'in_progress': return 'Em curso'
+      case 'waiting_customer': return 'A aguardar cliente'
       case 'resolved': return 'Resolvido'
       case 'closed': return 'Fechado'
       default: return status
@@ -173,6 +198,7 @@ export default function TicketDetailPage() {
     switch (status) {
       case 'open': return 'bg-red-100 text-red-700'
       case 'in_progress': return 'bg-yellow-100 text-yellow-700'
+      case 'waiting_customer': return 'bg-blue-100 text-blue-700'
       case 'resolved': return 'bg-green-100 text-green-700'
       case 'closed': return 'bg-gray-100 text-gray-500'
       default: return 'bg-gray-100 text-gray-500'
@@ -335,15 +361,28 @@ export default function TicketDetailPage() {
             </div>
           ) : (
             ticket.messages.map((message) => (
-              <div key={message.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+              <div
+                key={message.id}
+                className={`rounded-xl p-4 border ${
+                  message.isInternal
+                    ? 'bg-amber-50 border-amber-200'
+                    : message.isStaffReply
+                      ? 'bg-teal-50 border-teal-100'
+                      : 'bg-gray-50 border-gray-100'
+                }`}
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-teal-600" />
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${message.isStaffReply ? 'bg-teal-100' : 'bg-gray-200'}`}>
+                      <User className={`w-3.5 h-3.5 ${message.isStaffReply ? 'text-teal-600' : 'text-gray-500'}`} />
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">{message.user.name}</p>
-                      <p className="text-xs text-gray-400">{message.user.email}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-gray-900 text-sm">{message.authorName}</p>
+                      {message.isInternal && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-medium">
+                          Nota interna
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs text-gray-400">
@@ -361,6 +400,7 @@ export default function TicketDetailPage() {
               </div>
             ))
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Formulário de resposta */}

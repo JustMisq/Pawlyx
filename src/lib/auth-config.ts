@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { logger } from "@/lib/logger"
+import { rateLimiters } from "@/lib/rate-limit"
 
 declare module "next-auth" {
   interface User {
@@ -45,8 +46,17 @@ export const authConfig: NextAuthOptions = {
           return null
         }
 
+        const email = (credentials.email as string).toLowerCase().trim()
+
+        // Anti-bruteforce par compte, avant le bcrypt.compare qui est volontairement coûteux
+        const rateLimit = await rateLimiters.login(email)
+        if (!rateLimit.success) {
+          logger.warn("AUTH", `Login rate limit atteint (retry dans ${rateLimit.retryAfter}s)`)
+          return null
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
         })
 
         if (!user) {
@@ -66,7 +76,7 @@ export const authConfig: NextAuthOptions = {
         )
 
         if (!passwordMatch) {
-          logger.warn("AUTH", `Invalid password for: ${credentials.email}`)
+          logger.warn("AUTH", `Invalid password for user ${user.id}`)
           return null
         }
 

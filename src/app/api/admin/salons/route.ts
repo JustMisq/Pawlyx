@@ -63,7 +63,9 @@ export async function GET(req: NextRequest) {
         _count: {
           select: {
             appointments: true,
-            services: true
+            services: true,
+            clients: true,
+            members: true
           }
         }
       },

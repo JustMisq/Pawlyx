@@ -43,7 +43,8 @@ export async function GET(request: Request) {
           gte: tomorrow,
           lte: tomorrowEnd,
         },
-        status: 'confirmed',
+        // 'scheduled' subsiste sur les marcações créées avant l'auto-confirmation
+        status: { in: ['scheduled', 'confirmed'] },
         deletedAt: null,
       },
       include: {

@@ -3,13 +3,59 @@
  * À ne pas exporter depuis les routes API
  */
 
+import { prisma } from './prisma'
+
 export interface WebhookConfig {
   id: string
+  name: string
   type: 'slack' | 'discord' | 'email'
   url: string
   severityLevel: 'error' | 'warning' | 'critical'
   enabled: boolean
   retries: number
+}
+
+/** Webhooks définis par variables d'environnement : toujours actifs, non modifiables depuis l'admin. */
+export function envWebhooks(): WebhookConfig[] {
+  const webhooks: WebhookConfig[] = []
+
+  if (process.env.SLACK_CRITICAL_WEBHOOK) {
+    webhooks.push({
+      id: 'env-slack-critical',
+      name: 'Slack (variável de ambiente)',
+      type: 'slack',
+      url: process.env.SLACK_CRITICAL_WEBHOOK,
+      severityLevel: 'critical',
+      enabled: true,
+      retries: 3,
+    })
+  }
+
+  if (process.env.DISCORD_CRITICAL_WEBHOOK) {
+    webhooks.push({
+      id: 'env-discord-critical',
+      name: 'Discord (variável de ambiente)',
+      type: 'discord',
+      url: process.env.DISCORD_CRITICAL_WEBHOOK,
+      severityLevel: 'critical',
+      enabled: true,
+      retries: 3,
+    })
+  }
+
+  if (process.env.ALERT_EMAIL_ADDRESS) {
+    webhooks.push({
+      id: 'env-email-critical',
+      name: 'Email (variável de ambiente)',
+      type: 'email',
+      url: process.env.ALERT_EMAIL_ADDRESS,
+      severityLevel: 'critical',
+      enabled: true,
+      retries: 1,
+    })
+  }
+
+  return webhooks
 }
 
 export interface WebhookData {
@@ -138,48 +184,33 @@ async function sendEmailNotification(email: string, data: WebhookData): Promise<
   }
 }
 
+const SEVERITY_RANK: Record<string, number> = { warning: 1, error: 2, critical: 3 }
+
 /**
- * Fonction pour déclencher une alerte critique
+ * Déclenche une alerte sur les webhooks dont le seuil est atteint.
+ * Un webhook réglé sur « critical » ignore les simples erreurs.
  */
-export async function triggerCriticalAlert(errorData: {
+export async function triggerAlert(errorData: {
   message: string
   severity: string
   errorId?: string
   stack?: string
   url?: string
 }) {
-  // Webhooks configurés
-  const CRITICAL_WEBHOOKS: WebhookConfig[] = []
+  const stored = await prisma.webhook
+    .findMany({ where: { enabled: true } })
+    .catch(() => [])
 
-  // Ajouter les webhooks depuis les variables d'environnement
-  if (process.env.SLACK_CRITICAL_WEBHOOK) {
-    CRITICAL_WEBHOOKS.push({
-      id: 'slack-critical',
-      type: 'slack',
-      url: process.env.SLACK_CRITICAL_WEBHOOK,
-      severityLevel: 'critical',
-      enabled: true,
-      retries: 3,
-    })
-  }
-
-  if (process.env.DISCORD_CRITICAL_WEBHOOK) {
-    CRITICAL_WEBHOOKS.push({
-      id: 'discord-critical',
-      type: 'discord',
-      url: process.env.DISCORD_CRITICAL_WEBHOOK,
-      severityLevel: 'critical',
-      enabled: true,
-      retries: 3,
-    })
-  }
-
-  if (CRITICAL_WEBHOOKS.length === 0) return
+  const eventRank = SEVERITY_RANK[errorData.severity] ?? SEVERITY_RANK.error
+  const targets = [...(stored as unknown as WebhookConfig[]), ...envWebhooks()].filter(
+    webhook => eventRank >= (SEVERITY_RANK[webhook.severityLevel] ?? SEVERITY_RANK.critical)
+  )
+  if (targets.length === 0) return
 
   await Promise.all(
-    CRITICAL_WEBHOOKS.map(webhook =>
-      sendWebhookNotification(webhook, {
-        type: 'critical',
+    targets.map(async webhook => {
+      const result = await sendWebhookNotification(webhook, {
+        type: errorData.severity === 'critical' ? 'critical' : 'error',
         message: errorData.message,
         errorId: errorData.errorId,
         severity: errorData.severity,
@@ -189,6 +220,18 @@ export async function triggerCriticalAlert(errorData: {
           url: errorData.url,
         },
       })
-    )
+
+      if (!webhook.id.startsWith('env-')) {
+        await prisma.webhook
+          .update({
+            where: { id: webhook.id },
+            data: {
+              lastStatus: result.success ? 'success' : result.error || 'failed',
+              lastTriggeredAt: new Date(),
+            },
+          })
+          .catch(() => undefined)
+      }
+    })
   )
 }

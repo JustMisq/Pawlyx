@@ -16,6 +16,15 @@ export async function GET() {
       )
     }
 
+    // Tolérant à l'absence de la colonne : si la migration n'est pas encore passée,
+    // on considère le salon comme actif plutôt que de bloquer tous les utilisateurs.
+    const salon = await prisma.salon
+      .findUnique({
+        where: { userId: session.user.id },
+        select: { status: true },
+      })
+      .catch(() => null)
+
     const subscription = await prisma.subscription.findUnique({
       where: { userId: session.user.id },
       select: {
@@ -36,9 +45,10 @@ export async function GET() {
       (subscription.status === 'active' || subscription.status === 'cancel_at_period_end') &&
       subscription.currentPeriodEnd > new Date()
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       hasActiveSubscription,
-      subscription: hasActiveSubscription ? subscription : null 
+      subscription: hasActiveSubscription ? subscription : null,
+      salonStatus: salon?.status ?? null,
     })
   } catch (error) {
     const { message, errorId } = getErrorMessage(error)

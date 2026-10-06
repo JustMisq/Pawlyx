@@ -74,29 +74,31 @@ export async function GET(request: NextRequest) {
           deletedAt: null,
         },
       }),
-      // RDV période actuelle
+      // RDV période actuelle - seul le statut est agrégé ensuite
       prisma.appointment.findMany({
         where: {
           salonId: salon.id,
           startTime: { gte: startDate },
           deletedAt: null,
         },
+        select: { status: true },
       }),
-      // RDV période précédente
-      prisma.appointment.findMany({
+      // RDV période précédente - seul le total compte
+      prisma.appointment.count({
         where: {
           salonId: salon.id,
           startTime: { gte: previousStartDate, lte: previousEndDate },
           deletedAt: null,
         },
       }),
-      // Factures période actuelle
+      // Factures période actuelle - seuls le statut et le total sont agrégés
       prisma.invoice.findMany({
         where: {
           salonId: salon.id,
           createdAt: { gte: startDate },
           deletedAt: null,
         },
+        select: { status: true, total: true },
       }),
       // Factures période précédente
       prisma.invoice.findMany({
@@ -105,6 +107,7 @@ export async function GET(request: NextRequest) {
           createdAt: { gte: previousStartDate, lte: previousEndDate },
           deletedAt: null,
         },
+        select: { status: true, total: true },
       }),
       // Stats par service : agrégé en JS car le revenu réel est finalPrice quand il existe
       // (services flexibles), ce qu'un _sum SQL ne peut pas exprimer.
@@ -164,8 +167,8 @@ export async function GET(request: NextRequest) {
       ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
       : currentRevenue > 0 ? 100 : 0
 
-    const appointmentGrowth = previousAppointments.length > 0
-      ? ((currentAppointments.length - previousAppointments.length) / previousAppointments.length) * 100
+    const appointmentGrowth = previousAppointments > 0
+      ? ((currentAppointments.length - previousAppointments) / previousAppointments) * 100
       : currentAppointments.length > 0 ? 100 : 0
 
     // Top services
@@ -231,7 +234,7 @@ export async function GET(request: NextRequest) {
         revenueGrowth: Math.round(revenueGrowth * 10) / 10,
         appointmentGrowth: Math.round(appointmentGrowth * 10) / 10,
         previousRevenue,
-        previousAppointments: previousAppointments.length,
+        previousAppointments,
       },
       topServices,
       activeClientsCount: activeClients.length,

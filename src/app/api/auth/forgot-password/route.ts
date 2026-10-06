@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendResetPasswordEmail } from '@/lib/email';
+import { checkRouteRateLimit } from '@/lib/rate-limit';
 import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 
+// Réponse identique que le compte existe ou non, pour ne pas permettre d'énumérer les emails
+const GENERIC_RESPONSE = { message: 'Se este email existe, um link de reinicialização foi enviado' };
+
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = await checkRouteRateLimit(request, 'passwordReset');
+    if (rateLimitResponse) return rateLimitResponse;
+
     const { email } = await request.json();
 
     // Validate email
@@ -22,17 +29,13 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase() },
     });
 
-    // Don't reveal if user exists (security)
     if (!user || user.deletedAt) {
-      return NextResponse.json(
-        { message: 'Se este email existe, um link de reinicialização foi enviado' },
-        { status: 200 }
-      );
+      return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
     }
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
 
     // Update user with reset token
     await prisma.user.update({
@@ -43,10 +46,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // In production, send email here
-    // For now, log the reset link for testing
     const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`;
-    console.log('🔐 Password reset link:', resetUrl);
+    // Jamais en production : le lien contient un token valide pour prendre le compte
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Password reset link:', resetUrl);
+    }
 
     // Send reset email
     try {
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
         resetUrl,
         userName: user.name,
       });
-      console.log('✅ Reset email sent to', user.email);
+      console.log('✅ Reset email sent');
     } catch (emailError) {
       console.error('❌ Failed to send reset email:', emailError);
       // Don't fail the request if email fails - in development this can happen
@@ -64,10 +68,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      { message: 'Email de reinicialização enviado' },
-      { status: 200 }
-    );
+    return NextResponse.json(GENERIC_RESPONSE, { status: 200 });
   } catch (error) {
     console.error('Forgot password error:', error);
     return NextResponse.json(

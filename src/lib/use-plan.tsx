@@ -15,6 +15,8 @@ interface PlanContextValue {
   planConfig: PlanConfig
   /** Raw subscription data */
   subscription: SubscriptionState | null
+  /** Salon status set from the admin panel: active | inactive | suspended */
+  salonStatus: string | null
   /** Whether the plan data is loading */
   loading: boolean
   /** Check if a route is accessible */
@@ -28,6 +30,7 @@ interface PlanContextValue {
 const PlanContext = createContext<PlanContextValue>({
   planConfig: getPlanConfig('starter'),
   subscription: null,
+  salonStatus: null,
   loading: true,
   canAccess: () => true,
   planId: 'starter',
@@ -36,6 +39,7 @@ const PlanContext = createContext<PlanContextValue>({
 
 export function PlanProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<SubscriptionState | null>(null)
+  const [salonStatus, setSalonStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchPlan = async () => {
@@ -43,6 +47,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
       const res = await fetch('/api/subscription/check')
       if (res.ok) {
         const data = await res.json()
+        setSalonStatus(data.salonStatus ?? null)
         if (data.hasActiveSubscription && data.subscription) {
           setSubscription({
             plan: data.subscription.plan || 'starter',
@@ -69,6 +74,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const value: PlanContextValue = {
     planConfig,
     subscription,
+    salonStatus,
     loading,
     canAccess: (pathname: string) => canAccessRoute(planId, pathname),
     planId,

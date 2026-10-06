@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 import { checkRouteRateLimit } from '@/lib/rate-limit'
-import { appointmentSchema, validateRequest } from '@/lib/validations'
+import { logActivity } from '@/lib/logger'
+import { createAuditLog } from '@/lib/audit'
 
 // Constantes pour la gestion des annulations
 const LATE_CANCELLATION_HOURS = 24
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get('from')
     const to = searchParams.get('to')
     const status = searchParams.get('status')
+    const clientId = searchParams.get('clientId')
+    const animalId = searchParams.get('animalId')
 
     const salon = await prisma.salon.findUnique({
       where: { userId: session.user.id },
@@ -45,14 +48,41 @@ export async function GET(request: NextRequest) {
       where.status = status
     }
 
+    // Filtres côté serveur : évite de télécharger tout l'historique du salon
+    // pour n'afficher que la fiche d'un client ou d'un animal.
+    if (clientId) {
+      where.clientId = clientId
+    }
+
+    if (animalId) {
+      where.animalId = animalId
+    }
+
     const appointments = await prisma.appointment.findMany({
       where,
-      include: {
-        client: true,
-        animal: true,
+      // Sélection explicite : le calendrier n'a besoin que des noms, et les notes
+      // privées du client n'ont pas à transiter vers le navigateur.
+      select: {
+        id: true,
+        startTime: true,
+        endTime: true,
+        status: true,
+        notes: true,
+        observations: true,
+        totalPrice: true,
+        finalPrice: true,
+        finalDuration: true,
+        isLateCancel: true,
+        cancellationReason: true,
+        clientId: true,
+        animalId: true,
+        client: { select: { firstName: true, lastName: true } },
+        animal: { select: { name: true, species: true } },
         services: {
-          include: {
-            service: true,
+          select: {
+            service: {
+              select: { id: true, name: true, price: true, duration: true, isFlexible: true },
+            },
           },
         },
       },
@@ -153,7 +183,8 @@ export async function POST(request: NextRequest) {
           totalPrice: totalPrice,
           notes: notes || null,
           internalNotes: internalNotes || null,
-          status: 'scheduled',
+          // Une marcação créée vaut confirmation : pas d'étape de confirmation manuelle
+          status: 'confirmed',
         },
         include: {
           client: true,
@@ -256,6 +287,14 @@ export async function POST(request: NextRequest) {
       }
 
       return newAppointment
+    })
+
+    await logActivity({
+      action: 'create',
+      resource: 'appointment',
+      userId: session.user.id,
+      resourceId: appointment.id,
+      salonId: salon.id,
     })
 
     return NextResponse.json(appointment, { status: 201 })
@@ -384,6 +423,29 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    await logActivity({
+      action: 'update',
+      resource: 'appointment',
+      userId: session.user.id,
+      resourceId: id,
+      salonId: salon.id,
+      oldValue: { status: existingAppointment.status },
+      newValue: { status: appointment.status },
+    })
+
+    // Traçabilité légale : une annulation doit rester justifiable après coup
+    if (status === 'cancelled') {
+      await createAuditLog({
+        userId: session.user.id,
+        salonId: salon.id,
+        action: 'cancel',
+        entityType: 'appointment',
+        entityId: id,
+        oldValue: { status: existingAppointment.status },
+        newValue: { status: 'cancelled', reason: cancellationReason || null },
+      })
+    }
+
     return NextResponse.json(appointment)
   } catch (error) {
     console.error('PUT appointment error:', error)
@@ -440,7 +502,22 @@ export async function DELETE(request: NextRequest) {
       data: { status: 'cancelled' },
     })
 
-    console.log('✅ Appointment soft deleted:', appointmentId)
+    await logActivity({
+      action: 'delete',
+      resource: 'appointment',
+      userId: session.user.id,
+      resourceId: appointmentId,
+      salonId: salon.id,
+    })
+    await createAuditLog({
+      userId: session.user.id,
+      salonId: salon.id,
+      action: 'delete',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      oldValue: { startTime: appointment.startTime.toISOString(), status: appointment.status },
+    })
+
     return NextResponse.json({ message: 'Appointment deleted successfully' })
   } catch (error) {
     console.error('💥 DELETE appointment error:', error)

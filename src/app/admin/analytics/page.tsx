@@ -94,6 +94,16 @@ export default function AdminAnalyticsPage() {
         </Link>
       </div>
 
+      {analytics && analytics.activeSubscriptions === 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800">
+          <p className="font-medium">Ainda não existem subscrições ativas.</p>
+          <p className="mt-1 text-blue-700">
+            Os valores financeiros (receita, MRR, ARR, LTV, churn) ficam a zero até que o primeiro salão
+            subscreva um plano. Os números de utilizadores em baixo já são reais.
+          </p>
+        </div>
+      )}
+
       {/* Receitas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard

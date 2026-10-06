@@ -48,8 +48,9 @@ export default function RegisterPage() {
         return
       }
 
-      toast.success('Conta criada com sucesso!')
-      router.push('/dashboard/onboarding')
+      // Le registo ne crée pas de session : on passe par la page de connexion
+      toast.success('Conta pronta! Inicie sessão para continuar.')
+      router.push('/auth/login')
     } catch (error) {
       toast.error('Ocorreu um erro')
     } finally {

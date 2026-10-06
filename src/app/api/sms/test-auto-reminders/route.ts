@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
           gte: tomorrow,
           lte: tomorrowEnd,
         },
-        status: 'scheduled',
+        // Les marcações sont confirmées dès leur création ; 'scheduled' subsiste sur les anciennes
+        status: { in: ['scheduled', 'confirmed'] },
       },
       include: {
         client: true,

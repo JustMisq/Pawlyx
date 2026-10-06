@@ -29,7 +29,7 @@ interface Salon {
   status: string
   createdAt: string
   _count?: {
-    users: number
+    members: number
     clients: number
     appointments: number
   }
@@ -40,6 +40,7 @@ export default function AdminSalonsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSalons()
@@ -61,6 +62,29 @@ export default function AdminSalonsPage() {
       toast.error('Impossível carregar os salões')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const updateStatus = async (salonId: string, status: string) => {
+    setUpdatingId(salonId)
+    try {
+      const res = await fetch(`/api/admin/salons/${salonId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!res.ok) throw new Error('Erro')
+
+      setSalons(prev => prev.map(s => (s.id === salonId ? { ...s, status } : s)))
+      toast.success(
+        status === 'active' ? 'Salão ativado' : status === 'inactive' ? 'Salão desativado' : 'Salão suspenso'
+      )
+    } catch (error) {
+      console.error('Erro:', error)
+      toast.error('Impossível atualizar o estado')
+    } finally {
+      setUpdatingId(null)
     }
   }
 
@@ -247,9 +271,9 @@ export default function AdminSalonsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600 hidden xl:table-cell">
                       <div className="flex items-center gap-3">
-                        <span className="inline-flex items-center gap-1" title="Utilizadores">
+                        <span className="inline-flex items-center gap-1" title="Membros da equipa">
                           <Users className="w-3.5 h-3.5 text-teal-500" />
-                          {salon._count?.users || 0}
+                          {salon._count?.members || 0}
                         </span>
                         <span className="inline-flex items-center gap-1" title="Clientes">
                           <Users className="w-3.5 h-3.5 text-blue-500" />
@@ -264,14 +288,53 @@ export default function AdminSalonsPage() {
                     <td className="px-6 py-4 text-sm text-gray-500 hidden lg:table-cell">
                       {new Date(salon.createdAt).toLocaleDateString('pt-PT')}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link
-                        href={`/admin/salons/${salon.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-teal-600 hover:text-white hover:bg-teal-500 rounded-lg transition-colors"
-                      >
-                        Ver
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {updatingId === salon.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-teal-500" />
+                        ) : (
+                          <>
+                            {salon.status !== 'active' && (
+                              <button
+                                onClick={() => updateStatus(salon.id, 'active')}
+                                title="Ativar"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" /> Ativar
+                              </button>
+                            )}
+                            {salon.status === 'active' && (
+                              <button
+                                onClick={() => updateStatus(salon.id, 'inactive')}
+                                title="Desativar"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                              >
+                                <XCircle className="w-3.5 h-3.5" /> Desativar
+                              </button>
+                            )}
+                            {salon.status !== 'suspended' && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Suspender "${salon.name}"? O proprietário perde o acesso ao painel.`)) {
+                                    updateStatus(salon.id, 'suspended')
+                                  }
+                                }}
+                                title="Suspender"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                        <Link
+                          href={`/admin/salons/${salon.id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-teal-600 hover:text-white hover:bg-teal-500 rounded-lg transition-colors"
+                        >
+                          Ver
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

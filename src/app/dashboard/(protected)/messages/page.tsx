@@ -124,8 +124,8 @@ export default function SMSPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Le numéro est repris de la fiche client côté serveur
           clientId: formData.clientId,
-          phoneNumber: formData.phoneNumber,
           message: formData.message,
           type: formData.type,
         }),

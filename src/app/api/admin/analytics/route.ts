@@ -29,7 +29,14 @@ export async function GET(request: NextRequest) {
 
     // Souscriptions
     const subscriptions = await prisma.subscription.findMany({
-      include: { user: true },
+      select: {
+        status: true,
+        price: true,
+        plan: true,
+        currentPeriodStart: true,
+        currentPeriodEnd: true,
+        updatedAt: true,
+      },
     })
 
     const activeSubscriptions = subscriptions.filter(
@@ -96,33 +103,34 @@ export async function GET(request: NextRequest) {
       ? ((activeSubscriptions - activeLastMonth) / activeLastMonth) * 100
       : 0
 
-    // Tendance (6 derniers mois)
-    const growthTrend = []
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const monthDateEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+    // Tendance (6 derniers mois) : 12 requêtes en parallèle plutôt qu'en série
+    const trendMonths = Array.from({ length: 6 }, (_, index) => {
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)
+      return {
+        monthDate,
+        monthDateEnd: new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0),
+      }
+    })
 
-      const usersAtMonth = await prisma.user.count({
-        where: {
-          createdAt: { lte: monthDateEnd },
-          deletedAt: null,
-        },
-      })
+    const growthTrend = await Promise.all(
+      trendMonths.map(async ({ monthDate, monthDateEnd }) => {
+        const [usersAtMonth, revenueAtMonth] = await Promise.all([
+          prisma.user.count({
+            where: { createdAt: { lte: monthDateEnd }, deletedAt: null },
+          }),
+          prisma.subscription.aggregate({
+            where: { createdAt: { lte: monthDateEnd }, status: 'active' },
+            _sum: { price: true },
+          }),
+        ])
 
-      const revenueAtMonth = await prisma.subscription.aggregate({
-        where: {
-          createdAt: { lte: monthDateEnd },
-          status: 'active',
-        },
-        _sum: { price: true },
+        return {
+          month: monthDate.toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' }),
+          users: usersAtMonth,
+          revenue: revenueAtMonth._sum.price || 0,
+        }
       })
-
-      growthTrend.push({
-        month: monthDate.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
-        users: usersAtMonth,
-        revenue: revenueAtMonth._sum.price || 0,
-      })
-    }
+    )
 
     return NextResponse.json({
       totalRevenue,

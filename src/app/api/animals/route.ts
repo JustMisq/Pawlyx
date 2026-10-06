@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authConfig } from '@/lib/auth-config'
 import { prisma } from '@/lib/prisma'
 import { animalSchema } from '@/lib/validations'
-import { logger, getErrorMessage, logApiCall } from '@/lib/logger'
+import { logger, getErrorMessage, logApiCall, logActivity } from '@/lib/logger'
+import { createAuditLog } from '@/lib/audit'
 import { z } from 'zod'
 
 // GET /api/animals?clientId=xxx - Récupérer les animaux d'un client ou tous les animaux du salon
@@ -133,6 +134,13 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     logApiCall('POST', '/api/animals', 201, duration, session.user.id)
     logger.audit('API/ANIMALS', 'ANIMAL_CREATED', session.user.id, { animalId: animal.id })
+    await logActivity({
+      action: 'create',
+      resource: 'animal',
+      userId: session.user.id,
+      resourceId: animal.id,
+      salonId: salon.id,
+    })
     return NextResponse.json(animal, { status: 201 })
   } catch (error) {
     const duration = Date.now() - startTime
@@ -289,6 +297,21 @@ export async function DELETE(request: NextRequest) {
     const duration = Date.now() - startTime
     logApiCall('DELETE', '/api/animals', 200, duration, session.user.id)
     logger.audit('API/ANIMALS', 'ANIMAL_DELETED', session.user.id, { animalId: id })
+    await logActivity({
+      action: 'delete',
+      resource: 'animal',
+      userId: session.user.id,
+      resourceId: id,
+      salonId: salon.id,
+    })
+    await createAuditLog({
+      userId: session.user.id,
+      salonId: salon.id,
+      action: 'delete',
+      entityType: 'animal',
+      entityId: id,
+      oldValue: { name: animal.name, species: animal.species },
+    })
 
     return NextResponse.json({ message: 'Animal deleted successfully' })
   } catch (error) {

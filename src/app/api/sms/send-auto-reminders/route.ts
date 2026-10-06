@@ -8,13 +8,22 @@ import { logger } from '@/lib/logger'
  * Envoie automatiquement les SMS de rappel pour les RDV de demain
  * Peut être appelé par un CRON externe (EasyCron, Vercel Cron, etc.)
  */
+/**
+ * Ces routes parcourent les marcações de TOUS les salons : elles ne doivent être
+ * joignables que par le CRON. Échoue volontairement en fermé si le secret est absent.
+ */
+function isAuthorizedCron(request: NextRequest): boolean {
+  const secretKey = process.env.CRON_SECRET_KEY
+  if (!secretKey) return false
+  return request.headers.get('authorization') === `Bearer ${secretKey}`
+}
+
+// Les marcações sont confirmées dès leur création ; 'scheduled' subsiste sur les anciennes
+const REMINDABLE_STATUSES = ['scheduled', 'confirmed']
+
 export async function POST(request: NextRequest) {
   try {
-    // Vérifier si le header d'authentification est fourni
-    const authHeader = request.headers.get('authorization')
-    const secretKey = process.env.CRON_SECRET_KEY
-
-    if (!secretKey || authHeader !== `Bearer ${secretKey}`) {
+    if (!isAuthorizedCron(request)) {
       return NextResponse.json(
         { message: 'Unauthorized' },
         { status: 401 }
@@ -36,7 +45,7 @@ export async function POST(request: NextRequest) {
           gte: tomorrow,
           lte: tomorrowEnd,
         },
-        status: 'scheduled',
+        status: { in: REMINDABLE_STATUSES },
       },
       include: {
         client: true,
@@ -160,6 +169,14 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Sans ce contrôle, la route exposait les noms et téléphones des clients de tous les salons
+    if (!isAuthorizedCron(request)) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const now = new Date()
     const tomorrow = new Date(now)
     tomorrow.setDate(tomorrow.getDate() + 1)
@@ -174,7 +191,7 @@ export async function GET(request: NextRequest) {
           gte: tomorrow,
           lte: tomorrowEnd,
         },
-        status: 'scheduled',
+        status: { in: REMINDABLE_STATUSES },
       },
       select: {
         id: true,

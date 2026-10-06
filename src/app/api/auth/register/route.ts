@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 import { getErrorMessage, logApiCall } from '@/lib/logger'
+import { checkRouteRateLimit } from '@/lib/rate-limit'
 
 // ✅ SÉCURITÉ: Validation stricte avec Zod
 const registerSchema = z.object({
@@ -32,10 +33,10 @@ export async function POST(request: NextRequest) {
   const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
 
   try {
-    // ✅ SÉCURITÉ: Rate limiting sur IP (5 registrations par heure)
-    const rateLimitKey = `register:${clientIp}`
-    // TODO: Utiliser Redis en production. Pour maintenant, on log juste
-    
+    // ✅ SÉCURITÉ: Rate limiting sur IP (3 inscriptions par heure)
+    const rateLimitResponse = await checkRouteRateLimit(request, 'register')
+    if (rateLimitResponse) return rateLimitResponse
+
     const body = await request.json()
 
     // ✅ SÉCURITÉ: Validation avec Zod
@@ -47,15 +48,13 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      logger.warn('AUTH', `Registration attempt with existing email: ${validatedData.email}`)
-      
-      // ✅ SÉCURITÉ: Ne pas révéler si l'email existe (prévenir énumération)
+      logger.warn('AUTH', 'Registration attempt with an existing email')
+
+      // ✅ SÉCURITÉ: même corps ET même statut que le succès, sinon le code HTTP
+      // suffit à savoir si l'email est déjà inscrit
       return NextResponse.json(
-        { 
-          message: 'Si cette adresse email n\'est pas déjà utilisée, votre compte a été créé. Vérifiez vos emails.',
-          errorId: `REG_${Date.now()}`
-        },
-        { status: 400 }
+        { message: 'Conta pronta. Inicie sessão para continuar.' },
+        { status: 201 }
       )
     }
 
@@ -102,10 +101,7 @@ export async function POST(request: NextRequest) {
     logApiCall('POST', '/api/auth/register', 201, duration, user.id)
 
     return NextResponse.json(
-      { 
-        message: 'Compte créé avec succès',
-        userId: user.id 
-      },
+      { message: 'Conta pronta. Inicie sessão para continuar.' },
       { status: 201 }
     )
   } catch (error) {

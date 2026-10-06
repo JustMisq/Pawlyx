@@ -37,14 +37,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const queryParams = activityQuerySchema.parse({
-      action: searchParams.get('action'),
-      resource: searchParams.get('resource'),
-      userId: searchParams.get('userId'),
-      salonId: searchParams.get('salonId'),
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
-    })
+    // fromEntries plutôt que des .get() : un paramètre absent doit être `undefined`,
+    // pas `null`, sinon les .optional() et .default() du schéma ne s'appliquent pas.
+    const queryParams = activityQuerySchema.parse(Object.fromEntries(searchParams))
 
     const skip = (queryParams.page - 1) * queryParams.limit
 
