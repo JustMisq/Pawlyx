@@ -6,6 +6,8 @@ import { format, parse, startOfWeek, getDay } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Button } from '@/components/ui/button'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { formatServiceDuration, formatServicePrice } from '@/lib/service-format'
 import toast from 'react-hot-toast'
 import {
   CalendarDays,
@@ -52,7 +54,7 @@ const messages = {
   date: 'Data',
   time: 'Hora',
   event: 'Evento',
-  noEventsInRange: 'Nenhuma consulta neste período',
+  noEventsInRange: 'Nenhuma marcação neste período',
   showMore: (total: number) => `+ ${total} mais`,
 }
 
@@ -98,6 +100,11 @@ interface Service {
   name: string
   price: number
   duration: number
+  isFlexible?: boolean
+  minPrice?: number | null
+  maxPrice?: number | null
+  minDuration?: number | null
+  maxDuration?: number | null
 }
 
 // Tipo para os eventos do calendário
@@ -119,7 +126,7 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [showFlexPricingModal, setShowFlexPricingModal] = useState(false)
-  const [flexFormData, setFlexFormData] = useState({ finalPrice: 0, finalDuration: 0, observations: '' })
+  const [flexFormData, setFlexFormData] = useState({ finalPrice: '', finalDuration: '', observations: '' })
   const [currentView, setCurrentView] = useState<'month' | 'week' | 'day' | 'agenda'>('month')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -204,6 +211,25 @@ export default function AppointmentsPage() {
     fetchAnimals()
   }, [formData.clientId])
 
+  const clientOptions = useMemo(
+    () =>
+      clients.map((client) => ({
+        value: client.id,
+        label: `${client.firstName} ${client.lastName}`,
+      })),
+    [clients]
+  )
+
+  const animalOptions = useMemo(
+    () =>
+      animals.map((animal) => ({
+        value: animal.id,
+        label: animal.name,
+        description: [animal.species, animal.breed].filter(Boolean).join(' · '),
+      })),
+    [animals]
+  )
+
   const handleSelectSlot = (slotInfo: any) => {
     setSelectedDate(slotInfo.start)
     const year = slotInfo.start.getFullYear()
@@ -250,7 +276,7 @@ export default function AppointmentsPage() {
 
       if (!res.ok) {
         const error = await res.json().catch(() => ({}))
-        toast.error(error.message || 'Erro ao criar a consulta')
+        toast.error(error.message || 'Erro ao criar a marcação')
         return
       }
 
@@ -273,7 +299,7 @@ export default function AppointmentsPage() {
         notes: '',
       })
       setShowForm(false)
-      toast.success('Consulta criada!')
+      toast.success('Marcação criada!')
     } catch (error) {
       console.error('Error creating appointment:', error)
       toast.error('Ocorreu um erro')
@@ -282,9 +308,9 @@ export default function AppointmentsPage() {
     }
   }
 
-  // Eliminar uma consulta
+  // Eliminar uma marcação
   const handleDeleteAppointment = async (appointmentId: string) => {
-    if (!confirm('Tem a certeza que deseja eliminar esta consulta?')) return
+    if (!confirm('Tem a certeza que deseja eliminar esta marcação?')) return
 
     try {
       const res = await fetch(`/api/appointments?id=${appointmentId}`, {
@@ -294,7 +320,7 @@ export default function AppointmentsPage() {
       if (res.ok) {
         setAppointments(appointments.filter(apt => apt.id !== appointmentId))
         setSelectedAppointment(null)
-        toast.success('Consulta eliminada')
+        toast.success('Marcação eliminada')
       } else {
         toast.error('Erro ao eliminar')
       }
@@ -304,7 +330,7 @@ export default function AppointmentsPage() {
     }
   }
 
-  // Alterar o estado de uma consulta
+  // Alterar o estado de uma marcação
   const handleStatusChange = async (appointmentId: string, newStatus: string, reason?: string) => {
     try {
       const body: any = { status: newStatus }
@@ -330,9 +356,9 @@ export default function AppointmentsPage() {
           in_progress: 'iniciada',
           completed: 'concluída',
           cancelled: 'cancelada',
-          no_show: 'marcada como não compareceu',
+          no_show: 'registada como não compareceu',
         }
-        toast.success(`Consulta ${statusLabels[newStatus] || 'atualizada'}`)
+        toast.success(`Marcação ${statusLabels[newStatus] || 'atualizada'}`)
       } else {
         const error = await res.json()
         toast.error(error.message || 'Erro ao atualizar')
@@ -348,13 +374,16 @@ export default function AppointmentsPage() {
     return apt.services && apt.services.some(s => s.service.isFlexible)
   }
 
+  const parsedFlexPrice = parseFloat(flexFormData.finalPrice) || 0
+  const parsedFlexDuration = parseInt(flexFormData.finalDuration) || 0
+
   // Finaliser avec prix flexible
   const handleFinalizeWithFlexPricing = async () => {
     if (!selectedAppointment) return
-    
+
     // Si c'est un service flexible, vérifier que prix et durée sont remplis
     if (hasFlexibleServices(selectedAppointment)) {
-      if (flexFormData.finalPrice <= 0 || flexFormData.finalDuration <= 0) {
+      if (parsedFlexPrice <= 0 || parsedFlexDuration <= 0) {
         toast.error('Preço e duração devem ser preenchidos para serviços flexíveis')
         return
       }
@@ -367,8 +396,8 @@ export default function AppointmentsPage() {
         body: JSON.stringify({
           status: 'completed',
           ...(hasFlexibleServices(selectedAppointment) && {
-            finalPrice: flexFormData.finalPrice,
-            finalDuration: flexFormData.finalDuration,
+            finalPrice: parsedFlexPrice,
+            finalDuration: parsedFlexDuration,
           }),
           observations: flexFormData.observations,
         }),
@@ -383,8 +412,8 @@ export default function AppointmentsPage() {
         ))
         setSelectedAppointment(null)
         setShowFlexPricingModal(false)
-        setFlexFormData({ finalPrice: 0, finalDuration: 0, observations: '' })
-        toast.success('Consulta finalizada com sucesso!')
+        setFlexFormData({ finalPrice: '', finalDuration: '', observations: '' })
+        toast.success('Marcação finalizada com sucesso!')
       } else {
         toast.error('Erro ao finalizar')
       }
@@ -500,7 +529,7 @@ export default function AppointmentsPage() {
           {showForm ? (
             <><X className="w-4 h-4 mr-2" /> Cancelar</>
           ) : (
-            <><Plus className="w-4 h-4 mr-2" /> Nova consulta</>
+            <><Plus className="w-4 h-4 mr-2" /> Nova marcação</>
           )}
         </Button>
       </div>
@@ -509,7 +538,7 @@ export default function AppointmentsPage() {
         <div className="bg-white rounded-2xl p-4 sm:p-6 border-2 border-gray-100 mb-8">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Plus className="w-5 h-5 text-teal-500" />
-            Criar uma consulta
+            Criar uma marcação
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
@@ -517,45 +546,35 @@ export default function AppointmentsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Cliente *
                 </label>
-                <select
+                <SearchableSelect
                   value={formData.clientId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, clientId: e.target.value })
+                  onChange={(clientId) =>
+                    setFormData({ ...formData, clientId, animalId: '' })
                   }
-                  className="input-base"
-                >
-                  <option value="">Selecionar um cliente</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.firstName} {client.lastName}
-                    </option>
-                  ))}
-                </select>
+                  options={clientOptions}
+                  placeholder="Selecionar um cliente"
+                  searchPlaceholder="Escreva o nome do cliente..."
+                  emptyMessage="Nenhum cliente encontrado"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Animal *
                 </label>
-                <select
+                <SearchableSelect
                   value={formData.animalId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, animalId: e.target.value })
-                  }
+                  onChange={(animalId) => setFormData({ ...formData, animalId })}
+                  options={animalOptions}
                   disabled={!formData.clientId}
-                  className="input-base disabled:bg-gray-100"
-                >
-                  <option value="">
-                    {formData.clientId
+                  placeholder={
+                    formData.clientId
                       ? 'Selecionar um animal'
-                      : 'Escolher um cliente primeiro'}
-                  </option>
-                  {animals.map((animal) => (
-                    <option key={animal.id} value={animal.id}>
-                      {animal.name} ({animal.species})
-                    </option>
-                  ))}
-                </select>
+                      : 'Escolher um cliente primeiro'
+                  }
+                  searchPlaceholder="Escreva o nome do animal..."
+                  emptyMessage="Nenhum animal encontrado"
+                />
               </div>
             </div>
 
@@ -588,8 +607,15 @@ export default function AppointmentsPage() {
                         className="w-4 h-4 rounded border-gray-300 text-teal-600"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{service.name}</p>
-                        <p className="text-xs text-gray-500">{service.duration}min - {service.price}€</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-medium text-gray-900">{service.name}</p>
+                          {service.isFlexible && (
+                            <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 text-[10px] font-medium rounded">Flexível</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {formatServiceDuration(service)} - {formatServicePrice(service)}
+                        </p>
                       </div>
                     </label>
                   ))
@@ -604,7 +630,7 @@ export default function AppointmentsPage() {
                       const service = services.find(s => s.id === serviceId)
                       return service ? (
                         <span key={serviceId} className="inline-flex items-center gap-1.5 bg-teal-100 text-teal-700 px-2.5 py-1 rounded-full text-xs font-medium">
-                          {service.name} ({service.price}€)
+                          {service.name} ({formatServicePrice(service)})
                           <button
                             type="button"
                             onClick={() =>
@@ -626,6 +652,9 @@ export default function AppointmentsPage() {
                       const service = services.find(s => s.id === serviceId)
                       return sum + (service?.price || 0)
                     }, 0).toFixed(2)}€
+                    {formData.serviceIds.some(id => services.find(s => s.id === id)?.isFlexible) && (
+                      <span className="font-normal"> (estimativa, serviço flexível)</span>
+                    )}
                   </p>
                 </div>
               )}
@@ -697,14 +726,14 @@ export default function AppointmentsPage() {
               {isSubmitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin mr-2" /> A criar...</>
               ) : (
-                <><Plus className="w-4 h-4 mr-2" /> Criar consulta</>
+                <><Plus className="w-4 h-4 mr-2" /> Criar marcação</>
               )}
             </Button>
           </form>
         </div>
       )}
 
-      {/* Modal de detalhes da consulta */}
+      {/* Modal de detalhes da marcação */}
       {selectedAppointment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
@@ -712,7 +741,7 @@ export default function AppointmentsPage() {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Eye className="w-5 h-5 text-teal-500" />
-                  Detalhes da consulta
+                  Detalhes da marcação
                 </h2>
                 <span className={`inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedAppointment.status || 'scheduled')}`}>
                   {getStatusIcon(selectedAppointment.status || 'scheduled')}
@@ -810,7 +839,7 @@ export default function AppointmentsPage() {
               {selectedAppointment.isLateCancel && (
                 <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3">
                   <p className="text-sm text-orange-800 flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4" /> Cancelamento tardio (menos de 24h antes da consulta)
+                    <AlertTriangle className="w-4 h-4" /> Cancelamento tardio (menos de 24h antes da marcação)
                   </p>
                 </div>
               )}
@@ -865,24 +894,25 @@ export default function AppointmentsPage() {
                 <Button 
                   onClick={() => {
                     setFlexFormData({
-                      finalPrice: selectedAppointment.totalPrice || 0,
-                      finalDuration: selectedAppointment.finalDuration || 0,
+                      finalPrice: selectedAppointment.totalPrice ? String(selectedAppointment.totalPrice) : '',
+                      finalDuration: selectedAppointment.finalDuration ? String(selectedAppointment.finalDuration) : '',
                       observations: selectedAppointment.observations || '',
                     })
                     setShowFlexPricingModal(true)
                   }}
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar a consulta
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar a marcação
                 </Button>
               )}
 
               {selectedAppointment.status === 'completed' && hasFlexibleServices(selectedAppointment) && (
                 <Button 
                   onClick={() => {
+                    const price = selectedAppointment.finalPrice || selectedAppointment.totalPrice
                     setFlexFormData({
-                      finalPrice: selectedAppointment.finalPrice || selectedAppointment.totalPrice || 0,
-                      finalDuration: selectedAppointment.finalDuration || 0,
+                      finalPrice: price ? String(price) : '',
+                      finalDuration: selectedAppointment.finalDuration ? String(selectedAppointment.finalDuration) : '',
                       observations: selectedAppointment.observations || '',
                     })
                     setShowFlexPricingModal(true)
@@ -895,7 +925,7 @@ export default function AppointmentsPage() {
 
               {['completed', 'cancelled', 'no_show'].includes(selectedAppointment.status || '') && !hasFlexibleServices(selectedAppointment) && (
                 <div className="text-center text-sm text-gray-500 py-2">
-                  Esta consulta está concluída e já não pode ser alterada.
+                  Esta marcação está concluída e já não pode ser alterada.
                 </div>
               )}
             </div>
@@ -927,7 +957,7 @@ export default function AppointmentsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              ✏️ Finalizar a consulta
+              ✏️ Finalizar a marcação
             </h2>
             
             <div className="space-y-4">
@@ -939,11 +969,12 @@ export default function AppointmentsPage() {
                     </label>
                     <input
                       type="number"
+                      inputMode="decimal"
                       value={flexFormData.finalPrice}
-                      onChange={(e) => setFlexFormData({ ...flexFormData, finalPrice: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => setFlexFormData({ ...flexFormData, finalPrice: e.target.value })}
                       step="0.01"
                       min="0"
-                      className="input-base"
+                      className="input-base text-base sm:text-sm"
                       placeholder="Preço final"
                     />
                   </div>
@@ -954,10 +985,11 @@ export default function AppointmentsPage() {
                     </label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       value={flexFormData.finalDuration}
-                      onChange={(e) => setFlexFormData({ ...flexFormData, finalDuration: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setFlexFormData({ ...flexFormData, finalDuration: e.target.value })}
                       min="0"
-                      className="input-base"
+                      className="input-base text-base sm:text-sm"
                       placeholder="Duração em minutos"
                     />
                   </div>
@@ -977,10 +1009,10 @@ export default function AppointmentsPage() {
                 />
               </div>
 
-              {hasFlexibleServices(selectedAppointment) && flexFormData.finalPrice > 0 && (
+              {hasFlexibleServices(selectedAppointment) && parsedFlexPrice > 0 && (
                 <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
                   <p className="text-sm text-teal-700">
-                    <span className="font-semibold">Resumo:</span> {flexFormData.finalPrice}€ durante {flexFormData.finalDuration} min
+                    <span className="font-semibold">Resumo:</span> {parsedFlexPrice}€ durante {parsedFlexDuration} min
                   </p>
                 </div>
               )}

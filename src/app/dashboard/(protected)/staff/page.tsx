@@ -225,7 +225,7 @@ export default function StaffPage() {
               <ul className="space-y-1">
                 <li className="flex items-center gap-1.5"><User className="w-4 h-4 text-gray-500" /> <strong>Pessoal</strong> : Clientes, Animais, Marcações, Serviços, Stocks</li>
                 <li className="flex items-center gap-1.5"><Settings className="w-4 h-4 text-blue-500" /> <strong>Admin</strong> : Pessoal + Faturas, Relatórios, Definições</li>
-                <li className="flex items-center gap-1.5"><Eye className="w-4 h-4 text-gray-400" /> <strong>Apenas leitura</strong> : Consulta apenas, sem modificação</li>
+                <li className="flex items-center gap-1.5"><Eye className="w-4 h-4 text-gray-400" /> <strong>Apenas leitura</strong> : Apenas visualização, sem modificação</li>
               </ul>
             </div>
 

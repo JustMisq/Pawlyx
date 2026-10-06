@@ -397,13 +397,13 @@ export default function ReportsPage() {
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-3">Nenhuma Nota de Débito de momento</h3>
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              As Notas de Débito são criadas automaticamente quando agenda uma consulta com um cliente.
+              As Notas de Débito são criadas automaticamente quando agenda uma marcação com um cliente.
             </p>
             <div className="space-y-3">
               <p className="text-sm text-gray-600 font-medium">Como fazer:</p>
               <ol className="text-left inline-block space-y-2 text-sm text-gray-600">
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">1</span> Vá a <strong>Marcações</strong></li>
-                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">2</span> Crie uma nova consulta</li>
+                <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">2</span> Crie uma nova marcação</li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">3</span> Selecione o cliente, o animal e o serviço</li>
                 <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center">4</span> Confirme - uma Nota de Débito será criada automaticamente</li>
               </ol>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, X, Scissors, Pencil, Trash2, Clock, Loader2, Info } from 'lucide-react'
+import { formatServiceDuration, formatServicePrice } from '@/lib/service-format'
 import toast from 'react-hot-toast'
 
 interface Service {
@@ -63,18 +64,23 @@ export default function ServicesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.price || !formData.duration) { toast.error('O nome, o preço e a duração são obrigatórios'); return }
-    if (formData.isFlexible && !formData.minPrice && !formData.maxPrice) { toast.error('Para um serviço flexível, indique pelo menos um preço mín. ou máx.'); return }
+    if (!formData.name) { toast.error('O nome é obrigatório'); return }
+    if (!formData.isFlexible && (!formData.price || !formData.duration)) { toast.error('O preço e a duração são obrigatórios'); return }
     setIsSubmitting(true)
     try {
       const method = editingService ? 'PUT' : 'POST'
+      const minPrice = formData.minPrice ? parseFloat(formData.minPrice) : null
+      const maxPrice = formData.maxPrice ? parseFloat(formData.maxPrice) : null
+      const minDuration = formData.minDuration ? parseInt(formData.minDuration) : null
+      const maxDuration = formData.maxDuration ? parseInt(formData.maxDuration) : null
       const body = {
         ...(editingService && { id: editingService.id }),
         name: formData.name, description: formData.description || null,
-        price: parseFloat(formData.price), minPrice: formData.minPrice ? parseFloat(formData.minPrice) : null,
-        maxPrice: formData.maxPrice ? parseFloat(formData.maxPrice) : null, duration: parseInt(formData.duration),
-        minDuration: formData.minDuration ? parseInt(formData.minDuration) : null,
-        maxDuration: formData.maxDuration ? parseInt(formData.maxDuration) : null, isFlexible: formData.isFlexible,
+        price: formData.price ? parseFloat(formData.price) : (minPrice ?? 0),
+        minPrice, maxPrice,
+        // La durée pilote le créneau du calendrier : garder une valeur exploitable même sans durée de base
+        duration: formData.duration ? parseInt(formData.duration) : (minDuration ?? maxDuration ?? 60),
+        minDuration, maxDuration, isFlexible: formData.isFlexible,
       }
       const res = await fetch('/api/services', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       if (!res.ok) { const error = await res.json().catch(() => ({})); toast.error(error.message || 'Erro'); return }
@@ -93,24 +99,6 @@ export default function ServicesPage() {
       if (res.ok) { setServices(services.filter(s => s.id !== serviceId)); toast.success('Serviço eliminado') }
       else { toast.error('Erro ao eliminar') }
     } catch (error) { console.error('Error:', error); toast.error('Ocorreu um erro') }
-  }
-
-  const formatPrice = (service: Service): string => {
-    if (service.isFlexible) {
-      if (service.minPrice && service.maxPrice) return `${service.minPrice}€ – ${service.maxPrice}€`
-      else if (service.minPrice) return `A partir de ${service.minPrice}€`
-      else if (service.maxPrice) return `Até ${service.maxPrice}€`
-    }
-    return `${service.price}€`
-  }
-
-  const formatDuration = (service: Service): string => {
-    if (service.isFlexible) {
-      if (service.minDuration && service.maxDuration) return `${service.minDuration} – ${service.maxDuration} min`
-      else if (service.minDuration) return `A partir de ${service.minDuration} min`
-      else if (service.maxDuration) return `Até ${service.maxDuration} min`
-    }
-    return `${service.duration} min`
   }
 
   if (loading) {
@@ -143,8 +131,10 @@ export default function ServicesPage() {
                 <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-base" placeholder="Ex: Tosquia completa" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Preço base (€) *</label>
-                <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="input-base" placeholder="15.00" />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Preço base (€) {formData.isFlexible ? <span className="text-gray-400 font-normal">(opcional)</span> : '*'}
+                </label>
+                <input type="number" inputMode="decimal" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="input-base text-base sm:text-sm" placeholder="15.00" />
               </div>
             </div>
             <div>
@@ -153,8 +143,10 @@ export default function ServicesPage() {
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Duração (minutos) *</label>
-                <input type="number" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} className="input-base" placeholder="60" />
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Duração (minutos) {formData.isFlexible ? <span className="text-gray-400 font-normal">(opcional)</span> : '*'}
+                </label>
+                <input type="number" inputMode="numeric" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} className="input-base text-base sm:text-sm" placeholder="60" />
               </div>
               <div className="flex items-end">
                 <label className="flex items-center gap-2.5 cursor-pointer h-[42px]">
@@ -165,6 +157,10 @@ export default function ServicesPage() {
             </div>
             {formData.isFlexible && (
               <div className="bg-teal-50/50 border border-teal-100 rounded-xl p-4 space-y-4">
+                <p className="flex items-start gap-2 text-xs text-teal-800">
+                  <Info className="w-4 h-4 shrink-0 mt-px" />
+                  Todos os campos abaixo são opcionais. O preço e a duração finais são definidos ao finalizar a marcação.
+                </p>
                 <div>
                   <h3 className="text-sm font-semibold text-teal-800 mb-3">Preço flexível</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -215,16 +211,16 @@ export default function ServicesPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900">{service.name}</h3>
                     {service.isFlexible && (
-                      <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs font-medium rounded-lg">Flexible</span>
+                      <span className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs font-medium rounded-lg">Flexível</span>
                     )}
                   </div>
                   {service.description && <p className="text-sm text-gray-500 mt-1">{service.description}</p>}
                   <div className="flex items-center gap-3 mt-2">
-                    <span className="inline-flex items-center gap-1 text-xs text-gray-500"><Clock className="w-3 h-3" /> {formatDuration(service)}</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-gray-500"><Clock className="w-3 h-3" /> {formatServiceDuration(service)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                  <p className="text-xl font-bold text-teal-600">{formatPrice(service)}</p>
+                  <p className="text-xl font-bold text-teal-600">{formatServicePrice(service)}</p>
                   <div className="flex gap-1">
                     <Button onClick={() => handleEdit(service)} variant="ghost" size="sm"><Pencil className="w-4 h-4" /></Button>
                     <Button onClick={() => handleDelete(service.id)} variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50"><Trash2 className="w-4 h-4" /></Button>

@@ -42,7 +42,7 @@ const RESOURCE_LABELS: Record<string, string> = {
   User: 'Utilizador',
   Client: 'Cliente',
   Animal: 'Animal',
-  Appointment: 'Consulta',
+  Appointment: 'Marcação',
   Invoice: 'Fatura',
   Service: 'Serviço',
   Subscription: 'Subscrição',
@@ -167,7 +167,7 @@ export default function AdminActivityPage() {
             <option value="User">Utilizador</option>
             <option value="Client">Cliente</option>
             <option value="Animal">Animal</option>
-            <option value="Appointment">Consulta</option>
+            <option value="Appointment">Marcação</option>
             <option value="Invoice">Fatura</option>
             <option value="Service">Serviço</option>
             <option value="Subscription">Subscrição</option>

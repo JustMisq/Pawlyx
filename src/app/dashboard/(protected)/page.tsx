@@ -233,7 +233,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/appointments">
             <Button>
               <Plus className="w-4 h-4" />
-              Nova consulta
+              Nova marcação
             </Button>
           </Link>
           <button

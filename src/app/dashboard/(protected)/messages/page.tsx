@@ -370,7 +370,7 @@ export default function SMSPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {[
               {
-                name: 'Lembrete de Consulta',
+                name: 'Lembrete de Marcação',
                 message: 'Olá! 🐾 Lembrete: tem tosquia para [animal] amanhã às [hora]. Até breve!',
               },
               {

@@ -362,7 +362,7 @@ export default function MembersPage() {
             <h4 className="font-medium text-gray-800 flex items-center gap-2">
               <Eye className="w-4 h-4" /> Apenas leitura
             </h4>
-            <p className="text-sm text-gray-600 mt-1">Consulta apenas, sem modificação</p>
+            <p className="text-sm text-gray-600 mt-1">Apenas visualização, sem modificação</p>
           </div>
         </div>
       </div>

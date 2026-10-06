@@ -625,7 +625,7 @@ export default function ClientDetailsPage() {
         </div>
         
         {appointments.length === 0 ? (
-          <p className="text-gray-400 text-sm">Nenhuma consulta</p>
+          <p className="text-gray-400 text-sm">Nenhuma marcação</p>
         ) : (
           <div className="space-y-2">
             {appointments.map(apt => (

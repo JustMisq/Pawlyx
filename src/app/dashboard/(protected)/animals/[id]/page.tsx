@@ -313,7 +313,7 @@ export default function AnimalDetailPage() {
           <CalendarDays className="w-5 h-5 text-teal-500" /> Histórico de visitas <span className="text-sm font-normal text-gray-400">({appointments.length})</span>
         </h2>
         {appointments.length === 0 ? (
-          <p className="text-gray-400 text-sm italic">Nenhuma consulta para este animal</p>
+          <p className="text-gray-400 text-sm italic">Nenhuma marcação para este animal</p>
         ) : (
           <div className="space-y-3">
             {appointments.map((apt) => {
