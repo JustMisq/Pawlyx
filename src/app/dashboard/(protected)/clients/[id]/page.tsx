@@ -35,6 +35,7 @@ interface Appointment {
   endTime: string
   status: string
   totalPrice: number
+  finalPrice?: number
   service?: { name: string }
 }
 
@@ -646,7 +647,7 @@ export default function ClientDetailsPage() {
                       {apt.status === 'completed' ? <CheckCircle2 className="w-3 h-3" /> : apt.status === 'cancelled' ? <XCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                       {apt.status === 'completed' ? 'Concluído' : apt.status === 'cancelled' ? 'Cancelado' : 'Agendado'}
                     </span>
-                    <p className="text-sm font-semibold text-gray-900 mt-1">{apt.totalPrice}€</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{apt.finalPrice ?? apt.totalPrice}€</p>
                   </div>
                 </div>
               </div>

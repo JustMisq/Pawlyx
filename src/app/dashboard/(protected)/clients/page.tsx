@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Users, Mail, Phone, MapPin, StickyNote, Eye, Loader2, Search, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Plus, X, Users, Mail, Phone, MapPin, StickyNote, Eye, Loader2, Search, AlertCircle, CheckCircle2, PawPrint, Upload } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Client {
@@ -12,6 +12,15 @@ interface Client {
   lastName: string
   email?: string
   phone?: string
+}
+
+const emptyAnimalForm = {
+  name: '',
+  species: 'dog',
+  breed: '',
+  color: '',
+  dateOfBirth: '',
+  notes: '',
 }
 
 // Validar formato de telefone português
@@ -47,6 +56,11 @@ export default function ClientsPage() {
     address: '',
     notes: '',
   })
+  // Étape 2 : ajout d'animaux juste après la création du client
+  const [createdClient, setCreatedClient] = useState<Client | null>(null)
+  const [animalForm, setAnimalForm] = useState(emptyAnimalForm)
+  const [addedAnimals, setAddedAnimals] = useState<string[]>([])
+  const [savingAnimal, setSavingAnimal] = useState(false)
 
   useEffect(() => {
     fetchClients()
@@ -111,10 +125,13 @@ export default function ClientsPage() {
         return
       }
 
+      const newClient: Client = await res.json()
       toast.success('Cliente criado com sucesso!')
       setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', notes: '' })
       setPhoneError(undefined)
-      setShowForm(false)
+      setAnimalForm(emptyAnimalForm)
+      setAddedAnimals([])
+      setCreatedClient(newClient)
       fetchClients()
     } catch (error) {
       console.error('Error:', error)
@@ -122,6 +139,52 @@ export default function ClientsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleAddAnimal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createdClient) return
+    if (!animalForm.name.trim()) {
+      toast.error('O nome do animal é obrigatório')
+      return
+    }
+
+    setSavingAnimal(true)
+    try {
+      const res = await fetch('/api/animals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...animalForm,
+          clientId: createdClient.id,
+          dateOfBirth: animalForm.dateOfBirth
+            ? new Date(animalForm.dateOfBirth + 'T00:00:00Z').toISOString()
+            : null,
+        }),
+      })
+
+      if (!res.ok) {
+        toast.error('Erro ao adicionar o animal')
+        return
+      }
+
+      setAddedAnimals(prev => [...prev, animalForm.name.trim()])
+      // Garder l'espèce : un client a souvent plusieurs animaux de la même espèce
+      setAnimalForm({ ...emptyAnimalForm, species: animalForm.species })
+      toast.success('Animal adicionado!')
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Ocorreu um erro')
+    } finally {
+      setSavingAnimal(false)
+    }
+  }
+
+  const closeForms = () => {
+    setCreatedClient(null)
+    setAnimalForm(emptyAnimalForm)
+    setAddedAnimals([])
+    setShowForm(false)
   }
 
   const handleDeleteClient = async (clientId: string, clientName: string) => {
@@ -160,12 +223,19 @@ export default function ClientsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Clientes</h1>
           <p className="text-gray-500 mt-1">{clients.length} cliente{clients.length !== 1 ? 's' : ''} registado{clients.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)} variant={showForm ? 'outline' : 'default'}>
-          {showForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Plus className="w-4 h-4" /> Adicionar um cliente</>}
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/dashboard/import?type=clients">
+            <Button variant="outline">
+              <Upload className="w-4 h-4" /> Importar
+            </Button>
+          </Link>
+          <Button onClick={() => (showForm ? closeForms() : setShowForm(true))} variant={showForm ? 'outline' : 'default'}>
+            {showForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Plus className="w-4 h-4" /> Adicionar um cliente</>}
+          </Button>
+        </div>
       </div>
 
-      {showForm && (
+      {showForm && !createdClient && (
         <div className="mb-6 bg-white rounded-2xl border-2 border-gray-100 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Novo cliente</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -218,6 +288,111 @@ export default function ClientsPage() {
             <Button type="submit" disabled={loading || phoneError !== undefined} className="w-full sm:w-auto">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Criar o cliente'}
             </Button>
+          </form>
+        </div>
+      )}
+
+      {createdClient && (
+        <div className="mb-6 bg-white rounded-2xl border-2 border-teal-200 p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+              <PawPrint className="w-5 h-5 text-teal-600" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Adicionar um animal a {createdClient.firstName} {createdClient.lastName}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Cliente criado. Registe já os animais dele ou termine e faça-o mais tarde.
+              </p>
+            </div>
+          </div>
+
+          {addedAnimals.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-500">Já adicionados:</span>
+              {addedAnimals.map((name, idx) => (
+                <span key={`${name}-${idx}`} className="inline-flex items-center gap-1.5 bg-teal-100 text-teal-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={handleAddAnimal} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nome do animal *</label>
+                <input
+                  type="text"
+                  value={animalForm.name}
+                  onChange={e => setAnimalForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="input-base"
+                  placeholder="Ex: Rex"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Espécie *</label>
+                <select
+                  value={animalForm.species}
+                  onChange={e => setAnimalForm(prev => ({ ...prev, species: e.target.value }))}
+                  className="input-base"
+                >
+                  <option value="dog">Cão</option>
+                  <option value="cat">Gato</option>
+                  <option value="rabbit">Coelho</option>
+                  <option value="bird">Pássaro</option>
+                  <option value="other">Outro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Raça</label>
+                <input
+                  type="text"
+                  value={animalForm.breed}
+                  onChange={e => setAnimalForm(prev => ({ ...prev, breed: e.target.value }))}
+                  className="input-base"
+                  placeholder="Ex: Golden Retriever"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Cor</label>
+                <input
+                  type="text"
+                  value={animalForm.color}
+                  onChange={e => setAnimalForm(prev => ({ ...prev, color: e.target.value }))}
+                  className="input-base"
+                  placeholder="Ex: Dourado"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Data de nascimento</label>
+                <input
+                  type="date"
+                  value={animalForm.dateOfBirth}
+                  onChange={e => setAnimalForm(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                  className="input-base"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Notas</label>
+              <textarea
+                value={animalForm.notes}
+                onChange={e => setAnimalForm(prev => ({ ...prev, notes: e.target.value }))}
+                rows={2}
+                className="input-base resize-none"
+                placeholder="Alergias, comportamento, preferências..."
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button type="submit" disabled={savingAnimal} className="sm:w-auto">
+                {savingAnimal ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Adicionar e continuar</>}
+              </Button>
+              <Button type="button" variant="outline" onClick={closeForms} className="sm:w-auto">
+                {addedAnimals.length > 0 ? 'Concluir' : 'Ignorar por agora'}
+              </Button>
+            </div>
           </form>
         </div>
       )}

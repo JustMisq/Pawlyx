@@ -106,17 +106,16 @@ export async function GET(request: NextRequest) {
           deletedAt: null,
         },
       }),
-      // Stats par service
-      prisma.appointment.groupBy({
-        by: ['serviceId'],
+      // Stats par service : agrégé en JS car le revenu réel est finalPrice quand il existe
+      // (services flexibles), ce qu'un _sum SQL ne peut pas exprimer.
+      prisma.appointment.findMany({
         where: {
           salonId: salon.id,
           startTime: { gte: startDate },
           status: 'completed',
           deletedAt: null,
         },
-        _count: true,
-        _sum: { totalPrice: true },
+        select: { serviceId: true, totalPrice: true, finalPrice: true },
       }),
       // No-shows récents
       prisma.appointment.count({
@@ -170,25 +169,31 @@ export async function GET(request: NextRequest) {
       : currentAppointments.length > 0 ? 100 : 0
 
     // Top services
-    const validServiceIds = serviceStats
-      .filter(s => s.serviceId !== null)
-      .map(s => s.serviceId as string)
-    
+    const revenueByService = new Map<string, { count: number; revenue: number }>()
+    for (const appointment of serviceStats) {
+      if (!appointment.serviceId) continue
+      const entry = revenueByService.get(appointment.serviceId) || { count: 0, revenue: 0 }
+      entry.count++
+      entry.revenue += appointment.finalPrice ?? appointment.totalPrice
+      revenueByService.set(appointment.serviceId, entry)
+    }
+
+    const validServiceIds = Array.from(revenueByService.keys())
+
     const servicesWithDetails = validServiceIds.length > 0
       ? await prisma.service.findMany({
           where: { id: { in: validServiceIds } },
         })
       : []
 
-    const topServices = serviceStats
-      .filter(s => s.serviceId !== null)
-      .map(stat => {
-        const service = servicesWithDetails.find(s => s.id === stat.serviceId)
+    const topServices = Array.from(revenueByService.entries())
+      .map(([serviceId, stat]) => {
+        const service = servicesWithDetails.find(s => s.id === serviceId)
         return {
-          id: stat.serviceId,
-          name: service?.name || 'Service inconnu',
-          count: stat._count,
-          revenue: stat._sum.totalPrice || 0,
+          id: serviceId,
+          name: service?.name || 'Serviço desconhecido',
+          count: stat.count,
+          revenue: stat.revenue,
         }
       })
       .sort((a, b) => b.count - a.count)

@@ -794,8 +794,8 @@ export default function AppointmentsPage() {
                 </div>
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <div className="text-sm font-semibold flex justify-between text-teal-700">
-                    <span>Total:</span>
-                    <span>{selectedAppointment.totalPrice || 0}€</span>
+                    <span>{selectedAppointment.finalPrice ? 'Total cobrado:' : 'Total:'}</span>
+                    <span>{selectedAppointment.finalPrice ?? selectedAppointment.totalPrice ?? 0}€</span>
                   </div>
                 </div>
               </div>
@@ -828,9 +828,14 @@ export default function AppointmentsPage() {
                   )}
                 </div>
               )}
-              {selectedAppointment.finalPrice && (
+              {(selectedAppointment.finalPrice || selectedAppointment.finalDuration) && (
                 <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
-                  <p className="text-sm text-teal-700"><span className="font-semibold">Preço cobrado:</span> {selectedAppointment.finalPrice}€</p>
+                  {selectedAppointment.finalPrice &&
+                    selectedAppointment.finalPrice !== selectedAppointment.totalPrice && (
+                      <p className="text-sm text-teal-700">
+                        <span className="font-semibold">Estimativa inicial:</span> {selectedAppointment.totalPrice ?? 0}€
+                      </p>
+                    )}
                   {selectedAppointment.finalDuration && (
                     <p className="text-sm text-teal-700"><span className="font-semibold">Duração real:</span> {selectedAppointment.finalDuration} min</p>
                   )}
@@ -1133,7 +1138,7 @@ export default function AppointmentsPage() {
                     </div>
                     <div className="text-right">
                       <span className="text-lg font-semibold text-teal-600">
-                        {apt.totalPrice}€
+                        {apt.finalPrice ?? apt.totalPrice}€
                       </span>
                       {apt.isLateCancel && (
                         <p className="text-xs text-orange-600 mt-1 flex items-center gap-1 justify-end">

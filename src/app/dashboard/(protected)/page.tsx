@@ -300,7 +300,7 @@ export default function DashboardPage() {
                     {getStatusLabel(apt.status)}
                   </span>
                   <span className="font-semibold text-teal-600 text-sm">
-                    {apt.totalPrice?.toFixed(2) || apt.service?.price?.toFixed(2)}€
+                    {(apt.finalPrice ?? apt.totalPrice)?.toFixed(2) || apt.service?.price?.toFixed(2)}€
                   </span>
                 </div>
               </div>

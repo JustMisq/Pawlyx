@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Plus, X, Scissors, Pencil, Trash2, Clock, Loader2, Info } from 'lucide-react'
+import { Plus, X, Scissors, Pencil, Trash2, Clock, Loader2, Info, Upload } from 'lucide-react'
 import { formatServiceDuration, formatServicePrice } from '@/lib/service-format'
 import toast from 'react-hot-toast'
 
@@ -116,9 +117,14 @@ export default function ServicesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Serviços</h1>
           <p className="text-gray-500 mt-1">{services.length} serviço{services.length !== 1 ? 's' : ''}</p>
         </div>
-        <Button onClick={() => { if (showForm && !editingService) { setShowForm(false) } else { resetForm(); setShowForm(true) } }} variant={showForm ? 'outline' : 'default'}>
-          {showForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Plus className="w-4 h-4" /> Novo serviço</>}
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/dashboard/import?type=services">
+            <Button variant="outline"><Upload className="w-4 h-4" /> Importar</Button>
+          </Link>
+          <Button onClick={() => { if (showForm && !editingService) { setShowForm(false) } else { resetForm(); setShowForm(true) } }} variant={showForm ? 'outline' : 'default'}>
+            {showForm ? <><X className="w-4 h-4" /> Cancelar</> : <><Plus className="w-4 h-4" /> Novo serviço</>}
+          </Button>
+        </div>
       </div>
 
       {showForm && (

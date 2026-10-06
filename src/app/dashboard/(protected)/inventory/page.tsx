@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
 import {
   Package, Plus, X, Loader2, Pencil, Trash2, Search,
-  AlertTriangle, ShoppingCart, Tags, FolderOpen, CheckCircle2, DollarSign
+  AlertTriangle, ShoppingCart, Tags, FolderOpen, CheckCircle2, DollarSign, Upload
 } from 'lucide-react'
 
 interface InventoryCategory {
@@ -408,6 +409,9 @@ export default function InventoryPage() {
           Gestão de stocks
         </h1>
         <div className="flex gap-2">
+          <Link href="/dashboard/import?type=inventory">
+            <Button variant="outline"><Upload className="w-4 h-4" /> Importar</Button>
+          </Link>
           <Button
             variant={showCategoryForm ? 'outline' : 'default'}
             onClick={() => {

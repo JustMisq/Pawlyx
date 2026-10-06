@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   Lock,
   Crown,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PlanProvider, usePlan } from '@/lib/use-plan'
@@ -44,6 +45,7 @@ const mainNavItems = [
 ]
 
 const managementNavItems = [
+  { href: '/dashboard/import', label: 'Importar dados', icon: Upload, minPlan: 'starter' as PlanId },
   { href: '/dashboard/staff', label: 'Equipa & Logs', icon: UserCog, minPlan: 'business' as PlanId },
   { href: '/dashboard/settings', label: 'Definições', icon: Settings, minPlan: 'starter' as PlanId },
 ]
