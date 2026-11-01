@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar'
-import { format, parse, startOfWeek, getDay } from 'date-fns'
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addDays, subDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Button } from '@/components/ui/button'
@@ -140,32 +140,61 @@ export default function AppointmentsPage() {
     notes: '',
   })
 
-  // Carregar os dados
+  // Carregar as marcações do mês visível (recarrega ao navegar no calendário)
+  const visibleMonth = startOfMonth(currentDate).getTime()
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        // A janela cobre todas as vistas: a grelha do mês mostra dias dos meses
+        // vizinhos e a vista agenda mostra 30 dias a partir da data atual.
+        const monthStart = new Date(visibleMonth)
+        const from = subDays(monthStart, 7)
+        const to = addDays(endOfMonth(monthStart), 31)
+
+        const res = await fetch(`/api/appointments?from=${from.toISOString()}&to=${to.toISOString()}`)
+
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) {
+            // Junta por id em vez de substituir: os meses já carregados continuam
+            // disponíveis e uma resposta fora de ordem não apaga nada.
+            setAppointments((prev) => {
+              const byId = new Map(prev.map((apt) => [apt.id, apt]))
+              data.forEach((apt: any) => {
+                byId.set(apt.id, {
+                  ...apt,
+                  start: new Date(apt.startTime),
+                  end: new Date(apt.endTime),
+                })
+              })
+              return Array.from(byId.values())
+            })
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('Appointments API error:', res.status, errData)
+          toast.error(errData?.details || 'Erro ao carregar marcações')
+        }
+      } catch (error) {
+        console.error('Error fetching appointments:', error)
+        toast.error('Erro ao carregar marcações')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAppointments()
+  }, [visibleMonth])
+
+  // Carregar os clientes e os serviços
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [apptRes, clientRes, serviceRes] = await Promise.all([
-          fetch(`/api/appointments?from=${new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()}&to=${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString()}`),
+        const [clientRes, serviceRes] = await Promise.all([
           fetch('/api/clients'),
           fetch('/api/services'),
         ])
-
-        if (apptRes.ok) {
-          const data = await apptRes.json()
-          if (Array.isArray(data)) {
-            setAppointments(
-              data.map((apt: any) => ({
-                ...apt,
-                start: new Date(apt.startTime),
-                end: new Date(apt.endTime),
-              }))
-            )
-          }
-        } else {
-          const errData = await apptRes.json().catch(() => ({}))
-          console.error('Appointments API error:', apptRes.status, errData)
-          toast.error(errData?.details || 'Erro ao carregar marcações')
-        }
 
         if (clientRes.ok) {
           setClients(await clientRes.json())
@@ -181,8 +210,6 @@ export default function AppointmentsPage() {
       } catch (error) {
         console.error('Error fetching data:', error)
         toast.error('Erro ao carregar')
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -281,8 +308,8 @@ export default function AppointmentsPage() {
       }
 
       const newAppointment = await res.json()
-      setAppointments([
-        ...appointments,
+      setAppointments((prev) => [
+        ...prev,
         {
           ...newAppointment,
           start: new Date(newAppointment.startTime),
@@ -318,7 +345,7 @@ export default function AppointmentsPage() {
       })
 
       if (res.ok) {
-        setAppointments(appointments.filter(apt => apt.id !== appointmentId))
+        setAppointments((prev) => prev.filter(apt => apt.id !== appointmentId))
         setSelectedAppointment(null)
         toast.success('Marcação eliminada')
       } else {
@@ -344,8 +371,8 @@ export default function AppointmentsPage() {
 
       if (res.ok) {
         const updated = await res.json()
-        setAppointments(appointments.map(apt => 
-          apt.id === appointmentId 
+        setAppointments((prev) => prev.map(apt =>
+          apt.id === appointmentId
             ? { ...updated, start: new Date(updated.startTime), end: new Date(updated.endTime) }
             : apt
         ))
@@ -405,8 +432,8 @@ export default function AppointmentsPage() {
 
       if (res.ok) {
         const updated = await res.json()
-        setAppointments(appointments.map(apt => 
-          apt.id === selectedAppointment.id 
+        setAppointments((prev) => prev.map(apt =>
+          apt.id === selectedAppointment.id
             ? { ...updated, start: new Date(updated.startTime), end: new Date(updated.endTime) }
             : apt
         ))
@@ -490,6 +517,17 @@ export default function AppointmentsPage() {
         title: `${apt.client.firstName} ${apt.client.lastName} - ${apt.animal.name}`,
       }))
   }, [appointments])
+
+  // A lista depende só do que ainda não terminou, não do mês visível no calendário
+  const now = new Date()
+  const upcomingAppointments = appointments
+    .filter(apt => apt.status !== 'cancelled' && apt.status !== 'no_show' && new Date(apt.endTime) >= now)
+    .sort(
+      (a, b) =>
+        new Date(a.startTime).getTime() -
+        new Date(b.startTime).getTime()
+    )
+    .slice(0, 5)
 
   if (loading) {
     return (
@@ -1086,21 +1124,14 @@ export default function AppointmentsPage() {
           <Clock className="w-5 h-5 text-teal-500" />
           Próximas marcações
         </h2>
-        {appointments.length === 0 ? (
+        {upcomingAppointments.length === 0 ? (
           <div className="bg-gray-50 rounded-2xl p-8 text-center">
             <CalendarDays className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Nenhuma marcação de momento</p>
           </div>
         ) : (
           <div className="grid gap-4">
-            {appointments
-              .filter(apt => apt.status !== 'cancelled' && apt.status !== 'no_show')
-              .sort(
-                (a, b) =>
-                  new Date(a.startTime).getTime() -
-                  new Date(b.startTime).getTime()
-              )
-              .slice(0, 5)
+            {upcomingAppointments
               .map((apt) => (
                 <div
                   key={apt.id}
