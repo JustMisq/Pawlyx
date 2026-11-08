@@ -7,12 +7,65 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 })
 
+// Statut côté app : un essai Stripe (trialing) donne accès comme un abonnement actif
+function toAppStatus(subscription: Stripe.Subscription): string {
+  if (subscription.cancel_at_period_end) return 'cancel_at_period_end'
+  if (subscription.status === 'active' || subscription.status === 'trialing') return 'active'
+  return subscription.status
+}
+
+/**
+ * Recopie l'état complet d'un abonnement Stripe en BDD (plan, intervalle, période, statut).
+ * Indispensable quand l'abonnement est modifié depuis le dashboard Stripe (passage à l'annuel,
+ * essai offert...) : sinon la BDD garde l'ancienne fin de période et l'accès coupe trop tôt.
+ */
+async function syncSubscription(subscription: Stripe.Subscription): Promise<number> {
+  const stripePrice = subscription.items.data[0]?.price
+  const resolved = stripePrice ? resolvePlanFromPriceId(stripePrice.id) : null
+  const status = toAppStatus(subscription)
+  const customerId =
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
+
+  const data = {
+    status,
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscription.id,
+    currentPeriodStart: new Date(subscription.current_period_start * 1000),
+    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+    // Un prix créé à la main dans Stripe n'est pas dans nos env vars : l'intervalle vient alors de Stripe
+    billingInterval:
+      resolved?.billingInterval ?? (stripePrice?.recurring?.interval === 'year' ? 'yearly' : 'monthly'),
+    ...(resolved && {
+      plan: resolved.plan,
+      price: resolved.price,
+      monthlySMSLimit: resolved.smsLimit,
+    }),
+  }
+
+  const bySubscription = await prisma.subscription.updateMany({
+    where: { stripeSubscriptionId: subscription.id },
+    data,
+  })
+  if (bySubscription.count > 0) return bySubscription.count
+
+  // Abonnement créé ou remplacé depuis le dashboard Stripe : on le rattache via le client,
+  // mais seulement s'il donne accès, pour qu'un ancien abonnement clôturé n'écrase pas le bon
+  if (status !== 'active' && status !== 'cancel_at_period_end') return 0
+
+  const byCustomer = await prisma.subscription.updateMany({
+    where: { stripeCustomerId: customerId },
+    data,
+  })
+  return byCustomer.count
+}
+
 /**
  * Webhook Stripe - Gère les événements de paiement
  * Endpoint: POST /api/stripe/webhook
  * 
  * Événements gérés:
  * - checkout.session.completed: Crée/met à jour la subscription
+ * - customer.subscription.created / updated: Synchronise plan, intervalle, période et statut
  * - customer.subscription.deleted: Annule la subscription
  * - invoice.payment_succeeded: Met à jour les dates de facture
  */
@@ -174,8 +227,10 @@ export async function POST(request: NextRequest) {
         console.log(`   Stripe Customer: ${subscription.customer}`)
 
         try {
+          // Par ID d'abonnement : supprimer l'ancien abonnement mensuel d'un client
+          // ne doit pas couper l'accès donné par son nouvel abonnement annuel
           const updated = await prisma.subscription.updateMany({
-            where: { stripeCustomerId: subscription.customer as string },
+            where: { stripeSubscriptionId: subscription.id },
             data: { status: 'canceled' },
           })
 
@@ -188,26 +243,22 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // MISE À JOUR D'ABONNEMENT (cancel_at_period_end, plan change, etc.)
+      // CRÉATION / MISE À JOUR D'ABONNEMENT (cancel_at_period_end, changement de plan
+      // ou d'intervalle, essai offert, abonnement créé depuis le dashboard Stripe...)
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
-        
-        console.log(`🔄 [WEBHOOK] customer.subscription.updated`)
+
+        console.log(`🔄 [WEBHOOK] ${event.type}`)
         console.log(`   Cancel at period end: ${subscription.cancel_at_period_end}`)
 
         try {
-          const newStatus = subscription.cancel_at_period_end
-            ? 'cancel_at_period_end'
-            : subscription.status === 'active'
-              ? 'active'
-              : subscription.status
+          // Relu via l'API : le contenu d'un événement suit la version d'API de l'endpoint,
+          // pas celle du SDK, et les dates de période n'y sont plus dans les versions récentes
+          const current = await stripe.subscriptions.retrieve(subscription.id)
+          const count = await syncSubscription(current)
 
-          await prisma.subscription.updateMany({
-            where: { stripeSubscriptionId: subscription.id },
-            data: { status: newStatus },
-          })
-
-          console.log(`✅ [WEBHOOK] Subscription mise à jour → ${newStatus}`)
+          console.log(`✅ [WEBHOOK] ${count} subscription(s) synchronisée(s) → ${toAppStatus(current)}`)
         } catch (err) {
           console.error('❌ [WEBHOOK] Erreur Prisma - update subscription:', err)
           throw err
@@ -223,30 +274,23 @@ export async function POST(request: NextRequest) {
         console.log(`💳 [WEBHOOK] invoice.payment_succeeded`)
         console.log(`   Stripe Customer: ${invoice.customer}`)
 
-        if (!invoice.subscription) {
+        // Depuis l'API 2025-03-31, l'ID de l'abonnement se trouve dans invoice.parent
+        const subscriptionId =
+          invoice.subscription ?? (invoice as any).parent?.subscription_details?.subscription
+
+        if (!subscriptionId) {
           console.log(`   Pas de subscription, skip`)
           return NextResponse.json({ received: true })
         }
 
         try {
           const stripeSubscription = await stripe.subscriptions.retrieve(
-            invoice.subscription as string
+            subscriptionId as string
           )
 
-          const updated = await prisma.subscription.updateMany({
-            where: { stripeCustomerId: invoice.customer as string },
-            data: {
-              currentPeriodStart: new Date(
-                stripeSubscription.current_period_start * 1000
-              ),
-              currentPeriodEnd: new Date(
-                stripeSubscription.current_period_end * 1000
-              ),
-              status: 'active',
-            },
-          })
+          const count = await syncSubscription(stripeSubscription)
 
-          console.log(`✅ [WEBHOOK] ${updated.count} subscription(s) mise(s) à jour`)
+          console.log(`✅ [WEBHOOK] ${count} subscription(s) mise(s) à jour`)
         } catch (err) {
           console.error('❌ [WEBHOOK] Erreur traitement invoice:', err)
           throw err
