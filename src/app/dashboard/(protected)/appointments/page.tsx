@@ -404,6 +404,16 @@ export default function AppointmentsPage() {
   const parsedFlexPrice = parseFloat(flexFormData.finalPrice) || 0
   const parsedFlexDuration = parseInt(flexFormData.finalDuration) || 0
 
+  const openFinalizeModal = () => {
+    if (!selectedAppointment) return
+    setFlexFormData({
+      finalPrice: selectedAppointment.totalPrice ? String(selectedAppointment.totalPrice) : '',
+      finalDuration: selectedAppointment.finalDuration ? String(selectedAppointment.finalDuration) : '',
+      observations: selectedAppointment.observations || '',
+    })
+    setShowFlexPricingModal(true)
+  }
+
   // Finaliser avec prix flexible
   const handleFinalizeWithFlexPricing = async () => {
     if (!selectedAppointment) return
@@ -901,10 +911,10 @@ export default function AppointmentsPage() {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
-                      onClick={() => handleStatusChange(selectedAppointment.id, 'in_progress')}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      onClick={openFinalizeModal}
+                      className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      <RefreshCw className="w-4 h-4 mr-2" /> Iniciar
+                      <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar
                     </Button>
                     <Button
                       onClick={() => handleStatusChange(selectedAppointment.id, 'no_show')}
@@ -926,16 +936,10 @@ export default function AppointmentsPage() {
                 </>
               )}
 
+              {/* 'in_progress' ne concerne plus que les marcações démarrées avant la suppression du bouton Iniciar */}
               {selectedAppointment.status === 'in_progress' && (
-                <Button 
-                  onClick={() => {
-                    setFlexFormData({
-                      finalPrice: selectedAppointment.totalPrice ? String(selectedAppointment.totalPrice) : '',
-                      finalDuration: selectedAppointment.finalDuration ? String(selectedAppointment.finalDuration) : '',
-                      observations: selectedAppointment.observations || '',
-                    })
-                    setShowFlexPricingModal(true)
-                  }}
+                <Button
+                  onClick={openFinalizeModal}
                   className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" /> Finalizar a marcação
